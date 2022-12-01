@@ -1290,6 +1290,7 @@ static int __init ModuleInit(void)
     Z80CPU.retn         = NULL;
     Z80CPU.hook         = NULL;
     Z80CPU.illegal      = NULL;
+    Z80CPU.options      = Z80_MODEL_ZILOG_NMOS;
 
     mutex_init(&Z80DRV_MUTEX);
 
