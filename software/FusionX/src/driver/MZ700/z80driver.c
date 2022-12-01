@@ -622,12 +622,6 @@ static void z80_halt(void *context, zboolean state)
 }
 
 // Methods below are not yet implemented, Work In Progress!
-static zuint8 z80_context(void *context, zuint16 address)
-{
-    Z_UNUSED(context)
-    printk("z80_context\n");
-    return 0x00;
-}
 static zuint8 z80_nmia(void *context, zuint16 address)
 {
     Z_UNUSED(context)
@@ -644,32 +638,6 @@ static zuint8 z80_intFetch(void *context, zuint16 address)
 {
     Z_UNUSED(context)
     printk("z80_int_fetch\n");
-    return 0x00;
-}
-static void z80_ldia(void *context)
-{
-    Z_UNUSED(context)
-    printk("z80_ldia\n");
-}
-static void z80_ldra(void *context)
-{
-    Z_UNUSED(context)
-    printk("z80_ldra\n");
-}
-static void z80_reti(void *context)
-{
-    Z_UNUSED(context)
-    printk("z80_reti\n");
-}
-static void z80_retn(void *context)
-{
-    Z_UNUSED(context)
-    printk("z80_retn\n");
-}
-static zuint8 z80_illegal(void *context, zuint8 opcode)
-{
-    Z_UNUSED(context)
-    printk("z80_illegal\n");
     return 0x00;
 }
 
@@ -1304,9 +1272,9 @@ static int __init ModuleInit(void)
     int      ret = 0;    
 
     // Setup the Z80 handlers.
-    Z80CPU.context      = z80_context;
-    Z80CPU.fetch        = z80_fetch;
+    Z80CPU.context      = NULL;
     Z80CPU.fetch_opcode = z80_fetch_opcode;
+    Z80CPU.fetch        = z80_fetch;
     Z80CPU.read         = z80_read;
     Z80CPU.write        = z80_write;
     Z80CPU.nop          = z80_nop;
@@ -1316,11 +1284,12 @@ static int __init ModuleInit(void)
     Z80CPU.nmia         = z80_nmia;
     Z80CPU.inta         = z80_inta;
     Z80CPU.int_fetch    = z80_intFetch;
-    Z80CPU.ld_i_a       = z80_ldia;
-    Z80CPU.ld_r_a       = z80_ldra;
-    Z80CPU.reti         = z80_reti;
-    Z80CPU.retn         = z80_retn;
-    Z80CPU.illegal      = z80_illegal;
+    Z80CPU.ld_i_a       = NULL;
+    Z80CPU.ld_r_a       = NULL;
+    Z80CPU.reti         = NULL;
+    Z80CPU.retn         = NULL;
+    Z80CPU.hook         = NULL;
+    Z80CPU.illegal      = NULL;
 
     mutex_init(&Z80DRV_MUTEX);
 
