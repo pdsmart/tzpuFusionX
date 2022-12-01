@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Dashboard - SharpKey Admin</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Add custom CSS here -->
+    <link href="css/sb-admin.css" rel="stylesheet">
+    <link href="css/sharpkey.css" rel="stylesheet">
+    <link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/jquery.edittable.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/style.css">
+  </head>
+
+  <body>
+
+    <div id="wrapper">
+
+      <!-- Sidebar -->
+      <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="index.html">SharpKey Interface</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+          <ul class="nav navbar-nav side-nav">
+            <li><a href="index.html"><i class="fa fa-dashboard"></i> Status</a></li>
+            <li id="keyMapAvailable"><a href="keymap.html"><i class="fa fa-keyboard-o"></i> %SK_CURRENTIF%Keymap</a></li>
+            <li class="active" id="mouseCfgAvailable"><a href="mouse.html"><i class="fa fa-mouse-pointer"></i> Mouse Config</a></li>
+            <li><a href="ota.html"><i class="fa fa-file"></i> OTA Update</a></li>
+            <li><a href="wifimanager.html"><i class="fa fa-wifi"></i> WiFi Manager</a></li>
+            <li><a href="reboot"><i class="fa fa-power-off"></i> Reboot</a></li>
+          </ul>
+
+          <ul class="nav navbar-nav navbar-right navbar-user">
+            <li class="dropdown user-dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-gear"></i> Settings <b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><a href="#"><i class="fa fa-gear"></i> Settings</a></li>
+                <li class="divider"></li>
+              </ul>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </nav>
+
+      <div id="page-wrapper">
+
+          <div class="row">
+              <div class="col-lg-12">
+                  <h1>Mouse Config </h1>
+                  <ol class="breadcrumb">
+                      <li class="active"><i class="fa fa-dashboard"></i> Status-&gt;Mouse Config</li>
+                  </ol>
+                  <div class="alert alert-success alert-dismissable">
+                      <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                      <p>Configure the Mouse settings in the panel below. Some of the mouse settings can be configured by the mouse wheel, please refer to the documentation for details.</p>
+                  </div>
+              </div>
+          </div><!-- /.row -->
+
+
+          <div class="row">
+              <div class="col-lg-12">
+                  <div class="panel panel-primary">
+                      <div class="panel-heading">
+                          <h3 class="panel-title"><i class="fa fa-server"></i> Mouse Host Configuration</h3>
+                      </div>
+                      <div class="panel-body">
+                          <form action="/data/mouse" method="POST" id="mouseHostCfgSave">
+                              <p><b>Host Scaling</b></p>
+                              <div>
+                                  %SK_MOUSEHOSTSCALING%
+                              </div>
+                              <hr class="hr_no_margin">
+                              <div>
+                                  <p style="white-space: pre-wrap;" id="mouseHostCfgMsg">Setup the host side mouse interface parameters. Commit changes by pressing <i>Save</i>.</p>
+                              </div>
+                              <hr class="hr_no_margin">
+                              <div>
+                                  <table class="table-condensed">
+                                      <tbody>
+                                          <tr>    
+                                              <td>
+                                                  <button type="submit" class="wm-button" name="mouseHostSave" id="mouseHostSave" form="mouseHostCfgSave" value="">Save</button>
+                                              </td>
+                                          </tr>
+                                      </tbody>
+                                  </table>
+                              </div>
+                          </form>
+                      </div>
+                  </div>
+              </div>
+          </div><!-- /.row -->      
+
+          <div class="row">
+              <div class="col-lg-12">
+                  <div class="panel panel-primary">
+                      <div class="panel-heading">
+                          <h3 class="panel-title"><i class="fa fa-mouse-pointer"></i> Mouse Configuration</h3>
+                      </div>
+                      <div class="panel-body">
+                          <form action="/data/mouse" method="POST" id="mousePS2CfgSave">
+                              <p><b>Mouse Scaling</b></p>
+                              <div>
+                                  %SK_MOUSEPS2SCALING%
+                              </div>
+                              <p><b>Mouse Resolution</b></p>
+                              <div>
+                                  %SK_MOUSEPS2RESOLUTION%
+                              <div>
+                              <p><b>Mouse Sampling Rate</b></p>
+                              <div>
+                                  %SK_MOUSEPS2SAMPLERATE%
+                              </div>
+                              <hr class="hr_no_margin">
+                              <div>
+                                  <p style="white-space: pre-wrap;" id="mousePS2CfgMsg">Setup the mouse parameters which are PS/2 settings, Bluetooth mice will use these parameters via internal mapping.<br>Commit changes by pressing <i>Save</i>.</p>
+                              </div>
+                              <hr class="hr_no_margin">
+                              <div>
+                                  <table class="table-condensed">
+                                      <tbody>
+                                          <tr>    
+                                              <td>
+                                                  <button type="submit" class="wm-button" name="mousePS2Save" id="mousePS2Save" form="mousePS2CfgSave" value="">Save</button>
+                                              </td>
+                                          </tr>
+                                      </tbody>
+                                  </table>
+                              </div>
+                          </form>
+                      </div>
+                  </div>
+              </div>
+          </div><!-- /.row -->      
+
+      </div><!-- /#page-wrapper -->
+
+      <!-- JavaScript -->
+      <script src="js/jquery.min.js"></script>
+      <script src="js/bootstrap.min.js"></script>
+      <script>
+          // Store the name of the active and secondary interfaces.
+          const activeInterface = "%SK_CURRENTIF%";
+          const secondaryInterface = "%SK_SECONDIF%"
+      </script>
+      <script src="js/mouse.js"></script>
+
+    </body>
+</html>

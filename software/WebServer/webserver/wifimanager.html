@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Dashboard - SharpKey Admin</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Add custom CSS here -->
+    <link href="css/sb-admin.css" rel="stylesheet">
+    <link href="css/sharpkey.css" rel="stylesheet">
+    <link href="font-awesome/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="/css/style.css">
+  </head>
+
+  <body>
+
+    <div id="wrapper">
+
+      <!-- Sidebar -->
+      <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="index.html">SharpKey Interface</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+          <ul class="nav navbar-nav side-nav">
+            <li><a href="index.html"><i class="fa fa-dashboard"></i> Status</a></li>
+            <li id="keyMapAvailable"><a href="keymap.html"><i class="fa fa-keyboard-o"></i> %SK_CURRENTIF%Keymap</a></li>
+            <li id="mouseCfgAvailable"><a href="mouse.html"><i class="fa fa-mouse-pointer"></i> Mouse Config</a></li>
+            <li><a href="ota.html"><i class="fa fa-table"></i> OTA Update</a></li>
+            <li class="active"><a href="wifimanager.html"><i class="fa fa-wifi"></i> WiFi Manager</a></li>
+            <li><a href="reboot"><i class="fa fa-power-off"></i> Reboot</a></li>
+          </ul>
+
+          <ul class="nav navbar-nav navbar-right navbar-user">
+            <li class="dropdown user-dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-gear"></i> Settings <b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><a href="#"><i class="fa fa-gear"></i> Settings</a></li>
+                <li class="divider"></li>
+              </ul>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </nav>
+
+      <div id="page-wrapper">
+
+        <div class="row">
+          <div class="col-lg-12">
+            <h1>WiFi Manager </h1>
+            <ol class="breadcrumb">
+                <li class="active"><i class="fa fa-dashboard"></i> Status-&gt;WiFi Manager</li>
+            </ol>
+            <div class="alert alert-success alert-dismissable justify">
+              <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+              <p>Welcome to the SharpKey WiFi Manager page.</p><p>This page allows you to configure the SharpKey WiFi Access Point (you connect to the SharpKey) or 
+              Client (SharpKey connects to your network) mode.</p>
+            </div>
+          </div>
+        </div><!-- /.row -->
+
+        <div class="row">
+        </div><!-- /.row -->
+
+        <div class="row">
+          <div class="col-lg-12">
+            <div class="panel panel-primary">
+              <div class="panel-heading">
+                <h3 class="panel-title"><i class="fa fa-wifi"></i> WiFi Configuration</h3>
+              </div>
+              <div class="panel-body">
+                <div class="table-responsive">
+                    <div id="client-wifi-config-area">
+
+                        <div id="wifiCfg%SK_WIFIMODEAP%">
+                            <table class="table table-borderless table-sm">
+                                <tbody>
+                                    <tr style="display: compact;">
+                                        <td>SSID:</td><td><span style="color: blue;">%SK_APSSID%</span></td>
+                                    </tr>
+                                    <tr style="display: compact;">
+                                        <td>Password:</td><td><span style="color: blue;">%SK_APPWD%</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>IP (AP):</td><td><span style="color: blue;">%SK_CURRENTIP%</span></td>
+                                        <td>NETMASK:</td><td><span style="color: blue;">%SK_CURRENTNM%</span></td>
+                                        <td>GATEWAY:</td><td><span style="color: blue;">%SK_CURRENTGW%</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="wifiCfg0%SK_WIFIMODECLIENT%">
+                            <table class="table table-borderless table-sm">
+                                <tbody>
+                                    <tr style="display: compact;">
+                                        <td>SSID:</td><td><span style="color: blue;">%SK_CLIENTSSID%</span></td>
+                                    </tr>
+                                    <tr style="display: compact;" id="wifiCfg1%SK_CLIENTDHCPON%">
+                                        <td>DHCP:</td><td><span style="color: blue;">Enabled</span></td>
+                                    </tr>
+                                    <tr id="wifiCfg3%SK_CLIENTDHCPON%">
+                                        <td>IP (assigned):</td><td><span style="color: blue;">%SK_CURRENTIP%</span></td>
+                                        <td>NETMASK:</td><td><span style="color: blue;">%SK_CURRENTNM%</span></td>
+                                        <td>GATEWAY:</td><td><span style="color: blue;">%SK_CURRENTGW%</span></td>
+                                    </tr>
+                                    <tr id="wifiCfg3%SK_CLIENTDHCPOFF%">
+                                        <td>IP (fixed):</td><td><span style="color: blue;">%SK_CURRENTIP%</span></td>
+                                        <td>NETMASK:</td><td><span style="color: blue;">%SK_CURRENTNM%</span></td>
+                                        <td>GATEWAY:</td><td><span style="color: blue;">%SK_CURRENTGW%</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /.row -->
+
+        <div class="row">
+          <div class="col-lg-12">
+            <div class="panel panel-primary">
+              <div class="panel-heading">
+                <h3 class="panel-title"><i class="fa fa-table"></i> Configure WiFi</h3>
+              </div>
+              <div class="panel-body">
+                <div class="table-responsive" id="wifi-configuration-area">
+                    <form action="/data/wifi" method="POST" id="wifiman">
+                        <div>
+                            <table class="sk-client-wifi-config-table">
+                                <tbody>
+                                    <tr>
+                                        <td><b>WiFi Mode:</b></td>
+                                        <td>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="wifiMode" id="wifiModeAccessPoint" value="ap" %SK_WIFIMODEAP%>
+                                                <label class="form-check-label" for="wifiModeAccessPoint">Access Point</label>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="wifiMode" id="wifiModeClient" value="client" %SK_WIFIMODECLIENT%>
+                                                <label class="form-check-label" for="wifiModeClient">Client</label>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Client Mode -->
+                        <div id="inputWiFiClient">
+                            <div>
+                                <table class="sk-client-wifi-config-table">
+                                    <tbody>
+                                        <tr>
+                                            <td><label for="clientSSID">SSID:</label></td>
+                                            <td><input type="text" id="clientSSID" name="clientSSID" value="%SK_CLIENTSSID%" autocapitalize="none"></td>
+                                            <td>Name of Wifi router to use.<td>
+                                        </tr>
+                                        <tr>
+                                            <td><label for="clientPWD">Password:</label></td>
+                                            <td><input type="text" id="clientPWD" name="clientPWD" value="%SK_CLIENTPWD%" autocapitalize="none"></td>
+                                            <td>Password of WiFi router.</td>
+                                        </tr>
+                                        <br>
+                                        <tr>
+                                            <td><b>DHCP Mode:</b></td>
+                                            <td>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="dhcpMode" id="dhcpModeEnabled" value="on" %SK_CLIENTDHCPON%>
+                                                    <label class="form-check-label" for="dhcpModeEnabled">
+                                                        Enabled
+                                                    </label>
+                                                </div>
+                                            </td>
+                                            <td style="width: 1px;">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="dhcpMode" id="dhcpModeDisabled" value="off" %SK_CLIENTDHCPOFF%>
+                                                    <label class="form-check-label" for="dhcpModeDisabled">
+                                                        Disabled
+                                                    </label>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr id="rowClientIP">
+                                            <td><label for="clientIP">IP Address</label></td>
+                                            <td><input id="clientIP" name="clientIP" inputmode="decimal" placeholder="_._._._" value="%SK_CLIENTIP%"></td>
+                                            <td>Static IP address to assign to SharpKey</td>
+                                        </tr>
+                                        <tr id="rowClientNETMASK">
+                                            <td><label for "clientNETMASK">Netmask</label></td>
+                                            <td><input id="clientNETMASK" name="clientNETMASK" inputmode="decimal" placeholder="_._._._" value="%SK_CLIENTNM%"/></td>
+                                            <td>Netmask for Static IP</td>
+                                        </tr>
+                                        <tr id="rowClientGATEWAY">
+                                            <td><label for="clientGATEWAY">Gateway</label></td>
+                                            <td><input id="clientGATEWAY" name="clientGATEWAY" inputmode="decimal" placeholder="_._._._" value="%SK_CLIENTGW%"/></td>
+                                            <td>Gateway or router IP Address (if needed).</td>
+                                        </tr>
+                                    </tbody>
+                               </table>
+                            </div>
+                            <div class="justify" id="dhcpInput">
+                                <p style="white-space: initial;">DHCP Mode enabled.<br>The SharpKey will use the credentials specified above (SSID/Password) to connect to the router and obtain
+                                an IP address, Netmask and Gateway. Use your router admin page to determine the IP address allocated and connect to the SharpKey via http://&lt;assigned IP&gt;</p>
+                            </div>
+                            <div>
+                                <div id="errorMsgClient">
+                                   %SK_ERRMSG%
+                                </div>
+                                <hr class="hr_no_margin">
+                                <div class="buttons" style="float: left; padding-left: 0px">
+                                   <table class="sk-client-wifi-config-table">
+                                        <tbody>
+                                            <tr>    
+                                                <td><button type="submit" class="wm-button" name="save" id="save" form="wifiman">Save</button></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div> 
+                            </div>
+                        </div>
+
+                        <!-- Access Point Mode -->
+                        <div id="inputWiFiAP">
+                            <div>
+                                <br>
+                                <table class="sk-client-wifi-config-table">
+                                    <tbody>
+                                        <tr>
+                                            <td><label for="apSSID">SSID</label></td>
+                                            <td><input type="text" id="apSSID" name="apSSID" value="%SK_APSSID%" autocapitalize="none"></td>
+                                            <td>Name of this WiFi Access Point.<td>
+                                        </tr>
+                                        <tr>
+                                            <td><label for="apPWD">Password</label></td>
+                                            <td><input type="text" id="apPWD" name="apPWD" value="%SK_APPWD%" autocapitalize="none"></td>
+                                            <td>Password required by this AP to authenticate clients.</td>
+                                        </tr>
+                                       <tr>
+                                           <td><label for="apIP">IP Address</label></td>
+                                           <td><input id="apIP" name="apIP" inputmode="decimal" placeholder="_._._._" value="%SK_APIP%"></td>
+                                           <td>IP address assigned to this Access Point. ie. 192.168.4.1</td>
+                                       </tr>
+                                       <tr>
+                                           <td><label for "apNETMASK">Netmask</label></td>
+                                           <td><input id="apNETMASK" name="apNETMASK" inputmode="decimal" placeholder="_._._._" value="%SK_APNM%"/></td>
+                                           <td>Netmask of this AP network.</td>
+                                       </tr>
+                                       <tr>
+                                           <td><label for="apGATEWAY">Gateway</label></td>
+                                           <td><input id="apGATEWAY" name="apGATEWAY" inputmode="decimal" placeholder="_._._._" value="%SK_APGW%"/></td>
+                                           <td>Gateway this AP will assign to a client. Normally same as IP.</td>
+                                       </tr>
+                                   </tbody>
+                               </table>
+                            </div>
+                            <div>
+                                <div id="errorMsgAP">
+                                   %SK_ERRMSG%
+                                </div>
+                                <hr class="hr_no_margin">
+                                <div class="buttons" style="float: left; padding-left: 0px">
+                                   <table class="sk-client-wifi-config-table">
+                                        <tbody>
+                                            <tr>    
+                                                <td><button type="submit" class="wm-button" name="save" id="save" form="wifiman">Save</button></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div> 
+                            </div>
+                        </div>
+                    </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /.row -->
+
+      </div><!-- /#page-wrapper -->
+
+    </div><!-- /#wrapper -->
+
+    <!-- JavaScript -->
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script>
+        // Store the name of the active and secondary interfaces.
+        const activeInterface = "%SK_CURRENTIF%";
+        const secondaryInterface = "%SK_SECONDIF%"
+    </script>
+    <script src="js/wifimanager.js"></script>
+  </body>
+</html>

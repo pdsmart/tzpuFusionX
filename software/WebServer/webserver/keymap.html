@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Dashboard - SharpKey Admin</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Add custom CSS here -->
+    <link href="css/sb-admin.css" rel="stylesheet">
+    <link href="css/sharpkey.css" rel="stylesheet">
+    <link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/jquery.edittable.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/style.css">
+  </head>
+
+  <body>
+
+    <div id="wrapper">
+
+      <!-- Sidebar -->
+      <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="index.html">SharpKey Interface</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+          <ul class="nav navbar-nav side-nav">
+            <li><a href="index.html"><i class="fa fa-dashboard"></i> Status</a></li>
+            <li class="active" id="keyMapAvailable"><a href="keymap.html"><i class="fa fa-keyboard-o"></i> %SK_CURRENTIF%Keymap</a></li>
+            <li id="mouseCfgAvailable"><a href="mouse.html"><i class="fa fa-mouse-pointer"></i> Mouse Config</a></li>
+            <li><a href="ota.html"><i class="fa fa-file"></i> OTA Update</a></li>
+            <li><a href="wifimanager.html"><i class="fa fa-wifi"></i> WiFi Manager</a></li>
+            <li><a href="reboot"><i class="fa fa-power-off"></i> Reboot</a></li>
+          </ul>
+
+          <ul class="nav navbar-nav navbar-right navbar-user">
+            <li class="dropdown user-dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-gear"></i> Settings <b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><a href="#"><i class="fa fa-gear"></i> Settings</a></li>
+                <li class="divider"></li>
+              </ul>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </nav>
+
+      <div id="page-wrapper">
+
+          <div class="row">
+              <div class="col-lg-12">
+                  <h1>%SK_CURRENTIF%KeyMap </h1>
+                  <ol class="breadcrumb">
+                      <li class="active"><i class="fa fa-dashboard"></i> Status-&gt;%SK_CURRENTIF%KeyMap</li>
+                  </ol>
+                  <div class="alert alert-success alert-dismissable">
+                      <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                      <p>Configure the keyboard mapping of the interface from PS/2 to %SK_CURRENTIF% via the table below. The priority is top down and a copy can be saved or uploaded to/from your disk for backup or offline editting.</p>
+                  </div>
+              </div>
+          </div><!-- /.row -->
+
+
+          <div class="row">
+              <div class="col-lg-12">
+                  <div class="panel panel-primary">
+                      <div class="panel-heading">
+                          <h3 class="panel-title"><i class="fa fa-table"></i> KeyMap Editor</h3>
+                      </div>
+                      <div class="panel-body">
+                          <div class="table-responsive" id="keymap-edit-area">
+%SK_KEYMAPPOPOVER%
+
+                              <div class="table-responsive keymap" id="edittable-area">
+                                  <div id="keymapTable"></div>
+                              </div>
+                              <p></p>
+                              <p style="white-space: pre-wrap;" id="keymapEditorMsg">Directly edit the table, click <span class="fa fa-plus" style="color: green"></span> to add a row, <span class="fa fa-minus" style="color: red"></span> to delete, select (<i class="fa fa-check"></i>) 2 rows to Swap or select multiple rows for multi-row Delete.<br>Press Save to commit changes or Reload to discard changes and reload active i/f map.</p>
+                              <div>
+                                  <table class="table-condensed">
+                                      <tbody>
+                                          <tr>    
+                                              <td>
+                                                  <button type="button" class="wm-button" name="keymapSwap" id="keymapSwap" value="">Swap</button>
+                                              </td>
+                                              <td>
+                                                  <button type="button" class="wm-button" name="keymapDelete" id="keymapDelete" value="">Delete</button>
+                                              </td>
+                                              <td>
+                                                  <button type="button" class="wm-button" name="keymapSave" id="keymapSave" value="">Save</button>
+                                              </td>
+                                              <td>
+                                                  <button type="button" class="wm-button" name="keymapReload" id="keymapReload" value="">Reload</button>
+                                              </td>
+                                          </tr>
+                                      </tbody>
+                                  </table>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div><!-- /.row -->      
+
+
+          <div class="row">
+              <div class="col-lg-12">
+                  <div class="panel panel-primary">
+                      <div class="panel-heading">
+                          <h3 class="panel-title"><i class="fa fa-table"></i> Direct KeyMap Access</h3>
+                      </div>
+                      <div class="panel-body">
+                          <div class="table-responsive" id="esp32-partitions-area">
+                              <form action="/keymap/upload" method="POST" id="fwupgrade">
+                                  <p style="white-space: pre-wrap;">The KeyMap for the %SK_CURRENTIF% interface can be directly manipulated via the buttons below. You can download the file for backup or to modify locally then upload to restore or implement changes.</p>
+                                  <p id="keymapMsg">Select Upload file (to SharpKey) or Download (to your PC) via the buttons below.</p>
+                                  <table class="table-condensed">
+                                      <tbody>
+                                          <tr>    
+                                              <td>
+                                                  <label for="keymapUpload" class="keymap-file-upload" id="keymapUploadLabel">Upload<input type="file" id="keymapUpload"/>
+                                                  </label>
+                                              </td>
+                                              <td>
+                                                  <a id="keymapDownloadLink" style="display: none"></a>
+                                                  <button type="button" class="wm-button" name="keymapDownload" id="keymapDownload" value="">Download</button>
+                                              </td>
+                                          </tr>
+                                      </tbody>
+                                  </table>
+                              </form>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div><!-- /.row -->      
+      </div><!-- /#page-wrapper -->
+
+      <!-- JavaScript -->
+      <script src="js/jquery.min.js"></script>
+      <script src="js/bootstrap.min.js"></script>
+      <script src="js/jquery.edittable.js"></script>
+      <script>
+          // Initialize keymap editting table. The table is defined in the document because the custom types need to be added in by the server dynamically. There is no method to
+          // add custom fields in edittable and JSON is not recommended (and doesnt support it in the API) for serialization of functions hence this solution.
+          var keymapTable = $("#keymapTable").editTable({
+                field_templates: {
+                  'checkbox' : {
+                      html: '<input type="checkbox" class="checkbox"/>',
+                      getValue: function (input) {
+                          return $(input).is(':checked');
+                      },
+                      setValue: function (input, value) {
+                          if ( value ){
+                              return $(input).attr('checked', true);
+                          }
+                          return $(input).removeAttr('checked');
+                      }
+                  },
+                  'textarea' : {
+                      html: '<textarea/>',
+                      getValue: function (input) {
+                          return $(input).val();
+                      },
+                      setValue: function (input, value) {
+                          return $(input).text(value);
+                      }
+                  },
+                  'hex' : {
+                      html: '<input type="text" class="hexInput" value="" data-placement="right"/>',
+                      getValue: function (input) {
+                          return $(input).val();
+                      },
+                      setValue: function (input, inVal) {
+                          return $(input).attr("value", hexConvert(inVal, false));
+                      }
+                  },
+                  'list' : {
+                      html: '<select><option value="">None</option><option>All</option></select>',
+                      getValue: function (input) {
+                          return $(input).val();
+                      },
+                      setValue: function (input, value) {
+                          var select = $(input);
+                          select.find('option').filter(function() {
+                              return $(this).val() == value; 
+                          }).attr('selected', true);
+                          return select;
+                      }
+                  },
+%SK_KEYMAPJSFIELDS%
+              },
+              row_template: false, 
+              headerCols: false,
+              first_row: false,
+              data:[ ],
+          
+              // Checkbox validation
+              validate_field: function (col_id, value, col_type, $element) {
+                  if ( col_type === 'checkbox' ) {
+                      $element.parent('td').animate({'background-color':'#fff'});
+                      if ( value === false ){
+                          $element.parent('td').animate({'background-color':'#DB4A39'});
+                          return false;
+                      }
+                  }
+                  if ( col_type === 'HEX' ) {
+             let regEx = "^[-+]?[0-9A-Fa-f]+\.?[0-9A-Fa-f]*?$";
+             let isHex = regEx.match(value);
+                      console.log(isHex);
+                      console.log(value);
+                  }
+                  return true;
+              },
+              tableClass: 'inputtable custom'
+          });
+
+          // Store the name of the active and secondary interfaces.
+          const activeInterface = "%SK_CURRENTIF%";
+          const secondaryInterface = "%SK_SECONDIF%"
+      </script>
+      <script src="js/keymap.js"></script>
+
+    </body>
+</html>

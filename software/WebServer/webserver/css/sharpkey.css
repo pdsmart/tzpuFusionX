@@ -1,0 +1,266 @@
+.wm-button {
+  width: 95px;
+  height: 25px;
+  background: blue;
+  border: none;
+  vertical-align: top;
+  margin-left: 25px;
+  cursor: pointer;
+  color: white;
+  transition: 2s;
+  border-radius: 12px;
+}
+
+.wm-button:disabled {
+  background: #999;
+  color: #555;
+  cursor: not-allowed;
+}
+
+.wm-button:hover {
+  background-color: #81ecec;
+  border: 2px solid #00cec9;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+.firmware-file-upload {
+  width: 95px;
+  height: 25px;
+  background: blue;
+  border: none;
+  vertical-align: middle;
+  text-align: center;
+  line-height: 25px;
+  margin-left: 35px;
+  margin-bottom: 0px;
+  cursor: pointer;
+  color: white;
+  transition: 2s;
+  border-radius: 12px;
+}
+
+.firmware-file-upload:hover {
+  background-color: #81ecec;
+  border: 2px solid #00cec9;
+}
+
+
+.keymap-file-upload {
+  width: 95px;
+  height: 25px;
+  background: blue;
+  border: none;
+  vertical-align: middle;
+  text-align: center;
+  line-height: 25px;
+  margin-left: 35px;
+  margin-bottom: 0px;
+  cursor: pointer;
+  color: white;
+  transition: 2s;
+  border-radius: 12px;
+}
+
+.keymap-file-upload:hover {
+  background-color: #81ecec;
+  border: 2px solid #00cec9;
+}
+
+input[type=file]::file-selector-button {
+  border: 2px solid #6c5ce7;
+  padding: .2em .4em;
+  border-radius: .2em;
+  background-color: #a29bfe;
+  transition: 1s;
+}
+
+input[type=file]::file-selector-button:hover {
+  background-color: #81ecec;
+  border: 2px solid #00cec9;
+}
+
+.sk-modules-table { 
+  border: none; 
+  border-collapse: collapse; 
+}
+.sk-modules-table caption { 
+  padding-bottom: 0.5em; 
+}
+.sk-modules-table th, .sk-modules-table td { 
+  border: none;
+  padding: 0.2rem 2rem;
+}
+.sk-modules-table td {
+  white-space: nowrap;
+}
+.sk-modules-table th { 
+  font-weight: normal; 
+}
+.sk-modules-table td { 
+  border-style: none; 
+  vertical-align: top; 
+}
+.sk-modules-table th { 
+  padding: 0.2em; 
+  vertical-align: middle; 
+  text-align: center; 
+}
+
+.sk-modules-table tbody td:first-child::after { 
+  content: leader(". ");
+}
+
+.sk-client-wifi-config-table { 
+  border: none; 
+  border-collapse: collapse; 
+  width: 1px !important;
+  table-layout: auto !important;
+}
+.sk-client-wifi-config-table caption { 
+  padding-bottom: 0.5em; 
+}
+.sk-client-wifi-config-table th, .sk-client-wifi-config-table td { 
+  border: none;
+  padding: 0.2rem 2rem;
+  padding-left: 0;
+  padding-right: 4rem;
+}
+.sk-client-wifi-config-table td {
+  white-space: nowrap;
+  overflow: hidden;
+  border-style: none; 
+  vertical-align: top; 
+  width: auto !important;
+}
+.sk-client-wifi-config-table th { 
+  font-weight: normal; 
+  padding: 0.2em; 
+  vertical-align: middle; 
+  text-align: center; 
+  width: auto !important;
+}
+
+#client-wifi-config-area {
+    overflow-x: scroll;
+    width: fit-content;
+}
+
+#firmware-revision-area {
+    overflow-x: scroll;
+    width: fit-content;
+}
+
+#esp32-partitions-area {
+    overflow-x: scroll;
+    width: fit-content;
+}
+
+.sk-partitions-table { 
+  border: none; 
+  border-collapse: collapse; 
+}
+.sk-partitions-table caption { 
+  padding-bottom: 0.5em; 
+}
+.sk-partitions-table th, .sk-partitions-table td { 
+  border: none;
+  padding: 0.2rem 2rem;
+}
+.sk-partitions-table td {
+  white-space: nowrap;
+  border-style: none; 
+  vertical-align: top; 
+}
+.sk-partitions-table th { 
+  font-weight: normal; 
+  padding: 0.2em; 
+  vertical-align: middle; 
+  text-align: center; 
+}
+
+.sk-partitions-table tbody td:first-child::after { 
+  content: leader(". ");
+}
+
+.sk-partitions-table tbody td:nth-child(4) { 
+	text-align: right;
+}
+.sk-partitions-table tbody td:nth-child(5) { 
+	text-align: right;
+}
+.sk-partitions-table tbody td:nth-child(6) { 
+	text-align: center;
+}
+.sk-partitions-table tbody td:nth-child(8) { 
+	text-align: center;
+}
+
+.table-condensed .progress {
+    margin-bottom: 0 !important;
+    width: 400px;
+    display: none;
+}
+
+.table-borderless > tbody > tr > td,
+.table-borderless > thead > tr > td,
+.table-borderless {
+    border-bottom: 0;
+    border-top: 0;
+    padding: 4px;
+    padding-top: 2px;
+    padding-bottom: 0;
+    white-space: nowrap;
+}
+
+.table-responsive {
+    border-bottom: 0;
+    border-top: 0;
+    border-left: 0;
+    border-right: 0;
+    padding: 4px;
+    padding-top: 2px;
+    padding-bottom: 0;
+    white-space: nowrap;
+    table-layout: auto;
+}
+
+.table {
+    margin-bottom: 10px;
+}
+
+.justify {
+    text-align: justify;
+    text-justify: inter-word;
+}
+
+.keymap {
+    max-height: 36.2em;
+    overflow: auto;
+}
+
+.hr_no_margin {
+    margin-top: 0.2em;
+    margin-bottom: 0.2em;
+}
+
+fieldset {
+    overflow: hidden;
+}
+.radio-mouse {
+    padding-right: 1em;
+}
+.radio-mouse label {
+    float: left;
+    clear: none;
+    display: block;
+    padding: 0px 1em 0px 8px;
+}
+input[type=radio] .radio-mouse,
+input.radio .radio-mouse {
+    float: left;
+    clear: none;
+    margin: 2px 0 0 2px;    
+}

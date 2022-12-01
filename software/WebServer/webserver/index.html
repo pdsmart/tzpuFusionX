@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Dashboard - SharpKey Admin</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Add custom CSS here -->
+    <link href="css/sb-admin.css" rel="stylesheet">
+    <link href="css/sharpkey.css" rel="stylesheet">
+    <link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
+  </head>
+
+  <body>
+
+    <div id="wrapper">
+
+      <!-- Sidebar -->
+      <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="index.html">SharpKey Interface</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+          <ul class="nav navbar-nav side-nav">
+            <li class="active"><a href="index.html"><i class="fa fa-dashboard"></i> Status</a></li>
+            <li id="keyMapAvailable"><a href="keymap.html"><i class="fa fa-keyboard-o"></i> %SK_CURRENTIF%Keymap</a></li>
+            <li id="mouseCfgAvailable"><a href="mouse.html"><i class="fa fa-mouse-pointer"></i> Mouse Config</a></li>
+            <li><a href="ota.html"><i class="fa fa-file"></i> OTA Update</a></li>
+            <li><a href="wifimanager.html"><i class="fa fa-wifi"></i> WiFi Manager</a></li>
+            <li><a href="reboot"><i class="fa fa-power-off"></i> Reboot</a></li>
+          </ul>
+
+          <ul class="nav navbar-nav navbar-right navbar-user">
+            <li class="dropdown user-dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-gear"></i> Settings <b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><a href="#"><i class="fa fa-gear"></i> Settings</a></li>
+                <li class="divider"></li>
+              </ul>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </nav>
+
+      <div id="page-wrapper">
+
+        <div class="row">
+          <div class="col-lg-12">
+            <h1>Status </h1>
+            <ol class="breadcrumb">
+              <li class="active"><i class="fa fa-dashboard"></i> Status</li>
+            </ol>
+            <div class="alert alert-success alert-dismissable justify">
+              <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+              <p>Welcome to the SharpKey embedded browser based configuration App which enables keyboard map changes, mouse configuration, <u>O</u>ver <u>T</u>he <u>A</u>ir firmware updates and more.<br>No help text is available as NVRAM is at a premium, so please read the documentation if you need help.</p>
+            </div>
+          </div>
+        </div><!-- /.row -->
+
+        <div class="row">
+          <div class="col-lg-12">
+            <div class="panel panel-primary">
+              <div class="panel-heading">
+                <h3 class="panel-title"><i class="fa fa-wifi"></i> WiFi Configuration</h3>
+              </div>
+              <div class="panel-body">
+                <div class="table-responsive">
+                    <div id="client-wifi-config-area">
+                        <div id="wifiCfg%SK_WIFIMODEAP%">
+                            <table class="table table-borderless table-sm">
+                                <tbody>
+                                    <tr style="display: compact;">
+                                        <td>SSID:</td><td><span style="color: blue;">%SK_APSSID%</span></td>
+                                    </tr>
+                                    <tr style="display: compact;">
+                                        <td>Password:</td><td><span style="color: blue;">%SK_APPWD%</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>IP (AP):</td><td><span style="color: blue;">%SK_CURRENTIP%</span></td>
+                                        <td>NETMASK:</td><td><span style="color: blue;">%SK_CURRENTNM%</span></td>
+                                        <td>GATEWAY:</td><td><span style="color: blue;">%SK_CURRENTGW%</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="wifiCfg0%SK_WIFIMODECLIENT%">
+                            <table class="table table-borderless table-sm">
+                                <tbody>
+                                    <tr style="display: compact;">
+                                        <td>SSID:</td><td><span style="color: blue;">%SK_CLIENTSSID%</span></td>
+                                    </tr>
+                                    <tr style="display: compact;" id="wifiCfg1%SK_CLIENTDHCPON%">
+                                        <td>DHCP:</td><td><span style="color: blue;">Enabled</span></td>
+                                    </tr>
+                                    <tr id="wifiCfg3%SK_CLIENTDHCPON%">
+                                        <td>IP (assigned):</td><td><span style="color: blue;">%SK_CURRENTIP%</span></td>
+                                        <td>NETMASK:</td><td><span style="color: blue;">%SK_CURRENTNM%</span></td>
+                                        <td>GATEWAY:</td><td><span style="color: blue;">%SK_CURRENTGW%</span></td>
+                                    </tr>
+                                    <tr id="wifiCfg3%SK_CLIENTDHCPOFF%">
+                                        <td>IP (fixed):</td><td><span style="color: blue;">%SK_CURRENTIP%</span></td>
+                                        <td>NETMASK:</td><td><span style="color: blue;">%SK_CURRENTNM%</span></td>
+                                        <td>GATEWAY:</td><td><span style="color: blue;">%SK_CURRENTGW%</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /.row -->
+
+        <div class="row">
+          <div class="col-lg-12">
+            <div class="panel panel-primary">
+              <div class="panel-heading">
+                <h3 class="panel-title"><i class="fa fa-file"></i> Version Information</h3>
+              </div>
+              <div class="panel-body">
+                <div class="table-responsive">
+                    <div id="firmware-revision-area">
+                    %SK_PRODNAME% v%SK_PRODVERSION% &copy; P.D. Smart, 2018-22<br><br>
+                    <b>Modules</b><br>
+                    %SK_MODULES%
+                    <b>File Pack</b><br>
+                    %SK_FILEPACK%
+                    </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /.row -->
+
+
+      </div><!-- /#page-wrapper -->
+
+    </div><!-- /#wrapper -->
+
+    <!-- JavaScript -->
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script>
+        // Store the name of the active and secondary interfaces.
+        const activeInterface = "%SK_CURRENTIF%";
+        const secondaryInterface = "%SK_SECONDIF%"
+    </script>
+    <script src="js/index.js"></script>
+  </body>
+</html>

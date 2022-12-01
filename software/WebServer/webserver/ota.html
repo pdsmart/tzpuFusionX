@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Dashboard - SharpKey Admin</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Add custom CSS here -->
+    <link href="css/sb-admin.css" rel="stylesheet">
+    <link href="css/sharpkey.css" rel="stylesheet">
+    <link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
+  </head>
+
+  <body>
+
+    <div id="wrapper">
+
+      <!-- Sidebar -->
+      <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="index.html">SharpKey Interface</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+          <ul class="nav navbar-nav side-nav">
+            <li><a href="index.html"><i class="fa fa-dashboard"></i> Status</a></li>
+            <li id="keyMapAvailable"><a href="keymap.html"><i class="fa fa-keyboard-o"></i> %SK_CURRENTIF%Keymap</a></li>
+            <li id="mouseCfgAvailable"><a href="mouse.html"><i class="fa fa-mouse-pointer"></i> Mouse Config</a></li>
+            <li class="active"><a href="ota.html"><i class="fa fa-table"></i> OTA Update</a></li>
+            <li><a href="wifimanager.html"><i class="fa fa-wifi"></i> WiFi Manager</a></li>
+            <li><a href="reboot"><i class="fa fa-power-off"></i> Reboot</a></li>
+          </ul>
+
+          <ul class="nav navbar-nav navbar-right navbar-user">
+            <li class="dropdown user-dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-gear"></i> Settings <b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><a href="#"><i class="fa fa-gear"></i> Settings</a></li>
+                <li class="divider"></li>
+              </ul>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </nav>
+
+      <div id="page-wrapper">
+
+        <div class="row">
+          <div class="col-lg-12">
+            <h1><b>O</b>ver <b>T</b>he <b>A</b>ir Update </h1>
+            <ol class="breadcrumb">
+                <li class="active"><i class="fa fa-dashboard"></i> Status-&gt;OTA Update </li>
+            </ol>
+            <div class="alert alert-success alert-dismissable justify">
+              <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+              <p>Welcome to the SharpKey OTA Update page.</p><p>This page allows you to check current firmware/filepack version information and upgrade them as necessary. Please read the documentation if you need help.</p>
+            </div>
+          </div>
+        </div><!-- /.row -->
+
+        <div class="row">
+        </div><!-- /.row -->
+
+        <div class="row">
+          <div class="col-lg-12">
+            <div class="panel panel-primary">
+              <div class="panel-heading">
+                <h3 class="panel-title"><i class="fa fa-file"></i> Version Information</h3>
+              </div>
+              <div class="panel-body">
+                <div class="table-responsive">
+                    <div id="firmware-revision-area">
+                    %SK_PRODNAME% v%SK_PRODVERSION% &copy; P.D. Smart, 2018-22<br><br>
+                    <b>Modules</b><br>
+                    %SK_MODULES%
+                    <b>File Pack</b><br>
+                    %SK_FILEPACK%
+                    </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /.row -->
+
+        <div class="row">
+          <div class="col-lg-12">
+            <div class="panel panel-primary">
+              <div class="panel-heading">
+                <h3 class="panel-title"><i class="fa fa-table"></i> ESP32 Partitions</h3>
+              </div>
+              <div class="panel-body">
+                  <div class="table-responsive">
+                    <div id="esp32-partitions-area">
+                        <table class="table table-borderless table-sm">
+                            <thead>
+                                <tr>
+                                    <th><b>Partition Name</b></th>
+                                    <th><b>Type</b></th>
+                                    <th><b>Sub-Type</b></th>
+                                    <th><b>Address</b></th>
+                                    <th><b>Size</b></th>
+                                    <th><b>Version</b></th>
+                                    <th><b>Timestamp</b></th>
+                                    <th><b>Active (Running)</b></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                %SK_PARTITIONS%
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /.row -->
+
+        <div class="row">
+          <div class="col-lg-12">
+            <div class="panel panel-primary">
+              <div class="panel-heading">
+                <h3 class="panel-title"><i class="fa fa-file"></i> Firmware Upload</h3>
+              </div>
+              <div class="panel-body">
+                <div class="table-responsive" id="upload-firmware-area">
+                   <form action="/data/wifi" method="POST" id="fwupgrade">
+                       <p><i>Firmware</i> is a binary file containing the latest operating system for the SharpKey interface.</p>
+                       <hr class="hr_no_margin">
+                       <p id="firmwareMsg">Select a firmware image file with which to upgrade the SharpKey Operating System.</p>
+                       <hr class="hr_no_margin">
+                       <table class="table-condensed">
+                           <tbody>
+                               <tr>    
+                                   <td>
+                                       <label for="firmwareUpload" class="firmware-file-upload" id="firmwareUploadLabel">Select file<input type="file" id="firmwareUpload"/>
+                                       </label>
+                                   </td>
+                                   <td>
+                                       <div id="firmwareName"></div>
+                                   </td>
+                                   <td>
+                                       <button type="button" class="wm-button" name="firmwareUpgrade" id="firmwareUpgrade" value="" style="display: none;" disabled>Upgrade</button>
+                                   </td>
+                                   <td>
+                                       <button type="button" class="wm-button" name="firmwareCancel" id="firmwareCancel" style="display: none;" disabled>Cancel</button>
+                                   </td>
+                                   <td>
+                                       <div class="progress progress-striped" id="firmwareProgress">
+                                           <div class="progress-bar progress-bar-striped active" id="firmwareProgressBar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+                                           </div>
+                                       </div>
+                                   </td>
+                               </tr>
+                           </tbody>
+                       </table>
+                   </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /.row -->
+
+        <div class="row">
+          <div class="col-lg-12">
+            <div class="panel panel-primary">
+              <div class="panel-heading">
+                <h3 class="panel-title"><i class="fa fa-file"></i> File Pack Upload</h3>
+              </div>
+              <div class="panel-body">
+                <div class="table-responsive" id="upload-firmware-area">
+                   <form action="/data/wifi" method="POST" id="fpupgrade">
+                       <p style="white-space: pre-wrap;">A filepack is a SharpKey filesystem stored in a binary image file which contains static and template files for the webserver interface.</p>
+                       <p id="filepackWarning" style="display: none; white-space: pre-wrap;"><b>WARNING!</b> There is no rollback for this update unlike the firmware upgrade, if the process is interrupted and the filesystem corrupted you will need to attach a serial cable to the SharpKey programming interface and upload the image via the command:
+                       <br><span style="margin-left: 1em; display: block;"><i>esptool.py --chip esp32 --baud 921600 --before default_reset --after hard_reset write_flash --flash_freq 40m --flash_size detect 0x310000 &lt;filepack&gt;</i></span></p>
+                       <hr class="hr_no_margin">
+                       <p id="filepackMsg">Select a filepack image file with which to upgrade the SharpKey filesystem.</p>
+                       <hr class="hr_no_margin">
+                       <table class="table-condensed">
+                           <tbody>
+                               <tr>    
+                                   <td>
+                                       <label for="filepackUpload" class="firmware-file-upload" id="filepackUploadLabel">Select file<input type="file" id="filepackUpload"/>
+                                       </label>
+                                   </td>
+                                   <td>
+                                       <div id="filepackName"></div>
+                                   </td>
+                                   <td>
+                                       <button type="button" class="wm-button" name="filepackUpgrade" id="filepackUpgrade" value="" style="display: none;" disabled>Upgrade</button>
+                                   </td>
+                                   <td>
+                                       <button type="button" class="wm-button" name="filepackCancel" id="filepackCancel" style="display: none;" disabled>Cancel</button>
+                                   </td>
+                                   <td>
+                                       <div class="progress progress-striped" id="filepackProgress">
+                                           <div class="progress-bar progress-bar-striped active" id="filepackProgressBar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+                                           </div>
+                                       </div>
+                                   </td>
+                               </tr>
+                           </tbody>
+                       </table>
+                   </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /.row -->
+
+      </div><!-- /#page-wrapper -->
+
+    </div><!-- /#wrapper -->
+
+    <!-- JavaScript -->
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script>
+        // Store the name of the active and secondary interfaces.
+        const activeInterface = "%SK_CURRENTIF%";
+        const secondaryInterface = "%SK_SECONDIF%"
+    </script>
+    <script src="js/ota.js"></script>
+  </body>
+</html>

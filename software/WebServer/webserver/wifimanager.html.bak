@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <title>SharpKey Wi-Fi Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" type="text/css" href="/css/style.css">
+  </head>
+
+  <body>
+    <div class="topnav">
+      <h1>SharpKey WiFi Manager</h1>
+    </div>
+    <div class="content">
+      <div class="card-grid">
+        <div class="card">
+          <form action="/data" method="POST" id="wifiman">
+              <small>Name of Wifi router to use.</small><br>
+              <label for="ssid">SSID</label>
+              <input type="text" id="ssid" name="ssid" value="%SK_CLIENTSSID%" autocapitalize="none"><br>
+              <small>Password of WiFi Router.</small><br>
+              <label for="pwd">Password</label>
+              <input type="text" id="pwd" name="pwd" value="%SK_CLIENTPWD%" autocapitalize="none"><br>
+              <hr>
+              <input type="checkbox" id="dhcp" name="dhcp" onclick="myFunction()" %SK_CLIENTDHCP%> <label for="dhch">Use DHCP</label>
+
+              <input type="label" id="fixed" value=" Use DHCP"><br>
+              <label for="ip">IP Address</label>
+              <input type="number" id="ip" name="ip" value="%WM_IP%">
+              <br>
+              <label for="netmask">Netmask</label>
+              <input type="number" id="netmask" name="netmask" value="%WM_SN%">
+              <br>
+              <label for="gateway">Gateway</label>
+              <input type="number" id="gateway" name="gateway" value="%WM_GW%" title="find windows=ipconfig, linux=netstat -r">
+              <br>
+              <script>
+                myFunction();
+
+                function myFunction() {
+                  var checkBox = document.getElementById("dhcp");
+
+                  if (checkBox.checked == true) {
+                    document.getElementById("ip").type = "text";
+                    document.getElementById("gateway").type = "text";
+                    document.getElementById("netmask").type = "text";
+
+                    document.getElementById("ip").value = "defined by router";
+                    document.getElementById("gateway").value = "defined by router";
+                    document.getElementById("netmask").value = "defined by router";
+
+                    document.getElementById("ip").disabled = true;
+                    document.getElementById("gateway").disabled = true;
+                    document.getElementById("netmask").disabled = true;
+
+                    document.getElementById("fixed").value = "DHCP";
+                  } else {
+                    document.getElementById("ip").type = "text";
+                    document.getElementById("gateway").type = "text";
+                    document.getElementById("netmask").type = "text";
+
+                    document.getElementById("ip").disabled = false;
+                    document.getElementById("gateway").disabled = false;
+                    document.getElementById("netmask").disabled = false;
+
+                    document.getElementById("ip").value = "%SK_CLIENTIP%";
+                    document.getElementById("gateway").value = "%SK_CLIENTGW%";
+                    document.getElementById("netmask").value = "%SK_CLIENTNM%";
+
+                    document.getElementById("fixed").value = "Complete fields below";
+                  }
+                }
+
+              </script>
+              %SK_ERRMSG%
+              <hr>
+              <div class="buttons" style="float: left; padding-left: 0px">
+                <table>
+                  <tr>    
+                      <td>
+                  <button type="submit" class="wm-button" name="save" id="save" form="wifiman">Save Settings</button>
+                      </td>
+                      <td>
+                  <button type="submit" class="wm-button" name="reboot" id="reboot" formaction="/reboot" style="display:%SK_REBOOTBUTTON%;">Reboot</button>
+                      </td>
+                  </tr>
+                </table>
+              </div> 
+          </form>
+        </div>
+      </div>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>

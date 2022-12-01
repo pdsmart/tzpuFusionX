@@ -1,0 +1,56 @@
+<html>
+<head><title>Upgrade firmware</title>
+<link rel="stylesheet" type="text/css" href="../css/style.css">
+<script type="text/javascript" src="js/140medley.min.js"></script>
+<script type="text/javascript" src="js/ota.js"></script>
+
+<style>
+table, td, th {
+    border: 1px solid black;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+</style>
+</head>
+<body>
+<div id="main">
+<h1>Upgrade Firmware</h1>
+
+<p><table>
+<caption><b>App Partitions</b></caption>
+     <thead>
+          <tr>
+               <th>Partition Name</th>
+               <th>Partition Size</th>
+               <th>App Version</th>
+               <th>App Valid</th>
+               <th>App Running</th>
+               <th>App Set Boot</th>
+               <th>App Upload <br/><input type="file" id="file" /></th>
+           </tr>
+     </thead>
+     <tbody id="tbodyApp">
+     </tbody>
+</table></p>
+
+<p><table>
+<caption><b>Data Partitions</b></caption>
+     <thead>
+          <tr>
+               <th>Partition Name</th>
+               <th>Partition Size</th>
+               <th>Data Type</th>
+               <th>Erase</th>
+           </tr>
+     </thead>
+     <tbody id="tbodyData">
+     </tbody>
+</table></p>
+<input type="submit" value="Reboot!" onclick="doReboot()" />
+<div><p id="remark">Loading...</p></div>
+<div id="spinner"></div>
+</div>
+</body>
+</html>
