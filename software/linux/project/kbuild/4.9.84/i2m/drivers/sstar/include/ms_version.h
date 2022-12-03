@@ -5,6 +5,6 @@
 #define MVXV_HEAD_VER   "4"
 #define MVXV_LIB_TYPE   "##"
 #define MVXV_CHIP_ID    "I2M#"
-#define MVXV_CHANGELIST "g1e61fe54a"
+#define MVXV_CHANGELIST "g6322424ba"
 #define MVXV_COMP_ID    "KL_LX409##"
 #define MVXV_EXT        "[BR:master]"

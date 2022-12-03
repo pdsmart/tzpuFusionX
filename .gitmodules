@@ -1,0 +1,6 @@
+[submodule "software/FusionX/src/driver/Z80"]
+	path = software/FusionX/src/driver/Z80
+	url = https://github.com/redcode/Z80.git
+[submodule "software/FusionX/src/driver/Zeta"]
+	path = software/FusionX/src/driver/Zeta
+	url = https://github.com/redcode/Zeta.git
