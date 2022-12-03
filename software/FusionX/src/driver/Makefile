@@ -4,8 +4,8 @@ MODEL       := MZ2000
 KERNEL      := $(PWD)/../../../linux/kernel
 FUSIONX     := $(PWD)/../..
 CROSS       := arm-linux-gnueabihf-
-ccflags-y   += -O2 -I${src}/Zeta/API -I${src}/Z80/API -I${KERNEL}/drivers/sstar/include -I${KERNEL}/drivers/sstar/include/infinity2m -I${KERNEL}/drivers/sstar/gpio/infinity2m
-CTRLINC     += -IZeta/API -IZ80/API
+ccflags-y   += -O2 -isystem "${src}/Zeta/API" -isystem "${src}/Z80/API" -I${KERNEL}/drivers/sstar/include -I${KERNEL}/drivers/sstar/include/infinity2m -I${KERNEL}/drivers/sstar/gpio/infinity2m -DZ80_STATIC
+CTRLINC     += -isystem "Zeta/API" -isystem "Z80/API" -DZ80_STATIC
 
 obj-m       += z80drv.o
 z80drv-objs += $(MODEL)/z80driver.o Z80.o $(MODEL)/z80io.o $(MODEL)/z80menu.o # emumz.o sharpmz.o osd.o
@@ -29,4 +29,3 @@ install:
 
 clean:
 	make -C $(KERNEL) M=$(PWD) clean
-	
