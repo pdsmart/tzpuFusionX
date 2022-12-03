@@ -1,0 +1,705 @@
+{
+  "brown": "settings",
+  "jp": [
+    {
+      "ui": "http://zeasn.tvapps.hungama.com/ha/app.js",
+      "ov": [
+        {"var onClickLogin = (haUserId,haUserEmail,haUserType) => {": "var onClickLogin=function(haUserId,haUserEmail,haUserType){"},
+        {"var onClickLogout = () => {": "var onClickLogout =function(){"},
+        {"var onClickAffilateId = () => {": "var onClickAffilateId = function() {"},
+        {"var onClickEvent = (event_name, param) => {": "var onClickEvent = function(event_name, param){"}
+      ]
+    },
+    {
+      "ui": "http://zeasn.cm.tvigle.ru/static/js/all.js",
+      "ov": [
+        {"stop:function(){this.video&&": "stop:function(){if(this.video){"},
+        {"this.video.pause()},bSeek": "this.video.pause();this.video.src=\"\";this.video.load();}},bSeek"}
+      ]
+    },
+    {
+      "ui": "http://tv.mytvscout.de/aquatv/index.js",
+      "ov":[
+        {"document.activeElement.blur();": "document.activeElement && document.activeElement.blur();"},
+        {"request.timeout = 5000;": "request.timeout = 30000;"}
+      ]
+    },
+    {
+      "ui": "http://www.swissinfo.ch/html/foxxum1.10/javascript/Video.js",
+      "ov": [
+        {"replaceSpecialCharacters(content.lead[0].parts[0]": "content.lead && replaceSpecialCharacters(content.lead[0].parts[0]"}
+      ]
+    },
+    { 
+      "ui": "http://apps.store.zeasn.com/iFlix/js/common.js",
+      "ov": [
+       {"video.appendChild(source);":"video.src=videourl;"},
+       {"video.play();":"console.log(video.src);video.play();"},
+       {"pluginElement.onDRMMessageResult = drmEvent;": "pluginElement.addEventListener(\"onDRMMessageResult\",drmEvent);"},
+       {"pluginElement = document.getElementById(\"oipfdrmagent\");":"var obj=document.createElement(\"Object\");obj.type=\"application/oipfDrmAgent\";obj.id=\"obj\";document.body.appendChild(obj);pluginElement = document.getElementById(\"obj\");"}
+      ]
+    },
+    {
+      "ui": "http://apps.store.zeasn.com/iFlix/js/index.js",
+      "ov": [
+       {"document.getElementsByClassName(\"homecenter_list\")[0].style.transform = 'translateY(' + size + 'px)';":"document.getElementsByClassName(\"homecenter_list\")[0].style.webkitTransform= 'translateY(' + size + 'px)';"}
+      ]
+    },
+    {	 
+      "ui": "https://zeasn.chili.com/bundle.00da3fd37f4d2564c357.js",
+      "ov": [
+        {"\"use strict\"": " "},
+        {"we.style[Ne]=\"50% 50%\",": " "},
+        {"we.style[Pe]=\"scaleX(0.5)\",": " "}
+      ]
+    },
+    {
+      "ui": "https://smarttv.baeblemusic.com/js/model/functions.js",
+      "ov": [
+        {"var fix;": "var fix;\n player.addEventListener(\"loadedmetadata\", function () {console.log(\"onloadedmetadata\");$(\".btnPlay\").removeClass(\"btnPlay\").addClass(\"btnPause\");\nLoading.off();player.play();video.progressbar();video.statue.flag = true;startTimer();});"}
+      ]
+    },
+    {
+      "ui": "http://zeasn.v4.tvigle.ru/js/all.js",
+      "ov": [
+        {"h.setPlrState(s.States.PLAYER_STATE_PLAYING,\"playing\")": "h.setPlrState(s.States.PLAYER_STATE_PLAYING,\"playing\"); h.clearState();application.addClass(\"playing\")"}
+      ]
+    },
+    {
+      "ui": "http://apps.store.zeasn.com/lib/js/funA2.js",
+      "ov": [
+        {"for (let n = 0; n < array.length; n++)": "for (var n = 0; n < array.length; n++)"},
+        {"case 8:
+      case 461:
+          if ($('.testDiv1')[0]) {
+            testDiv += '<p>' + testCount + ' case stop: ' + event.keyCode + '</p>'
+            testCount += 1
+            $('.testDiv1').html(testDiv)
+            if (testCount % 20 === 0) {
+              testDiv = ''
+            }
+          }
+        event.preventDefault();
+        return;
+        break;": "//case 8:
+      //case 461:
+          //if ($('.testDiv1')[0]) {
+            //testDiv += '<p>' + testCount + ' case stop: ' + event.keyCode + '</p>'
+            //testCount += 1
+            //$('.testDiv1').html(testDiv)
+            //if (testCount % 20 === 0) {
+              //testDiv = ''
+            //}
+          //}
+        //event.preventDefault();
+        //return;
+        //break;"}
+      ]
+    }
+  ],
+  "apps": [
+    {
+      "ui": "default",
+      "fh": true,
+      "ld": true,
+      "if": true,
+      "nv": "spatnav",
+      "bc": 4294967295,
+      "im": true,
+      "wc": true,
+      "sb": true,
+      "hb": 61512
+    },
+    {
+      "ui": "file:",
+      "ld": false,
+      "hb": 61512,
+      "sb": true,
+      "im":true,
+      "km": [
+        {"f": 61538, "t": 27},
+        {"f": 61512, "t": 8}
+      ]
+    },
+    {
+      "ui": "https://smarttv.zeasn.tv/AccuWeather_web",
+      "ld": false,
+      "pc": true,
+      "wc": true,
+      "im": true,
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    {                                                                       
+      "ui": "http://tv.globoplay.com.br",                                                                 
+      "nv": "spatnav"            
+    },   
+    { 
+      "ui": "http://ww1w.baidu.com",
+      "nv": "cursor",
+      "bc": 4294967295,
+      "im": true,
+      "sb": true
+    },
+    { 
+      "ui": "https://ww1w.baidu.com",
+      "nv": "cursor",
+      "im": true,
+      "bc": 4294967295,
+      "sb": true
+    },
+    { 
+      "ui": "chili",
+      "us": [
+        "https://zeasn.chili.com"
+      ],
+      "im": true,
+      "if": true,
+      "nv": "spatnav",
+      "sb": true
+    },
+    {
+      "ui": "iFlix",
+      "us": [
+        "http://apps.store.zeasn.com/iFlix/"
+      ],
+      "im": true,
+      "if": true,
+      "nv": "spatnav",
+      "sb": true,
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    {
+      "ui": "twitter",
+      "us": [
+        "http://m.twitter.com",
+        "https://mobile.twitter.com",
+        "http://mobile.twitter.com",
+        "https://twitter.com"
+      ],
+      "bc": 4294967295,
+      "im": true,
+      "if": true,
+      "nv": "cursor",
+      "sb": true
+    },
+    {
+      "ui": "appstore",
+      "us": [
+        "http://linux.store.zeasn.com/iserver/",
+        "http://linux.store.zeasn.com/iServer/"
+      ],
+      "nv": "spatnav"
+    },
+    { 
+      "ui": "facebook",
+      "us": [
+        "http://m.facebook.com",
+        "http://lm.facebook.com",
+        "http://www.facebook.com",
+        "https://www.facebook.com",
+        "https://lm.facebook.com",
+        "https://m.facebook.com"
+      ],
+      "nv": "cursor",
+      "im": true,
+      "bc": 4294967295,
+      "ua": "d",
+      "sb": true
+    },
+    {
+      "ui": "type7",
+      "pc": true,
+      "if": true,
+      "hb": 0,
+      "us": [
+        "http://smartgames.tv",
+        "http://www.smartgames.tv"
+      ],
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    {
+      "ui": "type9",
+      "pc": true,
+      "if": true,
+      "ws": true,
+      "ua": "d",
+      "hb": 0,
+      "us": [
+        "http://www.redkaraoke.com/"
+      ]
+    },
+    {
+      "ui": "type10",
+      "pc": true,
+      "if": true,
+      "ws": true,
+      "hb": 0,
+      "us": [
+        "http://tv.ipla.pl/alliance/filip"
+      ],
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    { 
+      "ui": "https://zeasn-file.oss-cn-beijing.aliyuncs.com",
+      "nv": "spatnav"
+    },
+    { 
+      "ui": "http://zeasn-file.oss-cn-beijing.aliyuncs.com",
+      "nv": "spatnav"
+    },
+    { "ui": "http://7728265386-3409765189.am-live.fxmconnect.com/open.php?type=app&id=135",
+      "nv": "spatnav"
+    },
+    { 
+      "ui": "http://apps.iserver.tv/browser",
+      "nv": "spatnav",
+      "ua": "d",
+      "xo": true,
+      "if": false,
+      "ws": false,
+      "hb": 0,
+      "cs": "css/spatnav.css"
+    },
+    {
+      "ui": "http://tv.zing.vn/smarttv/sonyceb.html#home",
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    {
+      "ui": "http://www.arte.tv/hbbtvv2/notv/html5/index.html",
+      "ua": "o",
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    {
+      "ui": "http://netrange.radioline.co",
+      "wc": true
+    },
+    {
+      "ui": "iserver",
+      "us": [
+        "http://apps.iserver.tv:8001/YouTube",
+        "http://launcher.iservernetwork.com/ytbtv",
+        "http://launcher.iservernetwork.com/ytbtv2",
+        "http://launcher.iservernetwork.com/ted",
+        "http://launcher.iservernetwork.com/popbox",
+        "http://apps.iserver.tv/YouTube"
+      ],
+      "im": true,
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    { 
+      "ui": "http://tv.tunein.com",
+      "wc": true
+    },
+    { 
+      "ui": "type7",
+      "wc": true,
+      "us": [
+        "http://apps.store.zeasn.com/truemovie1",
+        "http://apps.store.zeasn.com/UCPhab209KEicqPJFAk9IZEA",
+        "http://apps.store.zeasn.com/Born2Die83",
+        "http://apps.store.zeasn.com/mindseyedesign",
+        "http://apps.store.zeasn.com/UCeDqLK6FAytkaFEXRd443Pw",
+        "http://apps.store.zeasn.com/UCjdEJpJAZWxrF7YGUFHI3tQ",
+        "http://apps.store.zeasn.com/UCZYfd94EsqipAuZyunqVBRQ",
+        "https://recommend.zeasn.tv/skufftv_web"
+      ]
+    },
+    {
+      "ui": "http://apps.store.zeasn.com/YanNews",
+      "wc": true,
+      "im": true,
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    {
+      "ui": "type8",
+      "wc": true,
+      "im": true,
+      "us": [
+        "http://apps.store.zeasn.com/ICCnTv",
+        "http://apps.store.zeasn.com/EpicTVadventure"
+      ]
+    },
+    {
+      "ui": "http://apps.store.zeasn.com/fashiontvFMEN",
+      "wc": true,
+      "im": true,
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    {
+      "ui": "http://demo.store.zeasn.com/demo2.0",
+      "fh": true,
+      "km": [
+        {"f": 61512, "t": 27}
+      ]
+    },
+    {
+      "ui": "http://zeasn.tvapps.hungama.com",
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    {
+      "ui": "http://html5.toongoggles.com",
+      "ua": "d",
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    { 
+      "ui": "http://vega.dtv.fi/smtva/kelikamera",
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    {
+      "ui": "http://www.autozine.de/ip-tv",
+      "nv": "spatnav",
+      "wc": true
+    },
+    { 
+      "ui": "http://nettv.kicker.de",
+      "nv": "spatnav",
+      "wc": true
+    },
+    { 
+      "ui": "http://www.bigstarlatino.com",
+      "nv": "spatnav",
+      "wc": true
+    },
+    {
+      "ui": "http://www.seduction.media",
+      "nv": "spatnav",
+      "wc": true
+    },
+    {
+      "ui": "http://www.festivalfaves.com",
+      "nv": "spatnav",
+      "wc": true
+    },
+    {
+      "ui": "http://preview.bigstar.tv",
+      "nv": "spatnav",
+      "wc": true
+    },
+    {
+      "ui": "https://www.yandex.ru",
+      "nv": "spatnav",
+      "wc": true
+    },
+    {
+      "ui": "http://grupozeta.sport.final.24imedia.tv",
+      "km": [
+        {"f": 61512, "t": 27}
+      ]
+    },
+    {
+      "ui": "http://kulinarika.devnull.si",
+      "pc": true,
+      "km": [
+        {"f": 61512, "t": 61506}
+      ]
+    },
+    {
+      "ui": "netrange",
+      "fh": true,
+      "if": true,
+      "us": [
+        "https://ver.netrange.com/portals.portal-frontends-v3/master/v1/1135",
+        "http://17464.5d7bef99362b26cdc709f6ab436eedb2.com"
+      ],
+      "km": [
+        {"f": 61512, "t": 27}
+      ]
+    },
+    {
+      "ui": "tvigle2",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) NetCast.TV Chromium/53.0.2785.143 Chrome/53.0.2785.143 Safari/537.36",
+      "pc": true,
+      "us": [
+        "http://nettv2.v4.tvigle.ru"
+      ],
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    {
+      "ui": "tvigle",
+      "us": [
+        "http://zeasn.bd.tvigle.ru",
+        "http://zeasn.btv.tvigle.ru",
+        "http://zeasn.cm.tvigle.ru",
+        "http://zeasn.er.tvigle.ru",
+        "http://zeasn.kd.tvigle.ru",
+        "http://zeasn.ml.tvigle.ru",
+        "http://zeasn.rm3.tvigle.ru",
+        "http://zeasn.rs.tvigle.ru",
+        "http://zeasn.ser.tvigle.ru",
+        "http://zeasn.um.tvigle.ru",
+        "http://zeasn.ut.tvigle.ru",
+        "http://zeasn.v4.tvigle.ru"
+      ],
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    {
+      "ui": "mytvscout.trick",
+      "hb": 0,
+      "us": [
+        "http://tv.mytvscout.de/ikono2/html5.html"
+      ]
+    },
+    {
+      "ui": "mytvscout.error",
+      "wc": true,
+      "us": [
+        "http://tv.mytvscout.de/hbl",
+        "http://nettv.boersen-zeitung.de",
+        "http://nettv.album2.com",
+        "http://tv.mytvscout.de/ikono",
+        "http://tv.mytvscout.de/kiya2/html5.html"
+      ]
+    },
+    {
+      "ui": "type1",
+      "us": [
+        "http://t.divan.tv",
+        "http://minbio-egs-24i-prod.vimondtv.com",
+        "http://tv.mytvscout.de",
+        "http://queercinema.lgbt/tcl",
+        "http://jaggedmovies.com/tcl",
+        "http://docworld.media/tcl",
+        "http://extremesports.media/tcl",
+        "http://festivalfaves.com/tcl",
+        "http://foreignfilm.tv/tcl",
+        "http://olon.24imedia.tv",
+        "http://roos.24imedia.tv",
+        "http://smarttv.megogo.net",
+        "http://zeasn-app.megogo.net",
+        "http://1hd.tv.infolio-lab.com/1hd",
+        "http://apps.store.zeasn.com/LEGOOMANDARIN",
+        "http://hw.yandex.ru/ph",
+        "https://apps.zeasn.tv/ducktv",
+        "http://data.weathernationtv.com/apps",
+        "http://ducktv.zeasn.com",
+        "https://erosnowhtml.erosnow.com",
+        "http://247comedy.tv/tcl",
+        "http://247horror.com/tcl",
+        "http://bestbollywood.tv/tcl",
+        "http://fishingtv.com/apps",
+        "https://fishingtv.com/apps",
+        "https://apps.zeasn.tv/soundcloud_web",
+        "http://www.fishingtv.com/apps",
+        "http://lifeminute.tv/smartv",
+        "https://www.fishingtv.com/apps",
+        "http://blackworldcinema.com/tcl",
+        "http://alliance.futuretodayinc.com/ifoodtv",
+        "http://alliance.futuretodayinc.com/happykids",
+        "http://json.bild.de/tv"
+      ],
+      "pc": true,
+      "cu": true,
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    {
+      "ui": "type2",
+      "nv": "spatnav",
+      "pc": true,
+      "wc": true,
+      "us": [
+        "http://www.seniorennet.be/nettv_philips/hersenfitness",
+        "http://hbbtv.br.de/br-text",
+        "http://tv.uitinvlaanderen.be",
+        "http://nettv.cinetrailer.it",
+        "http://nettv.weerslag.be",
+        "http://smarttv.cinetrailer.it/zeasn",
+        "http://nettv.cinetrailer.tv/loewe"
+      ]
+    },
+    {
+      "ui": "type3",
+      "pc": true,
+      "hb": 0,
+      "us": [
+        "http://lge.pogody.tv",
+        "http://nettv.see.ua",
+        "http://plive.vfb.app.nrmmh.tv",
+        "http://bundestag.app.nrmmh.tv",
+        "http://www.viewster.tv/Viewster_v5",
+        "http://www.viewster.tv/viewster_v5",
+        "http://smapp.trt.tv/TvApp",
+        "http://alliance.futuretodayinc.com",
+        "http://connecttv.pelmorex.com/device",
+        "http://lg.hybridtv.myspass.de/loewe",
+        "http://hbbtv.daserste.de",
+        "http://hbbtv.zdf.de/zdfm",
+        "http://hbbtv.zdf.de/zdfm3",
+        "http://hbbtv-tatort.daserste.de",
+        "http://smart.radiotv.su/zeasn",
+        "http://www.tv3.cat/iptv/nettv"
+      ]
+    },
+    {
+      "ui": "type4",
+      "pc": true,
+      "nv": "spatnav",
+      "hb": 0,
+      "us": [
+        "http://www.nmax.tv/livetv",
+        "http://telecity.funspot.tv/portals"
+      ]
+    },
+    {
+      "ui": "ivi",
+      "us": [
+        "http://haier.ivi.ru",
+        "http://stb.ivi.ru",
+        "http://skyworth.ivi.ru"
+      ],
+      "pc": true,
+      "dr": true,
+      "nv": "spatnav",
+      "hb": 0
+    },
+    {
+      "ui": "type5",
+      "pc": true,
+      "nv": "spatnav",
+      "us": [
+        "http://meteo.dotscreen.com",
+        "http://apps.store.zeasn.com/EpicTVadventure/show.html",
+        "http://services.tvzavr.ru/alliance/?overrideParams=true&platform=zea",
+        "http://launcher.iservernetwork.com/popbox"
+      ],
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    {
+      "ui": "type4",
+      "pc": true,
+      "hb": 0,
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) NetCast.TV Chromium/53.0.2785.143 Chrome/53.0.2785.143 Safari/537.36",
+      "us": [
+        "http://hybridtv.myspass.de/loewe"
+      ]
+    },
+    {
+      "ui": "type5",
+      "us": [
+        "http://cetv.kicker.de",
+        "http://smarttv.app.verivox.de",
+        "http://www.filmboxliveapp.net/opr/tvapp",
+        "http://www.netzwelt.de/mediathek",
+        "https://www.netzwelt.de/mediathek",
+        "https://hbbtv.qvc.de"
+      ],
+      "if": true,
+      "pc": true,
+      "nv": "spatnav",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) lg netcast Chromium/53.0.2785.143 Chrome/53.0.2785.143 Safari/537.36",
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    {
+      "ui": "euronews",
+      "us": [
+        "http://www.euronews.com/_partners/philips/",
+        "https://www.euronews.com/_partners/philips/"
+      ],
+      "nv": "spatnav",
+      "wc": true,
+      "pc": true,
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    {
+      "ui": "type6",
+      "nv": "spatnav",
+      "wc": true,
+      "pc": true,
+      "us": [
+        "http://nettv.buienradar.be",
+        "http://www.jouwrecepten.nl/itvv",
+        "http://www.nettv.ilsole24ore.com",
+        "http://nettv.noapitel.com",
+        "http://nettv.meteox.fr",
+        "http://nettv.rgbilisim.com",
+        "http://nettv.vaderradar.se",
+        "http://www.autozine.de/nettv",
+        "http://www.haenlein-software.com/PRG",
+        "http://www.motorsport-total.com/itv",
+        "https://www.motorsport-total.com/itv",
+        "http://www.supasteri.it/tvp",
+        "http://www.yellowmap.de",
+        "http://philips.wetter.net"
+      ]
+    },
+    {
+      "ui": "http://apps.store.zeasn.com/aljazeera/",
+      "cu": true,
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    {
+      "ui": "https://zeasn.zee5.com",
+      "nv": "spatnav",
+      "if": true,
+      "hb": 0
+    },
+    {
+      "ui": "type7",
+      "us": [
+        "https://www.yupptv.com/v2/zeasn/index.html",
+        "https://devices.yupptv.com/v2/index.html?appid=71&movieid="
+      ],
+      "hb": 0,
+      "nv": "spatnav",
+      "ld": true,
+      "ua": "a",
+      "cu": true,
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    },
+    { 
+      "ui": "http://look-at-screen.tv-tech.eu/unic",
+      "nv": "spatnav",
+      "hb": 61512
+    },
+    {
+      "ui": "https://tvapp.kidoodle.tv/",
+      "nv": "spatnav",
+      "hb": 61512
+    },
+    {
+      "ui": "http://app.ss-iptv.com",
+      "km": [
+        {"f": 61512, "t": 8}
+      ]
+    }
+  ]
+}

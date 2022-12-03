@@ -1,0 +1,222 @@
+@font-face {font-family: "iconfont";
+  src: url('iconfont.eot?t=1555552209107'); /* IE9 */
+  src: url('iconfont.eot?t=1555552209107#iefix') format('embedded-opentype'), /* IE6-IE8 */
+  url('iconfont.woff?t=1555552209107') format('woff'),
+  url('iconfont.ttf?t=1555552209107') format('truetype'), /* chrome, firefox, opera, Safari, Android, iOS 4.2+ */
+  url('iconfont.svg?t=1555552209107#iconfont') format('svg'); /* iOS 4.1- */
+}
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.iconpause:before {
+  content: "\e8b8";
+}
+
+.iconsearch2:before {
+  content: "\e624";
+}
+
+.iconspeedkuaijin:before {
+  content: "\e63c";
+}
+
+.iconrewkuaitui:before {
+  content: "\e652";
+}
+
+.iconplay:before {
+  content: "\e603";
+}
+
+.iconspace:before {
+  content: "\e600";
+}
+
+.iconspace1:before {
+  content: "\e6eb";
+}
+
+.iconwifi:before {
+  content: "\e686";
+}
+
+.icondelete1:before {
+  content: "\e636";
+}
+
+.iconclear:before {
+  content: "\e635";
+}
+
+.iconicon02:before {
+  content: "\e63d";
+}
+
+.iconshezhi1:before {
+  content: "\e648";
+}
+
+.icondelete:before {
+  content: "\e674";
+}
+
+.iconspace-bar:before {
+  content: "\eb62";
+}
+
+.iconsearch:before {
+  content: "\e610";
+}
+
+.iconairplay:before {
+  content: "\e611";
+}
+
+.icontouping:before {
+  content: "\e612";
+}
+
+.icondlna:before {
+  content: "\e613";
+}
+
+.icontv:before {
+  content: "\e614";
+}
+
+.iconSetup:before {
+  content: "\e615";
+}
+
+.iconairplay1:before {
+  content: "\e616";
+}
+
+.icondlna1:before {
+  content: "\e617";
+}
+
+.icontv1:before {
+  content: "\e618";
+}
+
+.icontouping1:before {
+  content: "\e619";
+}
+
+.iconSetup1:before {
+  content: "\e61a";
+}
+
+.iconsearch1:before {
+  content: "\e61b";
+}
+
+.icontv3:before {
+  content: "\e61d";
+}
+
+.iconnetwork:before {
+  content: "\e61c";
+}
+
+.icontime:before {
+  content: "\e61e";
+}
+
+.iconsound:before {
+  content: "\e61f";
+}
+
+.iconlanguage:before {
+  content: "\e620";
+}
+
+.iconpic:before {
+  content: "\e621";
+}
+
+.iconin:before {
+  content: "\e622";
+}
+
+.iconicon-test:before {
+  content: "\e623";
+}
+
+.iconusb:before {
+  content: "\e626";
+}
+
+.iconnetwork2:before {
+  content: "\e625";
+}
+
+.iconapplication:before {
+  content: "\e628";
+}
+
+.icontou:before {
+  content: "\eb63";
+}
+
+.iconHistory:before {
+  content: "\e62a";
+}
+
+.iconhome:before {
+  content: "\e62b";
+}
+
+.iconwlanx:before {
+  content: "\e62d";
+}
+
+.iconwifino:before {
+  content: "\e62e";
+}
+
+.iconwlan:before {
+  content: "\e62f";
+}
+
+.iconxiangqing:before {
+  content: "\e62c";
+}
+
+.iconqingchu:before {
+  content: "\e631";
+}
+
+.iconqiehuan:before {
+  content: "\e632";
+}
+
+.icondow:before {
+  content: "\e633";
+}
+
+.iconduomeiti:before {
+  content: "\e634";
+}
+
+.iconshanchu:before {
+  content: "\e64d";
+}
+
+.iconbanbenxinxi:before {
+  content: "\e64e";
+}
+.icongengduoshezhi:before {
+  content: "\e64f";
+}
+
+.iconqingchu1:before {
+  content: "\e650";
+}

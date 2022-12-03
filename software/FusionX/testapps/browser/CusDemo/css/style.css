@@ -1,0 +1,404 @@
+@font-face{
+    font-family: "SourceHanSansCN"; 
+    src:url('./font/SourceHanSansCN-Regular.woff') format('woff');
+}
+@font-face{
+    font-family: "PingFang-Medium"; 
+    src:url('./font/PingFang-Medium.woff') format('woff');
+}
+@font-face {
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 100;
+    src:url('./font/Roboto-Thin.woff') format('woff');
+  }
+  @font-face {
+    font-family: 'Roboto';
+    font-style: italic;
+    font-weight: 100;
+    src: url('./font/Roboto-ThinItalic.woff') format('woff');
+  }
+  @font-face {
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 300;
+    src:url('./font/Roboto-Light.woff') format('woff');
+  }
+  @font-face {
+    font-family: 'Roboto';
+    font-style: italic;
+    font-weight: 300;
+    src:url('./font/Roboto-LightItalic.woff') format('woff');
+  }
+  @font-face {
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 400;
+    src:  url('./font/Roboto-Regular.woff') format('woff');
+  }
+  @font-face {
+    font-family: 'Roboto';
+    font-style: italic;
+    font-weight: 400;
+    src:  format('woff2'), url('./font/Roboto-RegularItalic.woff') format('woff');
+  }
+  @font-face {
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 500;
+    src:  url('./font/Roboto-Medium.woff') format('woff');
+  }
+  @font-face {
+    font-family: 'Roboto';
+    font-style: italic;
+    font-weight: 500;
+    src:  url('./font/Roboto-MediumItalic.woff') format('woff');
+  }
+  @font-face {
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 700;
+    src:  url('./font/Roboto-Bold.woff') format('woff');
+  }
+  @font-face {
+    font-family: 'Roboto';
+    font-style: italic;
+    font-weight: 700;
+    src: url('./font/Roboto-BoldItalic.woff') format('woff');
+  }
+  @font-face {
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 900;
+    src:  url('./font/Roboto-Black.woff') format('woff');
+  }
+  @font-face {
+    font-family: 'Roboto';
+    font-style: italic;
+    font-weight: 900;
+    src: url('./font/Roboto-BlackItalic.woff') format('woff');
+  }
+body{
+    font-family:"Roboto";
+    font-style: normal;
+    letter-spacing: 0.5px;
+}
+*{padding:0;margin:0;box-sizing:border-box;outline:none;overflow: hidden;}
+li{list-style-type:none}
+img{
+    width: 100%;
+    height: 100%;
+}
+.screen{
+    width: 800px;
+    height: 480px;
+    overflow: hidden;
+}
+#menu{
+    width: 170px;
+    height: 440px;
+    position: absolute;
+    left: 0;
+    top: 40px;
+    background: #fdf7f8;
+    z-index: 1;
+}
+#content{
+    width: 630px;
+    height: 440px;
+    position: absolute;
+    left: 170px;
+    top: 40px;
+    background-color: #fdf7f8;
+}
+#menu ul{
+    margin-top:10px;
+}
+#menu ul>li{
+    width: 100%;
+    /* height: 100px; */
+    color: black;
+    text-align: center;
+    font-size: 42px;
+    line-height: 48px;
+    padding: 10px 0px;
+    margin: 15px 0;
+    background-color: white;
+}
+#menu ul .Focus{
+    background-color: #be8a3b;
+    color: white;;
+    -webkit-transform: scale(1);
+}
+#menu ul li.mark{
+    color: #ebebeb;
+    background-color: #cda4a4;
+}
+#menu i{
+    width: 70px;
+    height: 70px;
+    float: left;
+    font-size: 45px;
+}
+#menu div{
+    width: 100px;
+    /* height: 40px; */
+    float: left;
+    font-size: 28px;
+    line-height: 70px;
+}
+.icon_recomend{
+    background-image: url("../img/444.png");
+    background-repeat: no-repeat;
+    background-position: -70px 0px;
+}
+.icon_cake{
+    background-image: url("../img/22.png");
+    background-repeat: no-repeat;
+    background-position: -70px 0px;
+}
+.icon_drink{
+    background-image: url("../img/hb.png");
+    background-repeat: no-repeat;
+    background-position: -70px 0px;
+}
+.icon_donuts{
+    background-image: url("../img/333.png");
+    background-repeat: no-repeat;
+    background-position: -70px 0px;
+}
+.Focus .icon_recomend{
+    background-position: 0px 0px;
+}
+.Focus .icon_cake{
+    background-position: 0px 0px;
+}
+.Focus .icon_drink{
+    background-position: 0px 0px;
+}
+.Focus .icon_donuts{
+    background-position: 0px 0px;
+}
+#menu ul .Focus div{
+    /* background:rgba(217,217,217,1); */
+}
+#icon{
+    position: absolute;
+    left:0;
+    top: 0;
+    height: 40px;
+    width: 800px;
+    z-index: 1;
+    background: #e9e7e9;
+}
+.logo{
+    width:150px;
+    height: 33px;
+    float: left;
+    background-image: url(../img/logo.png)
+}
+.page-loading{
+    background-image: url('../img/loading.gif');background-position: center;background-repeat: no-repeat;
+}
+
+.Focus{
+    -webkit-transform:scale(1.2);
+}
+h2{
+    font-size: 28px;
+}
+
+/**集成多语言键盘**/
+.inputBox{
+    width: 180px;
+    height: 20px;
+    line-height: 20px;
+    background: rgba(255, 255, 255, .15);
+    font-size: 20px;
+    letter-spacing: 1px;
+    overflow: hidden;
+    position: relative;
+    padding: 0 10px;
+    float: right;
+    margin-right: 50px;
+    margin-top: 10px;
+}
+  .inputBox>span:before{
+    padding:0 10px;
+    color:#999;
+  }
+  .inputBox>i{
+    display: inline-block;
+    position: absolute;
+    top:10px;
+    height: 34px;
+    width: 60px;
+    background-repeat: no-repeat;
+    background-position: center;
+    border-radius: 6px;
+    background-size: cover;
+  }
+  .inputBox>input{
+    background: white;
+    border: none;
+    bottom: 0;
+    box-sizing: border-box;
+    margin: 0;
+    outline: none;
+    position: absolute;
+    height: 20px;
+    width: 180px;
+  }
+  input{
+    color: #999;
+  }
+  .inputs{
+    /* padding-left: 100px; */
+    position: relative;
+  }
+
+  .inputs .Focus,.Focus input{
+    color: #2f2f2f;
+    background-color:#D9D9D9;
+  }
+  #searchIcon{
+    right: 0px;
+    position: absolute;
+    height: 20px;
+    line-height: 20px;
+    font-size: 15px;
+    border: 1px;
+    border-radius: 25px;
+    width: 40px;
+    text-align: center;
+  }
+  /***推荐*****/
+  .poll{
+    width: 600px;
+    height: 100px;
+    background-size: contain;
+    background-image: url(../img/td.png);
+    margin: 15px;
+  }
+  .list li{
+    width: 154px;
+    height: 114px;
+    float: left;
+    padding: 0;
+    margin: 18px;
+  }
+  .list li img{
+    height: 80%;
+  }
+  .list li .price{
+    margin-right: 10px;
+    color: red;
+  }
+  /***video***/
+  .player{
+      display: none;
+      width: 800px;
+      height: 480px;
+      position: relative;
+  }
+  .control{
+    position: absolute;
+    top: 20px;
+    font-size: 20px;
+    z-index:1000
+  }
+  #video{
+      width: 100%;
+      height: 100%;
+  }
+
+/**details**/
+.details{
+    z-index: 1000;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    background: rgba(0, 0, 0, 0.48);
+    display: none;
+}
+.details_content{
+    width: 70%;
+    margin: 10% auto;
+    height: 70%;
+    background: white;
+    border-radius: 15px;
+    /* overflow-y:auto; */
+    position: relative;
+}
+.details_item{
+    width: 400px;
+    overflow-y: auto;
+    margin: auto;
+    height: 100%;
+}
+.details_item div{
+    overflow-y: auto;
+}
+.close{
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background-image: url(../img/close.png);
+    background-size: contain;
+    right: 0px;
+}
+.details_content .icon{
+    width: 150px;
+    margin: 30px auto;
+    text-align: center;
+}
+.describe{
+    margin: 10px auto;
+    color: rgb(153,153,153);
+}
+.describe div{
+    display: inline;
+}
+.describe p{
+   margin-top: 5px;
+}
+.describe .price{
+    color: red;
+    float: right;
+}
+.state div{
+    margin: 5px auto;;
+    font-size: 20px;
+    color: rgb(153,153,153);
+}
+.state li{
+    display: inline-block;
+    min-width: 80px;
+    overflow: hidden;
+    color: #333;
+    background-color: rgb(245, 245, 247);
+    border-radius: 6px;
+    text-align: center;
+    margin: 5px 20px 5px 0px;
+}
+.state li.active{
+    color: white;
+    background-color: rgb(190, 137, 57);
+}
+.details_item::-webkit-scrollbar {display:none}
+/******/
+.tvUI-mask{ position: fixed; width:100%; height:100%; background-color:rgba(0,0,0,0.85);top: 0px; left: 0px;z-index: 9999}
+.tvUI-alert{position:absolute; width: 700px; min-height: 150px;left: 50%;bottom:50%;margin-left:-350px;margin-bottom: -75px;background-color:#333;border-radius: 4px;}
+.tvUI-alert-title{width:100%;height:60px;line-height: 60px;text-indent: 20px;font-weight: bold;font-size: 24px;background-image: url('../images/wenli.png');color:#f1f1f1;}
+.tvUI-alert-btnGroup{height:50px;line-height: 50px;float: right;padding: 5px;  box-sizing: content-box;}
+.tvUI-alert-btn{float:left;height:50px;line-height: 50px;padding: 0 30px;margin-right: 15px;border-radius: 4px;font-size: 24px;background: #c7c6c6;color:#555;border:none;outline: none}
+.tvUI-alert-btn:focus{background: #1c8ae8;color:#fff;}
+.tvUI-alert-content{box-sizing: border-box;width:100%;min-height: 120px;padding:20px;font-size: 24px;color:#f1f1f1;}
+
+.tvUI-toast{position: fixed;height:60px;line-height: 60px;top:50%;left:50%;margin-top: -30px;background-color: rgba(0,0,0,0.9);color:#fff;padding: 0 20px;border-radius: 4px;display: none;font-size: 24px;z-index: 9999}
+
+.tvUI-loading{position: fixed;background-color: black;width:100%;height:100%;top:0;left:0;background-image: url('../images/load.gif');background-position: center;background-repeat: no-repeat;z-index:9999}
+.tvUI-loading h2{position: absolute;bottom: 250px;left: 0;width: 100%;text-align: center;color:#fff;font-weight:normal;}
+#tv-loading{width:100%;height:100%;position:fixed;z-index: 9999;top:0;left:0;background-color: black;;background-image: url('../images/load.gif');background-position: center;background-repeat: no-repeat;}
+#tv-loading h2{position: absolute;bottom: 250px;left: 0;width: 100%;text-align: center;color:#fff;font-weight:normal;}

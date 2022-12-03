@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Sigmastar</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/iconfont.css">
+</head>
+<body>
+    <div id="main" tabindex="0" class="screen" style="">
+        <div id="icon">
+            <div class="logo" onclick="exit()">
+            </div>
+            <div class="inputBox">
+                <input type="text" placeholder="输入食品名称">
+                <span id="searchIcon" class="iconfont"></span>
+            </div>
+        </div>
+        <div id="menu">
+            <ul class="">
+                <li  data-type="frame" data-url="recomend"><i class="icon_recomend"></i><div>推荐</div></li>
+                <li  data-type="frame" data-url="cake"><i class="icon_cake"></i><div>蛋糕</div></li>
+                <li  data-type="frame" data-url="drink"><i class="icon_drink"></i><div>饮品</div></li>
+                <li  data-type="frame" data-url="donuts"><i class="icon_donuts"></i><div>甜甜圈</div></li>
+            </ul>
+        </div>
+        <div id="content">
+            <div id="recomend" class="recomend">
+                <div class="poll"></div>
+                <div class="list"></div>
+            </div>
+            <div id="cake">
+                    <div class="list"></div>
+            </div>
+            <div id="drink">
+                <div class="list"></div>
+            </div>
+            <div id="donuts">
+                <div class="list"></div>
+            </div>
+        </div>
+    </div>
+    <div class="details">
+        <div class="details_content">
+            <div class="close"></div>
+            <div class="details_item"></div>
+        </div>
+    </div>
+    <div class="player">
+        <div class="control">
+            <span>《</span>
+        </div>
+        <video id="video" src="" controls="controls"></video>
+    </div>
+    <!--webView-->
+    <!-- <iframe id="webView" src="about:blank" tabindex="0" class="screen webView" scrolling="no"></iframe> -->
+    <!--模态框-->
+    <script src="./js/require.js" data-main="./js/main.js"></script>
+	<script>
+		function debug(str){
+			var debuger = document.getElementById('debuger');
+			if(!debuger){
+				debuger = document.createElement("div"); 
+				debuger.style.color = '#fff';
+				debuger.style.background = 'rgba(0,0,0,.7)';
+				debuger.style.position = 'fixed';
+				debuger.style.bottom = 0;
+				debuger.style.zIndex = 999;
+				debuger.setAttribute('id','debuger');
+                document.body.appendChild(debuger);
+			}
+			var p = document.createElement("p");
+			p.innerText = str;
+			debuger.appendChild(p);
+        }
+		function exit(){
+            window.close();
+        }
+	</script>
+	
+</body>
+</html>

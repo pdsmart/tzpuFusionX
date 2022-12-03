@@ -1,0 +1,348 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dbutton">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+  <!-- <link rel="stylesheet" href="./font.css"> -->
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+      border: 0;
+      outline: none;
+    }
+
+.main {
+      /* background: #05090c; */
+      width: 1280px;
+      height: 250px;
+      color: #fff;
+    }
+
+    td button {
+      width: 100%;
+      height: 100%;
+      font-size: 22px;
+    }
+    li {
+      list-style: none;
+    }
+
+    td {
+      /* border: 1px solid #aaa; */
+      background: #dddddd;
+      text-align: center;
+      cursor: pointer;
+      color: #000;
+    }
+
+    table {
+      /* border: 2px solid #999; */
+      table-layout: fixed;
+      width: 1280px;
+      /* margin:0  200px 0 200px; */
+    }
+   
+    button:hover,
+    button:focus {
+      background: #8080BF;
+
+    }
+
+    .ctrlkeys,
+    .shiftKeys {
+      /* background: #f99; */
+    }
+
+    .num {
+      color: blue;
+    }
+
+    .keyrow {
+      text-align: center;
+    }
+
+    #keyboard .keyspace {
+      width: 800px;
+    }
+
+    #keyboard .alt {
+      width: 225px;
+    }
+
+    #keyboard .shift {
+
+      width: 176px;
+    }
+
+    #keyboard .change {
+      /* font-family: "iconfont" !important;
+      font-style: normal;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale; */
+      width: 176px;
+      /* font-size: 28px; */
+    }
+
+    #keyboard .bksp {
+      font-family: "iconfont" !important;
+      font-style: normal;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      /* font-size: 28px; */
+    }
+
+    #keyboard button {
+      /* border: 1px solid #aaa; */
+      margin: 2px;
+      width: 86px;
+      height: 36px;
+      text-align: center;
+      cursor: pointer;
+      color: #000;
+      font-size: 21px;
+      line-height: 20px;
+      overflow: hidden;
+      font-family: arial, sans-serif;
+    }
+
+    @font-face {
+      font-family: "iconfont";
+      src: url('iconfont.eot?t=1545125575459');
+      /* IE9*/
+      src: url('iconfont.eot?t=1545125575459#iefix') format('embedded-opentype'),
+        /* IE6-IE8 */
+        /* url('data:application/x-font-woff2;charset=utf-8;base64,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') format('woff2'), */
+        url('./js/iconfont.woff?t=1545125575459') format('woff'),
+        /* chrome, firefox, opera, Safari, Android, iOS 4.2+*/
+        url('iconfont.svg?t=1545125575459#iconfont') format('svg');
+      /* iOS 4.1- */
+    }
+
+    .iconfont {
+      font-family: "iconfont" !important;
+      font-style: normal;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    #toglang #language {
+      display: inline-block;
+      height: 100%;
+      height: 100%;
+      background-color: #dddddd;
+      font-size: 20px;
+      cursor: pointer;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+    }
+
+    #toglang {
+      width: 158px;
+      height: 31px;
+      background-color: #ccc;
+    }
+    /* ------- */
+    /* #search-title{
+      height: 50px;
+      width: 550px;
+      font-size: 30px;
+      color: #fff;
+      background-color: #303a3f;
+      line-height: 50px;
+      border-radius: 20px;
+      padding-left: 20px;
+      margin: 200px 0 60px 490px;
+    } */
+       .changeLan{
+         float: left;
+           width: 280px;
+           height: 50px;
+           background-color: #303a3f;
+           color: #fff;
+           border-radius: 20px;
+           margin-left: 250px;
+           text-align: center;
+           line-height: 50px;
+           font-size: 40px;  
+           position: relative;
+           margin: 0 100px;
+       }
+       .changeLan:focus{
+         background-color: red;
+       }
+       .changeLan .leftarrow{
+           /* margin-left: 20px; */
+           float: left;
+       }
+       .changeLan .rightarrow{
+           float: right;
+           /* margin-right: 20px; */
+       }
+       .changeLan button{
+        font-size: 36px;
+        width: 50px;
+        height: 50px;
+       }
+       .container {
+           padding: 0 0px;
+           overflow: hidden;
+       }
+       .language {
+           width: 2000px;
+
+       }
+       .language li{
+           list-style: none;
+           width: 180px;
+           height: 50px;
+           float: left;
+           font-size: 30px;
+       }
+       .language li:focus{
+         background-color:red;
+       }
+       .hide{
+         float: right;
+         margin: 0 100px;
+       }
+       .hide button{
+          width: 150px;
+          height: 50px;
+          font-size: 28px;
+        }
+        .header{
+          height: 50px;
+        }
+        td{
+          border-radius: 5px;
+          border: 1px solid;
+        }
+        .header button,#keyboard button{
+          border-radius: 5px;
+          border: 1px solid;
+        }
+  </style>
+
+  <script>
+    
+  </script>
+
+</head>
+
+<body onload="init()" class="main">
+  <div class="mian">
+           <!-- 键盘语言切换 -->
+           <div class="header">
+           <div class="changeLan">
+            <div class="leftarrow" onclick="left()"><button >&lt;</button></div>
+            <div class="rightarrow" onclick="right()"><button >&gt;</button></div>
+               <div class="container"><ul class="language" id="language"><li class="active" lang="eng" data-index="0">English</li></ul></div>
+           </div>
+           <div class="hide"><button class="iconfont" onclick="hide()">&#xe633;</button></div>
+          </div>
+  <table cellspacing="1" onclick="test()" style="display:none">
+    <tr>
+      <td colspan="2"><button>http://</button></td>
+      <td colspan="2"><button>www.</button></td>
+      <td colspan="2"><button>.com</button></td>
+      <td colspan="2"><button>.org</button></td>
+      <td colspan="2"><button>.cn</button></td>
+      <td colspan="2"><button>.com.cn</button></td>
+      <td colspan="2"><button id="home" class="ctrlkeys">Home</button></td>
+      <td colspan="2"><button id="end" class="ctrlkeys">End</button></td>
+    </tr>
+    <tr>
+      <td><button>~</button></td>
+      <td><button>!</button></td>
+      <td><button>@</button></td>
+      <td><button>#</button></td>
+      <td><button>$</button></td>
+      <td><button>%</button></td>
+      <td><button>^</button></td>
+      <td><button>&amp;</button></td>
+      <td><button>*</button></td>
+      <td><button>(</button></td>
+      <td><button>)</button></td>
+      <td><button>_</button></td>
+      <td><button>+</button></td>
+      <td><button>|</button></td>
+      <td colspan="2"><button id="clear" class="ctrlkeys">Clear</button></td>
+    </tr>
+    <tr>
+      <td><button>`</button></td>
+      <td><button class="num">1</button></td>
+      <td><button class="num">2</button></td>
+      <td><button class="num">3</button></td>
+      <td><button class="num">4</button></td>
+      <td><button class="num">5</button></td>
+      <td><button class="num">6</button></td>
+      <td><button class="num">7</button></td>
+      <td><button class="num">8</button></td>
+      <td><button class="num">9</button></td>
+      <td><button class="num">0</button></td>
+      <td><button>-</button></td>
+      <td><button>=</button></td>
+      <td><button>\</button></td>
+      <td colspan="2"><button id="backspace" class="ctrlkeys">BackSpace</button></td>
+    </tr>
+    <tr>
+      <td><button>q</button></td>
+      <td><button>w</button></td>
+      <td><button>e</button></td>
+      <td><button>r</button></td>
+      <td><button>t</button></td>
+      <td><button>y</button></td>
+      <td><button>u</button></td>
+      <td><button>i</button></td>
+      <td><button>o</button></td>
+      <td><button>p</button></td>
+      <td><button>{</button></td>
+      <td><button>}</button></td>
+      <td><button>[</button></td>
+      <td><button>]</button></td>
+      <td colspan="2"><button id="shift" class="shiftKeys">Shift</button></td>
+    </tr>
+    <tr>
+      <td><button>a</button></td>
+      <td><button>s</button></td>
+      <td><button>d</button></td>
+      <td><button>f</button></td>
+      <td><button>g</button></td>
+      <td><button>h</button></td>
+      <td><button>j</button></td>
+      <td><button>k</button></td>
+      <td><button>l</button></td>
+      <td><button>:</button></td>
+      <td><button>"</button></td>
+      <td><button>;</button></td>
+      <td><button>'</button></td>
+      <td><button id="hide" class="ctrlkeys">OK</button></td>
+      <td colspan="2"><button id="commit" class="ctrlkeys">Enter</button></td>
+    </tr>
+    <tr>
+      <td><button>z</button></td>
+      <td><button>x</button></td>
+      <td><button>c</button></td>
+      <td><button>v</button></td>
+      <td><button>b</button></td>
+      <td><button>n</button></td>
+      <td><button>m</button></td>
+      <td><button>&lt;</button></td>
+      <td><button>&gt;</button></td>
+      <td><button>?</button></td>
+      <td><button>,</button></td>
+      <td><button>.</button></td>
+      <td><button>/</button></td>
+      <td id="thespace" colspan="3"><button>Space</button></td>
+      <!-- <td colspan="2"><button id="change" class="shiftKeys iconfont">&#xe728;
+        </button>
+      </td> -->
+    </tr>
+  </table>
+</div>
+<script src="./js/keybord.js"></script>
+<script src="./js/ime.js"></script>
+</body>
+</html>
