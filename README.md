@@ -32,7 +32,8 @@ To most retro users, the above wont have meaning or interest as it is primarily 
 </font></ul>
 
 
-The tran<i>ZPU</i>ter<sup><i>FusionX</i></sup> is under development and this source and document repository will be updated as the project progresses.
+The tran<i>ZPU</i>ter<sup><i>FusionX</i></sup> is under development and this source and document repository will be updated as the project progresses. Some source such as the SigmaStar SDK
+and documents will be added in due course.
 
 </div>
 

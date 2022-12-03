@@ -1,0 +1,113 @@
+/*
+* infinity2m-ssc011a-s01a-padmux-rgb565-rmii.dtsi- Sigmastar
+*
+* Copyright (c) [2019~2020] SigmaStar Technology.
+*
+*
+* This software is licensed under the terms of the GNU General Public
+* License version 2, as published by the Free Software Foundation, and
+* may be copied, distributed, and modified under those terms.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License version 2 for more details.
+*
+*/
+
+#include <../../../../drivers/sstar/include/infinity2m/padmux.h>
+#include <../../../../drivers/sstar/include/mdrv_puse.h>
+
+/ {
+    soc {
+         padmux {
+            compatible = "sstar-padmux";
+            schematic =
+                // RGB
+                <PAD_TTL0               PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT00 >,     // R0
+                <PAD_TTL1               PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT01 >,     // R1
+                <PAD_TTL2               PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT02 >,     // R2
+                <PAD_TTL3               PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT03 >,     // R3
+                <PAD_TTL4               PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT04 >,     // R4
+                <PAD_TTL5               PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT05 >,     // R5
+                <PAD_TTL6               PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT06 >,     // R6
+                <PAD_TTL7               PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT07 >,     // R7
+                <PAD_TTL8               PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT08 >,     // G0
+                <PAD_TTL9               PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT09 >,     // G1
+                <PAD_TTL10              PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT10 >,     // G2
+                <PAD_TTL11              PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT11 >,     // G3
+                <PAD_TTL12              PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT12 >,     // G4
+                <PAD_TTL13              PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT13 >,     // G5
+                <PAD_TTL14              PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT14 >,     // G6
+                <PAD_TTL15              PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT15 >,     // G7
+                <PAD_TTL16              PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT16 >,     // B0
+                <PAD_TTL17              PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT17 >,     // B1
+                <PAD_TTL18              PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT18 >,     // B2
+                <PAD_TTL19              PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT19 >,     // B3
+                <PAD_TTL20              PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT20 >,     // B4
+                <PAD_TTL21              PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT21 >,     // B5
+                <PAD_TTL22              PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT22 >,     // B6
+                <PAD_TTL23              PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DOUT23 >,     // B7
+                // Video Control Signals.
+                <PAD_TTL24              PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_CLK >,        // Pixel Clock
+                <PAD_TTL25              PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_HSYNC >,      // Horizontal Sync
+                <PAD_TTL26              PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_VSYNC >,      // Vertical Sync
+                <PAD_TTL27              PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_TTL_DE >,         // Display Enable
+
+                // FUART
+                <PAD_FUART_RX           PINMUX_FOR_FUART_MODE_1      MDRV_PUSE_FUART_RX>,
+                <PAD_FUART_TX           PINMUX_FOR_FUART_MODE_1      MDRV_PUSE_FUART_TX>,
+                <PAD_FUART_CTS          PINMUX_FOR_FUART_MODE_1      MDRV_PUSE_FUART_CTS>,
+                <PAD_FUART_RTS          PINMUX_FOR_FUART_MODE_1      MDRV_PUSE_FUART_RTS>,
+
+                // UART 0
+                <PAD_UART0_RX           PINMUX_FOR_UART0_MODE_1      MDRV_PUSE_UART0_RX >,
+                <PAD_UART0_TX           PINMUX_FOR_UART0_MODE_1      MDRV_PUSE_UART0_TX >,
+
+                // UART 1
+                <PAD_UART1_RX           PINMUX_FOR_UART1_MODE_1      MDRV_PUSE_UART1_RX >,
+                <PAD_UART1_TX           PINMUX_FOR_UART1_MODE_1      MDRV_PUSE_UART1_TX >,
+
+                // SD CARD
+                <PAD_SD_CLK             PINMUX_FOR_SDIO_MODE_1       MDRV_PUSE_SDIO0_CLK >,
+                <PAD_SD_CMD             PINMUX_FOR_SDIO_MODE_1       MDRV_PUSE_SDIO0_CMD >,
+                <PAD_SD_D0              PINMUX_FOR_SDIO_MODE_1       MDRV_PUSE_SDIO0_D0  >,
+                <PAD_SD_D1              PINMUX_FOR_SDIO_MODE_1       MDRV_PUSE_SDIO0_D1  >,
+                <PAD_SD_D2              PINMUX_FOR_SDIO_MODE_1       MDRV_PUSE_SDIO0_D2  >,
+                <PAD_SD_D3              PINMUX_FOR_SDIO_MODE_1       MDRV_PUSE_SDIO0_D3  >,
+                <PAD_PM_SD_CDZ          PINMUX_FOR_GPIO_MODE         MDRV_PUSE_SDIO0_CDZ >,
+
+                // SPI0
+                <PAD_GPIO8              PINMUX_FOR_SPI0_MODE_5       MDRV_PUSE_SPI0_CZ >,
+                <PAD_GPIO9              PINMUX_FOR_SPI0_MODE_5       MDRV_PUSE_SPI0_CK >,
+                <PAD_GPIO10             PINMUX_FOR_SPI0_MODE_5       MDRV_PUSE_SPI0_DI >,
+                <PAD_GPIO11             PINMUX_FOR_SPI0_MODE_5       MDRV_PUSE_SPI0_DO >,
+
+                // USB 1 and 2
+                <PAD_DM_P1              PINMUX_FOR_USB_MODE          MDRV_PUSE_UTMI1_DM >,       // utmi: default not-GPIO
+                <PAD_DP_P1              PINMUX_FOR_USB_MODE          MDRV_PUSE_UTMI1_DP >,       // utmi: default not-GPIO
+                <PAD_DM_P2              PINMUX_FOR_USB_MODE          MDRV_PUSE_UTMI2_DM >,       // utmi: default not-GPIO
+                <PAD_DP_P2              PINMUX_FOR_USB_MODE          MDRV_PUSE_UTMI2_DP >,       // utmi: default not-GPIO
+
+                <PAD_GPIO0              PINMUX_FOR_GPIO_MODE         MDRV_PUSE_NA >,
+                <PAD_GPIO1              PINMUX_FOR_GPIO_MODE         MDRV_PUSE_NA >,
+                <PAD_GPIO2              PINMUX_FOR_GPIO_MODE         MDRV_PUSE_NA >,
+                <PAD_GPIO3              PINMUX_FOR_GPIO_MODE         MDRV_PUSE_NA >,
+                <PAD_GPIO4              PINMUX_FOR_GPIO_MODE         MDRV_PUSE_NA >,
+                <PAD_GPIO5              PINMUX_FOR_GPIO_MODE         MDRV_PUSE_NA >,
+                <PAD_GPIO6              PINMUX_FOR_GPIO_MODE         MDRV_PUSE_NA >,
+                <PAD_GPIO7              PINMUX_FOR_GPIO_MODE         MDRV_PUSE_NA >,
+                <PAD_GPIO12             PINMUX_FOR_GPIO_MODE         MDRV_PUSE_NA >,
+                <PAD_GPIO13             PINMUX_FOR_GPIO_MODE         MDRV_PUSE_NA >,
+                <PAD_GPIO14             PINMUX_FOR_GPIO_MODE         MDRV_PUSE_NA >,
+                <PAD_HSYNC_OUT          PINMUX_FOR_GPIO_MODE         MDRV_PUSE_NA>,              // HSYNC_OUT: Used as GPIO
+                <PAD_VSYNC_OUT          PINMUX_FOR_GPIO_MODE         MDRV_PUSE_NA>,              // VSYNC_OUT: Used as GPIO
+                <PAD_SAR_GPIO2          PINMUX_FOR_GPIO_MODE         MDRV_PUSE_NA>,              // SAR2: Used as GPIO
+                <PAD_PM_IRIN            PINMUX_FOR_TTL_MODE_1        MDRV_PUSE_NA>;              // IR: Used as GPIO
+
+
+            status = "ok"; // ok or disable
+        };
+
+    };
+};
