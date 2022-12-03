@@ -1,9 +1,10 @@
-<img src='../images/tzpuFusionX_v1_0_layout.png' height='70%' width='70%' style="margin-left: auto; margin-right: auto; display: block;"/>
+<img src='http://eaw.app/images/tzpuFusionX_v1_0_layout.png' height='70%' width='70%' style="margin-left: auto; margin-right: auto; display: block;"/>
 
 ## <font style="color: yellow;" size="6">Foreword</font>
 
 <div style="text-align: justify">
 The tran<i>ZPU</i>ter<sup><i>FusionX</i></sup> is a spinoff concept from the tranZPUter series. It shares the same purpose, to replace the Z80 in a Sharp or similar system and provide it with features such as faster CPU, more memory, better graphics, quicker application loading etc. 
+
 <div style="padding-top: 0.8em;"></div>
 
 It shares similarities with the tran<i>ZPU</i>ter<sup><i>Fusion</i></sup> but instead of realising it in hardware via an FPGA it realises
@@ -20,7 +21,7 @@ can provide a wealth of features to the host through this mechanism. The SOM is 
 Like the tran<i>ZPU</i>ter<sup><i>Fusion</i></sup>, the tran<i>ZPU</i>ter<sup><i>FusionX</i></sup> can provide enhanced video and sound to the host. The SOM incorporates dual DAC audio and a 2D GPU with configurable resolutions. 
 <div style="padding-top: 0.8em;"></div>
 
-To most retro users, the above wont have meaning or interest as it is primarily for software research and development. What the board can offer the end user is:
+To most retro users, the above wont have meaning or interest as it is primarily for software research and development. What the board can offer the end user eventually (project still in development phase) is:
 <ul style="line-height: 0.8em;"><font size="3">
   <li>Original host specifications<br>- there might be slight differences in the Z80 functionality as it is implemented in software but the Z80 hardware timing is accurate.</li>
   <li>Accelerator<br>- the Z80 can run at much higher speeds due to the abundance of memory and 1.2GHz dual-core processor, which would typically see performance equivalent to a 500MHz Z80.</li>
@@ -79,10 +80,10 @@ This setup allows for emulated machines, whilst running in the host on the FPGA 
 
 <div style='content: ""; clear: both; display: table;'>
     <div style='width: 45%; padding: 5px; padding-left: 1em; float: left'>
-        <img src='../images/VideoInterface_MZ700_v1_0_3D_Top.png' height='100%' width='100%' style="margin-left: auto; margin-right: auto; display: block;"/>
+        <img src='http://eaw.app/images/VideoInterface_MZ700_v1_0_3D_Top.png' height='100%' width='100%' style="margin-left: auto; margin-right: auto; display: block;"/>
     </div>
     <div style='width: 50%; padding: 5px; padding-left: 1em; float: left'>
-        <img src='../images/VideoInterface_MZ700_v1_0_3D_Bottom.png' height='100%' width='100%' style="margin-left: auto; margin-right: auto; display: block;"/>
+        <img src='http://eaw.app/images/VideoInterface_MZ700_v1_0_3D_Bottom.png' height='100%' width='100%' style="margin-left: auto; margin-right: auto; display: block;"/>
     </div>
 </div>
 
@@ -106,10 +107,10 @@ The daughter board presents all the original connectors so it is easily installe
 
 <div style='content: ""; clear: both; display: table;'>
     <div style='width: 50%; padding: 5px; padding-left: 1em; float: left'>
-        <img src='../images/VideoInterface_MZ2000_v1_0_3D_Top.png' height='100%' width='100%' style="margin-left: auto; margin-right: auto; display: block;"/>
+        <img src='http://eaw.app/images/VideoInterface_MZ2000_v1_0_3D_Top.png' height='100%' width='100%' style="margin-left: auto; margin-right: auto; display: block;"/>
     </div>
     <div style='width: 50%; padding: 5px; padding-left: 1em; float: left'>
-        <img src='../images/VideoInterface_MZ2000_v1_0_3D_Bottom.png' height='100%' width='100%' style="margin-left: auto; margin-right: auto; display: block;"/>
+        <img src='http://eaw.app/images/VideoInterface_MZ2000_v1_0_3D_Bottom.png' height='100%' width='100%' style="margin-left: auto; margin-right: auto; display: block;"/>
     </div>
 </div>
 
@@ -134,10 +135,10 @@ The daughter board presents all the original connectors so it is easily installe
 
 <div style='content: ""; clear: both; display: table;'>
     <div style='width: 47%; padding: 5px; padding-left: 1em; float: left'>
-        <img src='../images/VideoInterface_MZ80A_V1_0_3D_Top.png' height='100%' width='100%' style="margin-left: auto; margin-right: auto; display: block;"/>
+        <img src='http://eaw.app/images/VideoInterface_MZ80A_V1_0_3D_Top.png' height='100%' width='100%' style="margin-left: auto; margin-right: auto; display: block;"/>
     </div>
     <div style='width: 50%; padding: 5px; padding-left: 1em; float: left'>
-        <img src='../images/VideoInterface_MZ80A_V1_0_3D_Bottom.png' height='100%' width='100%' style="margin-left: auto; margin-right: auto; display: block;"/>
+        <img src='http://eaw.app/images/VideoInterface_MZ80A_V1_0_3D_Bottom.png' height='100%' width='100%' style="margin-left: auto; margin-right: auto; display: block;"/>
     </div>
 </div>
 <div style="text-align: justify">
