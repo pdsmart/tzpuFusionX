@@ -177,23 +177,22 @@ The smallest components which could be manually assembled where used, ie. 0402/0
 <font style="color: cyan;" size="4">PCB Component Placement and Bill of Materials</font>
 
 <div style="text-align: justify; line-height: 1.4em; font-size: 0.8em; font-family:sans-serif;">
-Click <a href="../_pages/FusionX_v1_0_BOM.html">here</a> to view an interactive PCB component placement diagram and Bill of Materials.
+Click <a href="http://eaw.app/_pages/FusionX_v1_0_BOM.html">here</a> to view an interactive PCB component placement diagram and Bill of Materials.
 </div>
 
 --------------------------------------------------------------------------------------------------------
 
 ## <font style="color: yellow;" size="6">Software</font>
 
-Under construction.
-
+<font size="2">Under construction.</font>
 
 ###### <font style="color: yellow;" size="5">Linux</font>
 
-Under construction.
+<font size="2">Under construction.</font>
 
 ###### <font style="color: yellow;" size="5">Z80 Emulator</font>
 
-Under construction.
+<font size="2">Under construction.</font>
 
 --------------------------------------------------------------------------------------------------------
 
@@ -551,11 +550,7 @@ The table below contains all the datasheets and manuals referenced in the design
 
 ## <font style="color: yellow;" size="5">Demonstration Videos</font>
 
-<font style="color: cyan;" size="4">MZ-2000 Demo</font>
-
 <a href="https://t.co/ZP4T3oisrg">MZ-2000 Demo</a>
-
-<font style="color: cyan;" size="4">MZ-700 Demo</font>
 
 <a href="https://t.co/6lJoGkNuiP">MZ-700 Demo</a>
 
