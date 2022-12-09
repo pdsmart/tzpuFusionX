@@ -89,7 +89,7 @@ The CPLD internal state machines are clocked by an external 50MHz oscillator, th
 The SOM is rich in peripherals and this circuit interfaces some of them for use in the FusionX, these include:
 
 <ul style="line-height: 0.9em;"><font size="3">
-<li><font style="color: orange;" size="3">Stereo Audio Microphone input</font><br>- a digital microphone input but the pins are used in the CPLD interface.</li>
+<li><font style="color: orange;" size="3">Stereo Audio Microphone input</font><br>- a digital microphone input is also available but the pins are used in the CPLD interface.</li>
 <li><font style="color: orange;" size="3">Stereo Audio DAC output</font><br>- dual digital to analogue converters for sound output which can be clocked at 48KHz.</li>
 <li><font style="color: orange;" size="3">WiFi Antenna</font><br>- a SSW101B 20/40MHz IEEE 802.11 b/g/n/e/l/n/w WiFi transceiver operating in the 2.4GHz band with a 500M range. The SOM also includes a 100MHz ETH PHY but this is not used in this design as hard wired ethernet is not practical for a board which is
 sited inside a retro machine.</li>
@@ -385,17 +385,6 @@ The table below contains all the sites referenced in the design and programming 
 <div style="padding-top: 0.8em;"></div>
 <div style="padding-left: 10%;">
 <font size="4">
-<style>
-table {
-    border-collapse: collapse;
-}
-tr td {
-    padding-top: 0em;
-}
-tr:nth-child(4) td {
-    padding-top: 0;
-}
-</style>
 <table>
   <thead>
     <tr>
@@ -450,17 +439,6 @@ The table below contains all the datasheets and manuals referenced in the design
 <div style="padding-top: 0.8em;"></div>
 <div style="padding-left: 10%;">
 <font size="4">
-<style>
-table {
-    border-collapse: collapse;
-}
-tr td {
-    padding-top: 0em;
-}
-tr:nth-child(4) td {
-    padding-top: 0;
-}
-</style>
 <table>
   <thead>
     <tr>
@@ -575,11 +553,11 @@ tr:nth-child(4) td {
 
 <font style="color: cyan;" size="4">MZ-2000 Demo</font>
 
-<blockquote class="twitter-tweet" data-dnt="true" data-theme="dark"><p lang="zxx" dir="ltr"><a href="https://t.co/ZP4T3oisrg">pic.twitter.com/ZP4T3oisrg</a></p>&mdash; engineers@work (@engineerswork1) <a href="https://twitter.com/engineerswork1/status/1596925985592864768?ref_src=twsrc%5Etfw">November 27, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+<a href="https://t.co/ZP4T3oisrg">MZ-2000 Demo</a>
 
 <font style="color: cyan;" size="4">MZ-700 Demo</font>
 
-<blockquote class="twitter-tweet" data-dnt="true" data-theme="dark"><p lang="en" dir="ltr"> <a href="https://t.co/6lJoGkNuiP">pic.twitter.com/6lJoGkNuiP</a></p>&mdash; engineers@work (@engineerswork1) <a href="https://twitter.com/engineerswork1/status/1586864092601630721?ref_src=twsrc%5Etfw">October 30, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+<a href="https://t.co/6lJoGkNuiP">MZ-700 Demo</a>
 
 
 --------------------------------------------------------------------------------------------------------
