@@ -1678,3 +1678,6 @@ software/FusionX/src/driver/MZ2000/emumz.c
 software/FusionX/src/driver/MZ2000/sharpmz.c
 software/FusionX/src/driver/MZ80A/z80driver.c.bad
 software/FusionX/src/driver/MZ80A/z80vhw_rfs.c.bad
+software/FusionX/disk
+software/FusionX/roms
+software/linux/project/FusionX/

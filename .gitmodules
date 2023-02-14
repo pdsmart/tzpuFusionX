@@ -7,3 +7,6 @@
 [submodule "software/FusionX/src/driver/6502"]
 	path = software/FusionX/src/driver/6502
 	url = https://github.com/redcode/6502.git
+[submodule "software/FusionX/src/driver/software/FusionX/src/driver/6502"]
+	path = software/FusionX/src/driver/software/FusionX/src/driver/6502
+	url = https://github.com/redcode/6502.git
