@@ -49,6 +49,9 @@ DATE=$(date +%m%d)
 BACKUPDIR=$(date +%m%d%H%M)
 #images will output in ${RELEASEDIR}/images/
 RELEASEDIR=`pwd`
+FUSIONXDIR=`pwd`\..\FusionX
+WEBSRVDIR=`pwd`\..\WebServer
+Z80EMUDIR=`pwd`\..\Z80emu
 #release source code
 #find ./boot/ | grep -v boot/.git | cpio -pdm ${RELEASEDIR}/
 #find ./project/ | grep -v project/.git | cpio -pdm ${RELEASEDIR}/
@@ -259,25 +262,25 @@ if [ -d ${RELEASEDIR}/project/image/output/customer -a "`ls ${RELEASEDIR}/projec
 fi
 # Setup the applications for FusionX.
 mkdir -p ${RELEASEDIR}/project/image/output/sdrootfs/apps
-if [ -d /srv/dvlp/Projects/tzpu/FusionX/software/FusionX ]; then
+if [ -d ${FUSIONXDIR} ]; then
     echo -n "FusionX "
-    cd /srv/dvlp/Projects/tzpu/FusionX/software/FusionX
+    cd ${FUSIONXDIR}
     mkdir -p ${RELEASEDIR}/project/image/output/sdrootfs/apps/FusionX/
     cp -r * ${RELEASEDIR}/project/image/output/sdrootfs/apps/FusionX/
     cp start_FusionX.sh ${RELEASEDIR}/project/image/output/sdrootfs/apps/
     chmod +x ${RELEASEDIR}/project/image/output/sdrootfs/apps/start_FusionX.sh
 fi
-if [ -d /srv/dvlp/Projects/tzpu/FusionX/software/WebServer/ ]; then
+if [ -d ${WEBSRVDIR} ]; then
     echo -n "WebServer "
-    cd /srv/dvlp/Projects/tzpu/FusionX/software/WebServer/
+    cd ${WEBSRVDIR}
     mkdir -p ${RELEASEDIR}/project/image/output/sdrootfs/apps/WebServer/
     cp -r WebServer webfs/ conf/ ${RELEASEDIR}/project/image/output/sdrootfs/apps/WebServer/
     cp start_WebServer.sh ${RELEASEDIR}/project/image/output/sdrootfs/apps/
     chmod +x ${RELEASEDIR}/project/image/output/sdrootfs/apps/start_WebServer.sh
 fi
-if [ -d /srv/dvlp/Projects/tzpu/FusionX/software/Z80emu/Z80/ ]; then
+if [ -d ${Z80EMUDIR} ]; then
     echo -n "Z80 "
-    cd /srv/dvlp/Projects/tzpu/FusionX/software/Z80emu/
+    cd ${Z80EMUDIR}
     mkdir -p ${RELEASEDIR}/project/image/output/sdrootfs/apps/Z80/
     cp -r Z80/* ${RELEASEDIR}/project/image/output/sdrootfs/apps/Z80/
 fi
@@ -291,9 +294,13 @@ fi
 # Copy any new files.
 for f in DSK MZF CPM BAS CAS Basic
 do
-    mkdir -p ${RELEASEDIR}/project/image/output/sdrootfs/apps/disk/Sharp
-    cp -r /srv/dvlp/Projects/tzpu/FusionX/software/${f}/ ${RELEASEDIR}/project/image/output/sdrootfs/apps/disk/Sharp/${f}/
+    mkdir -p ${RELEASEDIR}/project/image/output/sdrootfs/apps/FusionX/disk/
+    cp -r /srv/dvlp/Projects/tzpu/FusionX/software/${f}/ ${RELEASEDIR}/project/image/output/sdrootfs/apps/FusionX/disk/${f}/
 done
+
+# Copy an new rom images.
+mkdir -p ${RELEASEDIR}/project/image/output/sdrootfs/apps/FusionX/roms/
+cp -r /srv/dvlp/Projects/tzpu/FusionX/software/roms/* ${RELEASEDIR}/project/image/output/sdrootfs/apps/FusionX/roms/
 
 # Make any manual setup changes.
 #echo "/dev/zram0     none swap sw 0 -1"         >> ${RELEASEDIR}/project/image/output/sdrootfs/etc/fstab
