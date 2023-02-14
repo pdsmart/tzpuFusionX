@@ -36,13 +36,11 @@
             reg = <0x0>;
             operating-points = <
                 /* kHz     uV */
-                /*
                 1200000  1000000
                 1100000  1000000
-                */
                 1000000  900000
-                /*
                 800000   900000
+                /*
                 600000   900000
                 400000   900000
                 */
@@ -56,13 +54,11 @@
             reg = <0x1>;
             operating-points = <
                 /* kHz     uV */
-                /*
                 1200000  1000000
                 1100000  1000000
-                */
                 1000000  900000
-                /*
                 800000   900000
+                /*
                 600000   900000
                 400000   900000
                 */
@@ -217,7 +213,7 @@
             interrupts=<GIC_SPI INT_IRQ_CMDQ IRQ_TYPE_LEVEL_HIGH>;
             status = "ok";
         };
-
+/*
         uart0: uart0@1F221000 {
             compatible = "sstar,uart";
             reg = <0x1F221000 0x100>;
@@ -225,6 +221,7 @@
             clocks = <&CLK_uart0>;
             status = "ok";
         };
+*/
         uart1: uart1@1F221200 {
             compatible = "sstar,uart";
             reg = <0x1F221200 0x100>;
@@ -300,7 +297,6 @@
             status = "ok";
         };
 
-
         spi: spi {
             compatible = "sstar_spi";
             io_phy_addr = <0x1f000000>;
@@ -332,7 +328,7 @@
             compatible = "spidev";
 	    status = "ok";
         };
-        */
+*/
 
          Sstar-ehci-1 {
             compatible = "Sstar-ehci-1";
@@ -414,7 +410,7 @@
             slot-intcdzs = <1>,<1>,<1>;
             slot-fakecdzs = <0>,<0>,<0>;
             slot-cdzs-gpios = <PAD_PM_SD_CDZ>,<0>,<0>;
-          //slot-pwr-gpios = <PAD_SATA_GPIO>,<0>,<0>; // ssc010a:PAD_TTL0 P2_ssc011a: PAD_GPIO0
+            slot-pwr-gpios = <PAD_SATA_GPIO>,<0>,<0>; // ssc010a:PAD_TTL0 P2_ssc011a: PAD_GPIO0
             slot-pwr-off-delay = <30>,<30>,<30>;
             slot-sdio-use = <0>,<0>,<0>;
 
@@ -505,12 +501,9 @@
         };
 
         core_voltage {
-            //vid_width = <2>;
-            vid_width = <1>;
-            //vid_gpios = <PAD_UART1_RX PAD_SAR_GPIO1>;
-            vid_gpios = <PAD_SAR_GPIO1>;
-            //vid_voltages = <850 900 950 1000>;  //2b'00 2b'01 2b'10 2b'11
-            vid_voltages = <950 1000>;  //2b'00 2b'01 2b'10 2b'11
+            vid_width = <2>;
+            vid_gpios = <PAD_UART1_RX PAD_SAR_GPIO1>;
+            vid_voltages = <850 900 950 1000>;  //2b'00 2b'01 2b'10 2b'11
         };
 /*
         core_voltage {

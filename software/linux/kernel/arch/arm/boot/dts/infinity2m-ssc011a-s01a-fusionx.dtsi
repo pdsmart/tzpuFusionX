@@ -78,19 +78,18 @@
               */
             i2c-speed = <3>;
             i2c-en-dma = <0>;  // 0: disable; 1: enable;
-            status = "disabled";
-
-//           focaltech@38{
-//               compatible = "focaltech,fts"; /* do not modify */
-//               reg = <0x38>; /* do not modify */
-//               interrupts-extended = <&ms_gpi_intc INT_GPI_FIQ_GPIO13>;
-//               focaltech,reset-gpio = <PAD_GPIO12>; /* RST脚 */
-//               focaltech,irq-gpio = <PAD_GPIO13>; /* INT脚 */
-//               focaltech,max-touch-number = <10>; /* 最大触点数 */
-//               //focaltech,display-coords = <0 0 720 720>; /* 分辨率 */
-//               focaltech,display-coords = <0 0 480 480>; /* 分辨率 */
-//               status = "ok";
-//           };
+            status = "ok";
+            focaltech@38{
+                compatible = "focaltech,fts"; /* do not modify */
+                reg = <0x38>; /* do not modify */
+                interrupts-extended = <&ms_gpi_intc INT_GPI_FIQ_GPIO13>;
+                focaltech,reset-gpio = <PAD_GPIO12>; /* RST脚 */
+                focaltech,irq-gpio = <PAD_GPIO13>; /* INT脚 */
+                focaltech,max-touch-number = <10>; /* 最大触点数 */
+                //focaltech,display-coords = <0 0 720 720>; /* 分辨率 */
+                focaltech,display-coords = <0 0 480 480>; /* 分辨率 */
+                status = "ok";
+            };
 /*
             goodix_gt911@5D{ //EVB i2c-padmux=2 SSD201_SZ_DEMO_BOARD i2c-padmux=1
                 compatible = "goodix,gt911";

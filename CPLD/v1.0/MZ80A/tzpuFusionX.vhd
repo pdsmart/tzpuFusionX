@@ -9,9 +9,12 @@
 --                  for the MZ-80A.
 --
 -- Credits:         
--- Copyright:       (c) 2018-22 Philip Smart <philip.smart@net2net.org>
+-- Copyright:       (c) 2018-23 Philip Smart <philip.smart@net2net.org>
 --
--- History:         Nov 2022 - Initial write for the MZ-2000, adaption to MZ-80A underway.
+-- History:         Nov 2022 v1.0 - Initial write for the MZ-2000, adaption to the MZ-80A.
+--                  Feb 2023 v1.1 - Updates, after numerous tests to try and speed up the Z80 transaction
+--                                  from SSD202 issuing a command to data being returned. Source now
+--                                  different to the MZ-700/MZ-2000 so will need back porting.
 --
 ---------------------------------------------------------------------------------------------------------
 -- This source file is free software: you can redistribute it and-or modify
@@ -272,7 +275,7 @@ begin
     -- On the second edge, if occurring within 1 second of the first, the PM_RESET signal to the SOM is triggered, held low for 1 second,
     -- forcing the SOM to reboot.
     SYSRESET: process( Z80_CLKi, Z80_RESETn )
-        variable timer1        : integer range 0 to 354000 := 0;
+        variable timer1        : integer range 0 to 200000 := 0;
         variable timer100      : integer range 0 to 10     := 0;
         variable timerPMReset  : integer range 0 to 10     := 0;
         variable resetCount    : integer range 0 to 3      := 0;
@@ -308,7 +311,7 @@ begin
             end if;
 
             -- 100ms interval.
-            if(timer1 = 354000) then
+            if(timer1 = 200000) then
                 timer100         := timer100 + 1;
 
                 if(timer100 >= 10) then
@@ -353,7 +356,7 @@ begin
                 elsif(SPI_SHIFT_EN = '1' and SPI_FRAME_CNT = 3 and SPI_BIT_CNT = 0) then
                     SPI_RX_DATA(23 downto 16) <= SPI_RX_SREG(6 downto 0) & VSOM_SPI_MOSI;
 
-                elsif(SPI_SHIFT_EN = '1' and SPI_FRAME_CNT = 4 and SPI_BIT_CNT = 0) then
+                elsif(SPI_FRAME_CNT = 4 and SPI_BIT_CNT = 0) then
                     SPI_RX_DATA(31 downto 24) <= SPI_RX_SREG(6 downto 0) & VSOM_SPI_MOSI;  
                 end if;
             end if;
@@ -363,18 +366,22 @@ begin
     -- SPI Slave output. Return the current data set as selected by the input signals XACT.
     SPI_OUTPUT : process(VSOM_SPI_CLK,VSOM_SPI_CSn,SPI_TX_DATA)
     begin
+        -- Chip Select inactive, disable process and reset control flags.
         if(VSOM_SPI_CSn = '1') then
             SPI_SHIFT_EN         <= '0';
-            SPI_BIT_CNT          <= 15;
+            SPI_BIT_CNT          <= 7;
 
         -- SPI_CLK_POLARITY='0' => falling edge; SPI_CLK_POLARITY='1' => risinge edge
         elsif(VSOM_SPI_CLK'event and VSOM_SPI_CLK = not SPI_CLK_POLARITY) then
+            -- Each clock reset the shift enable and done flag in preparation for the next cycle.
             SPI_SHIFT_EN         <= '1';
 
+            -- Bit count decrements to detect when last bit of byte is sent.
             if(SPI_BIT_CNT > 0) then
                 SPI_BIT_CNT      <= SPI_BIT_CNT - 1;
             end if;
 
+            -- Shift out the next bit.
             VSOM_SPI_MISO        <= SPI_TX_SREG(6);
             SPI_TX_SREG          <= SPI_TX_SREG(5 downto 0) & '0';
 
@@ -429,6 +436,7 @@ begin
         -- for 8bit, 16bit and 32bit transmissions.
         -- The packet is formatted as follows:
         --
+        -- < SPI_CPU_ADDR                                > < SPI_CPU_DATA      >< SOM_CMD>
         -- < SPI_FRAME_CNT=4     >< SPI_FRAME=3          > < SPI_FRAME_CNT=2   >< SPI_FRAME_CNT=1>
         -- < 16bit Z80 Address                           > < Z80 Data          ><Command=00..80>
         -- 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 0
@@ -581,7 +589,7 @@ begin
             end if;
 
             -- Whenever we return to Idle or just prior to Refresh from a Fetch cycle set all control signals to default.
-            if(FSM_STATE = IdleCycle or FSM_STATE = RefreshCycle) then
+            if((FSM_STATE = IdleCycle or FSM_STATE = RefreshCycle) and Z80_CLK_TGL = '1') then
                 CPU_DATA_EN       <= '0';
                 Z80_MREQni        <= '1';
                 Z80_IORQni        <= '1';
@@ -598,6 +606,7 @@ begin
                     AUTOREFRESH_CNT <= AUTOREFRESH_CNT - 1;
                     if(AUTOREFRESH_CNT = 0) then
                         FSM_STATE <= RefreshCycle_3;
+                        FSM_STATUS<= '1';
                     end if;
                 end if;
             end if;
@@ -701,6 +710,7 @@ begin
 
                     when IdleCycle =>
                         CPU_LAST_T_STATE   <= '1';
+                        FSM_STATUS         <= '0';
                     --    FSM_STATE          <= IdleCycle;
 
                     -----------------------------
@@ -733,12 +743,12 @@ begin
                     when RefreshCycle =>
                         -- Latch data from mainboard.
                         CPU_DATA_IN        <= Z80_DATA;
-                        FSM_STATUS         <= '0';
                         Z80_RFSHni         <= '0';
 
                     when RefreshCycle_11 =>
                         -- Falling edge of T3 activates the MREQ line.
                         Z80_MREQni         <= '0';
+                        FSM_STATUS         <= '0';
 
                     when RefreshCycle_20 =>
 
@@ -978,5 +988,9 @@ begin
     -- DAC clocks.
     --VGA_PXL_CLK           <= CLK_50M;
     MONO_PXL_CLK                 <= VGA_PXL_CLK;
+
+    -- Currently unassigned.
+    VGA_COLR                     <= '0';
+    MONO_RSV                     <= '0';
                       
 end architecture;

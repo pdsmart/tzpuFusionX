@@ -9,9 +9,9 @@
 --                  which targets the MZ-80A host.
 --
 -- Credits:         
--- Copyright:       (c) 2018-22 Philip Smart <philip.smart@net2net.org>
+-- Copyright:       (c) 2018-23 Philip Smart <philip.smart@net2net.org>
 --
--- History:         Nov 2022 - Snapshot taken from the MZ-2000 version of the tzpuFusionX source.
+-- History:         Nov 2022 v1.0 - Snapshot taken from the MZ-2000 version of the tzpuFusionX source.
 --
 ---------------------------------------------------------------------------------------------------------
 -- This source file is free software: you can redistribute it and-or modify

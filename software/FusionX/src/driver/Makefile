@@ -1,6 +1,6 @@
-MODEL       := MZ2000
+#MODEL       := MZ2000
 #MODEL       := MZ700
-#MODEL       := MZ80A
+MODEL       := MZ80A
 KERNEL      := $(PWD)/../../../linux/kernel
 FUSIONX     := $(PWD)/../..
 CROSS       := arm-linux-gnueabihf-
