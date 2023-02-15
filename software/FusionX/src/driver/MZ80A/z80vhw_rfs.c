@@ -12,7 +12,8 @@
 // Credits:         
 // Copyright:       (c) 2019-2023 Philip Smart <philip.smart@net2net.org>
 //
-// History:         Feb 2023 - Initial write based on the RFS hardware.
+// History:         Feb 2023 v1.0 - Initial write based on the RFS hardware.
+//                           v1.1 - Bug fix, write logic was one byte out of kinter.
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -54,8 +55,8 @@
 // Device constants.
 #define MROM_ADDR                             0x00000                                   // Base address of the 512K Monitor ROM.
 #define USER_ROM_I_ADDR                       0x80000                                   // Base address of the first 512K User ROM.
-#define USER_ROM_II_ADDR                      0x80000                                   // Base address of the second 512K User ROM.
-#define USER_ROM_III_ADDR                     0x80000                                   // Base address of the third 512K User ROM.
+#define USER_ROM_II_ADDR                      0x100000                                  // Base address of the second 512K User ROM.
+#define USER_ROM_III_ADDR                     0x180000                                  // Base address of the third 512K User ROM.
 
 // RFS Control Registers.
 #define BNKCTRLRST                            0xEFF8                                    // Bank control reset, returns all registers to power up default.
@@ -86,7 +87,7 @@
 #define BNKCTRLDEF                            BBMOSI+SDCS+BBCLK                         // Default on startup for the Bank Control register.
 
 // SD Drive constants.
-#define SD_CARD_FILENAME                      "/customer/SHARP_MZ80A_RFS_CPM_IMAGE_1.img"// SD Card Binary Image.
+#define SD_CARD_FILENAME                      "/apps/FusionX/SD/SHARP_MZ80A_RFS_CPM_IMAGE_1.img"// SD Card Binary Image.
 
 // MMC/SD command (SPI mode)
 #define CMD0                                  0x40 + 0                                  // GO_IDLE_STATE 
@@ -318,18 +319,19 @@ void rfsSDCard(void)
             RFSCtrl.sd.cmdBuf[RFSCtrl.sd.rcvCntr++] = RFSCtrl.sd.regDataOut;
             //pr_info("Received:%02x(%d)\n", RFSCtrl.sd.regDataOut, RFSCtrl.sd.rcvCntr);
 
-            // 0xFF, 0xFE, <sector> 
-            if(RFSCtrl.sd.rcvCntr == (SD_SECSIZE+2) && RFSCtrl.sd.writeFlag == 1)
+            // 0xFE, <sector> <crc> 
+            if(RFSCtrl.sd.rcvCntr == (SD_SECSIZE+3) && RFSCtrl.sd.writeFlag == 1)
             {
                 static uint8_t response[] = { 0x05 };
 
                 // Write the sector to the SD card image.
-                RFSCtrl.sd.cmdBuf[SD_SECSIZE+2] = 0x00;  // CRC but we dont set, not needed in this application.
-                RFSCtrl.sd.cmdBuf[SD_SECSIZE+3] = 0x00;
-                noBytes = kernel_write(RFSCtrl.sd.fhandle, RFSCtrl.sd.cmdBuf, SD_SECSIZE+3, RFSCtrl.sd.fhandle->f_pos);
+               // RFSCtrl.sd.cmdBuf[SD_SECSIZE+2] = 0x00;  // CRC but we dont set, not needed in this application.
+               // RFSCtrl.sd.cmdBuf[SD_SECSIZE+3] = 0x00;
+                noBytes = kernel_write(RFSCtrl.sd.fhandle, &RFSCtrl.sd.cmdBuf[1], SD_SECSIZE, RFSCtrl.sd.fhandle->f_pos);
                 if(noBytes == 0) response[0] = 0x06; // Write error.
                 RFSCtrl.sd.respBuf = response;
                 RFSCtrl.sd.respLen = sizeof(response);
+                //pr_info("Writing %d bytes, CRC(%02x,%02x)\n", noBytes, RFSCtrl.sd.cmdBuf[SD_SECSIZE+2], RFSCtrl.sd.cmdBuf[SD_SECSIZE+3]);
 
                 // Reset to idle.
                 RFSCtrl.sd.rcvCntr = 0;
@@ -434,7 +436,7 @@ void rfsSDCard(void)
 
                             // Assemble LBA address and seek to the right location in the SD card image.
                             lbaAddr = RFSCtrl.sd.cmdBuf[1] << 24 | RFSCtrl.sd.cmdBuf[2] << 16 | RFSCtrl.sd.cmdBuf[3] << 8 | RFSCtrl.sd.cmdBuf[4];
-                            pr_info("Reading LBA %d\n", lbaAddr);
+                            //pr_info("Reading LBA %d\n", lbaAddr);
                             vfs_llseek(RFSCtrl.sd.fhandle, lbaAddr * SD_SECSIZE, SEEK_SET);
 
                             // Assemble response buffer including SD card sector.
@@ -471,15 +473,13 @@ void rfsSDCard(void)
                             
                             // Assemble LBA address and seek to the right location in the SD card image.
                             lbaAddr = RFSCtrl.sd.cmdBuf[1] << 24 | RFSCtrl.sd.cmdBuf[2] << 16 | RFSCtrl.sd.cmdBuf[3] << 8 | RFSCtrl.sd.cmdBuf[4];
-                            pr_info("Writing LBA %d\n", lbaAddr);
+                            //pr_info("Writing LBA %d\n", lbaAddr);
                             vfs_llseek(RFSCtrl.sd.fhandle, lbaAddr * SD_SECSIZE, SEEK_SET);
 
                             // Assemble response which is Ready, data can now be sent for sector. Set write flag so we know data is being received as sector data.
                             RFSCtrl.sd.respBuf   = response;
                             RFSCtrl.sd.respLen   = sizeof(response);
                             RFSCtrl.sd.writeFlag = 1;
-                            RFSCtrl.sd.cmdBuf[0] = 0xFE;  // Place start of data token at beginning of buffer.
-                            RFSCtrl.sd.rcvCntr   = 1;
                         }
                         break;
 
@@ -538,7 +538,7 @@ void rfsSDCard(void)
                         break;
 
                     default:
-                        pr_info("UNHANDLED REQUESTn");
+                        pr_info("UNHANDLED REQUEST:%02x,%02x,%02x,%02x,%02x,%02x\n", RFSCtrl.sd.cmdBuf[0],RFSCtrl.sd.cmdBuf[1],RFSCtrl.sd.cmdBuf[2],RFSCtrl.sd.cmdBuf[3],RFSCtrl.sd.cmdBuf[4],RFSCtrl.sd.cmdBuf[5]);
                         {
                             static const uint8_t response[] = { 0x00 };
                             RFSCtrl.sd.respBuf = response;
