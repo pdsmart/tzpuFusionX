@@ -116,7 +116,10 @@ enum CTRL_COMMANDS {
     Z80_CMD_DEL_DEVICE               = 11,
     CPLD_CMD_SEND_CMD                = 12,
     CPLD_CMD_SPI_TEST                = 13,
-    CPLD_CMD_PRL_TEST                = 14
+    CPLD_CMD_PRL_TEST                = 14,
+  #if(DEBUG_ENABLED != 0)
+    Z80_CMD_DEBUG                    = 15,
+  #endif
 };
 
 
@@ -242,7 +245,7 @@ int memoryDump(uint32_t memaddr, uint32_t memsize, uint8_t memoryType, uint32_t 
             {
                 case 16:
                     if(pnt+i < endAddr)
-                        printf("%04X", memoryType == 1 ? (uint16_t)Z80RAM[pnt+i] : memoryType == 2 ? (uint16_t)Z80ROM[pnt+i] : memoryType == 3 ? (uint16_t)Z80Ctrl->page[pnt+i] : (uint16_t)Z80Ctrl->iopage[pnt+i]);
+                        printf("%04X", memoryType == 1 ? (uint16_t)Z80RAM[pnt+i] : memoryType == 2 ? (uint16_t)Z80ROM[pnt+i] : memoryType == 3 ? (uint16_t)*(*(Z80Ctrl->page + Z80Ctrl->memoryMode) + (pnt+i)) : (uint16_t)Z80Ctrl->iopage[pnt+i]);
                     else
                         printf("    ");
                     i++;
@@ -250,7 +253,7 @@ int memoryDump(uint32_t memaddr, uint32_t memsize, uint8_t memoryType, uint32_t 
 
                 case 32:
                     if(pnt+i < endAddr)
-                        printf("%08lX", memoryType == 1 ? (uint32_t)Z80RAM[pnt+i] : memoryType == 2 ? (uint32_t)Z80ROM[pnt+i] : memoryType == 3 ? (uint32_t)Z80Ctrl->page[pnt+i] : (uint32_t)Z80Ctrl->iopage[pnt+i]);
+                        printf("%08lX", memoryType == 1 ? (uint32_t)Z80RAM[pnt+i] : memoryType == 2 ? (uint32_t)Z80ROM[pnt+i] : memoryType == 3 ? (uint32_t)*(*(Z80Ctrl->page + Z80Ctrl->memoryMode) + (pnt+i)) : (uint32_t)Z80Ctrl->iopage[pnt+i]);
                     else
                         printf("        ");
                     i++;
@@ -259,7 +262,7 @@ int memoryDump(uint32_t memaddr, uint32_t memsize, uint8_t memoryType, uint32_t 
                 case 8:
                 default:
                     if(pnt+i < endAddr)
-                        printf("%02X", memoryType == 1 ? (uint8_t)Z80RAM[pnt+i] : memoryType == 2 ? (uint8_t)Z80ROM[pnt+i] : memoryType == 3 ? (uint8_t)Z80Ctrl->page[pnt+i] : (uint8_t)Z80Ctrl->iopage[pnt+i]);
+                        printf("%02X", memoryType == 1 ? (uint8_t)Z80RAM[pnt+i] : memoryType == 2 ? (uint8_t)Z80ROM[pnt+i] : memoryType == 3 ? (uint8_t)*(*(Z80Ctrl->page + Z80Ctrl->memoryMode) + (pnt+i)) : (uint8_t)Z80Ctrl->iopage[pnt+i]);
                     else
                         printf("  ");
                     i++;
@@ -274,7 +277,7 @@ int memoryDump(uint32_t memaddr, uint32_t memsize, uint8_t memoryType, uint32_t 
         // print single ascii char
         for (i=0; i < displayWidth; i++)
         {
-            c = memoryType == 1 ? (char)Z80RAM[pnt+i] : memoryType == 2 ? (char)Z80ROM[pnt+i] : memoryType == 3 ? (char)Z80Ctrl->page[pnt+i] : (char)Z80Ctrl->iopage[pnt+i];
+            c = memoryType == 1 ? (char)Z80RAM[pnt+i] : memoryType == 2 ? (char)Z80ROM[pnt+i] : memoryType == 3 ? (char)*(*(Z80Ctrl->page + Z80Ctrl->memoryMode) + (pnt+i)) : (char)Z80Ctrl->iopage[pnt+i];
             if ((pnt+i < endAddr) && (c >= ' ') && (c <= '~'))
                 fputc((char)c, stdout);
             else
@@ -320,47 +323,57 @@ memoryDumpExit:
 
 // Method to load a program or data file into the Z80 memory. First load into Virtual memory and then trigger a sync to bring Host RAM in line.
 //
-int z80load(int fdZ80, char *fileName, uint32_t romLoadAddr, uint8_t useROM)
+int z80load(int fdZ80, char *fileName, uint32_t memLoadAddr, long fileOffset, long fileLen, uint8_t memoryType, uint8_t isMZF)
 {
     // Locals.
     struct ioctlCmd ioctlCmd;
     int             result = 0;
     long            fileSize;
     t_svcDirEnt     mzfHeader;
+    FILE            *ptr;
 
-    // Open the file and read directly into the Virtual memory via the share.
-    FILE *ptr;
-    ptr = fopen(fileName, "rb");
-    if(ptr)
+    // Sanity check.
+    if(isMZF == 0 && (fileOffset == -1 && fileLen != -1 || fileOffset != -1 && fileLen == -1))
     {
-        // Get size of file for sanity checks.
-        fseek(ptr, 0, SEEK_END);
-        fileSize = ftell(ptr);
-        fseek(ptr, 0, SEEK_SET);
+        printf("Error: Both --offset and --len are required, dont specify to use entire file.\n");
+        result = 1;
+    }
+    if(result == 0)
+    {
+        // Open the file and read directly into the Virtual memory via the share.
+        ptr = fopen(fileName, "rb");
+        if(ptr)
+        {
+            // Get size of file for sanity checks.
+            fseek(ptr, 0, SEEK_END);
+            fileSize = ftell(ptr);
+            fseek(ptr, 0, SEEK_SET);
 
-        // Sanity checks.
-        if(useROM)
-        {
-            if((romLoadAddr+fileSize) > Z80_VIRTUAL_ROM_SIZE)
+            // Sanity checks.
+            if(isMZF == 0)
             {
-                printf("Error: Binary ROM file out of ROM bounds (Size=%ld, Load=%08x)\n", fileSize, romLoadAddr);
-                result = 1;
-            }
-        } else
-        {
-            // First the header.
-            fread((uint8_t *)&mzfHeader, MZF_HEADER_SIZE, 1, ptr);
-            if((mzfHeader.loadAddr + mzfHeader.fileSize) > Z80_VIRTUAL_RAM_SIZE)
+                fileSize = (fileLen == -1 ? fileSize : fileLen);
+                if((memoryType == 1 && (memLoadAddr+fileSize) > Z80_VIRTUAL_RAM_SIZE) || (memoryType == 2 && (memLoadAddr+fileSize) > Z80_VIRTUAL_ROM_SIZE))
+                {
+                    printf("Error: Binary file out of memory bounds (Size=%ld, Load=%08x)\n", fileSize, memLoadAddr);
+                    result = 1;
+                }
+            } else
             {
-                printf("Error: MZF file out of RAM bounds (Size=%ld, Load=%08x)\n", fileSize, romLoadAddr);
-                result = 1;
+                // First the header.
+                fread((uint8_t *)&mzfHeader, MZF_HEADER_SIZE, 1, ptr);
+                if((mzfHeader.loadAddr + mzfHeader.fileSize) > Z80_VIRTUAL_RAM_SIZE)
+                {
+                    printf("Error: MZF file out of RAM bounds (Size=%ld, Load=%08x)\n", fileSize, memLoadAddr);
+                    result = 1;
+                }
             }
         }
-    }
-    else
-    {
-        printf("Couldnt open file:%s\n", fileName);
-        result = 1;
+        else
+        {
+            printf("Couldnt open file:%s\n", fileName);
+            result = 1;
+        }
     }
 
     // No file errors, read contents into Z80 memory.
@@ -371,11 +384,35 @@ int z80load(int fdZ80, char *fileName, uint32_t romLoadAddr, uint8_t useROM)
         ioctlCmd.cmd = IOCTL_CMD_Z80_PAUSE;
         ioctl(fdZ80, IOCTL_CMD_SEND, &ioctlCmd);
 
-        if(useROM)
+        if(isMZF == 0)
         {
+            // Position file if offset provided.
+            if(fileOffset != -1) fseek(ptr, fileOffset, SEEK_SET);
+
             // Now read in the data.
-            fread(&Z80ROM[romLoadAddr], fileSize, 1, ptr);
-            printf("Loaded %s, Size:%08x, Addr:%08x\n", fileName, fileSize, romLoadAddr);
+            switch(memoryType)
+            {
+                case 0:
+                    break;
+
+                case 2:
+                    fread(&Z80ROM[memLoadAddr], fileSize, 1, ptr);
+                    break;
+
+                case 3:
+                    fread(&Z80Ctrl->page[memLoadAddr], fileSize, 1, ptr);
+                    break;
+
+                case 4:
+                    fread(&Z80Ctrl->iopage[memLoadAddr], fileSize, 1, ptr);
+                    break;
+
+                case 1:
+                default:
+                    fread(&Z80RAM[memLoadAddr], fileSize, 1, ptr);
+                    break;
+            }
+            printf("Loaded %s, Size:%08x, Addr:%08x, memoryType:%d\n", fileName, fileSize, memLoadAddr, memoryType);
         }
         else
         {
@@ -423,7 +460,7 @@ int z80load(int fdZ80, char *fileName, uint32_t romLoadAddr, uint8_t useROM)
 
 // Method to save FusionX memory to a local file.
 //
-int z80save(int fdZ80, char *fileName, long addr, long size, long memoryType)
+int z80save(int fdZ80, char *fileName, long addr, long size, uint8_t memoryType)
 {
     // Locals.
     struct ioctlCmd ioctlCmd;
@@ -447,6 +484,7 @@ int z80save(int fdZ80, char *fileName, long addr, long size, long memoryType)
 
             case 2:
                 fwrite(&Z80ROM[addr], size, 1, ptr);
+                break;
 
             case 3:
                 fwrite(&Z80Ctrl->page[addr], size, 1, ptr);
@@ -584,6 +622,14 @@ int ctrlCmd(int fdZ80, enum CTRL_COMMANDS cmd, long param1, long param2, long pa
             ioctlCmd.cmd = IOCTL_CMD_USE_VIRTUAL_RAM;
             ioctl(fdZ80, IOCTL_CMD_SEND, &ioctlCmd);
             break;
+      #if(DEBUG_ENABLED != 0)
+        case Z80_CMD_DEBUG:
+            // Send command to enable/disable debugging output.
+            ioctlCmd.cmd = IOCTL_CMD_DEBUG;
+            ioctlCmd.debug.level = (uint8_t)param1;
+            ioctl(fdZ80, IOCTL_CMD_SEND, &ioctlCmd);
+            break;
+      #endif
         case Z80_CMD_MEMORY_TEST:
             // Send command to test the SPI.
             ioctlCmd.cmd = IOCTL_CMD_Z80_MEMTEST;
@@ -672,10 +718,14 @@ void showArgs(char *progName, struct optparse *options)
     printf("                          = DELDEV  --device <RFS, TZPU>                           # Remove a virtual device from the Z80 configuration.\n");
     printf("                          = SPEED   --mult <1, 2, 4, 8, 16, 32, 64, 128>           # In Virtual RAM mode, set CPU speed to base clock x factor.\n");
     printf("                          = LOADMZF --file <mzf filename>                          # Load MZF file into RAM.\n");
-    printf("                          = LOADROM --file <binary filename> --addr <24 bit addr>  # Load contents of binary file into ROM at address. default = 0x000000.\n");
+    printf("                                                                                   # Load contents of binary file into memory at address. default = 0x000000.\n");
+    printf("                          = LOADMEM --file <binary filename> --addr <24 bit addr> --type <0 - Host RAM, 1 = Virtual RAM, 2 = Virtual ROM> [--offset <offset> --len <length>]\n");
     printf("                          = SAVE    --file <filename>  --addr <24bit addr> --end <24bit addr> [--size <24bit>] --type <0 - Host RAM, 1 = Virtual RAM, 2 = Virtual ROM, 3 = PageTable, 4 = IOPageTable>\n");
     printf("                          = DUMP    --addr <24bit addr> --end <24bit addr> [--size <24bit>] --type <0 - Host RAM, 1 = Virtual RAM, 2 = Virtual ROM, 3 = PageTable, 4 = IOPageTable>\n");
     printf("                          = CPLDCMD --data <32bit command>                         # Send adhoc 32bit command to CPLD.\n");
+  #if(DEBUG_ENABLED != 0)
+    printf("                          = DEBUG --level <level>                                  # 0 = off, 1 = driver, 2 = k64f, 3 = both.\n");
+  #endif
     printf("                          = Z80TEST                                                # Perform various debugging tests\n");
     printf("                          = SPITEST                                                # Perform SPI testing\n");
     printf("                          = PRLTEST                                                # Perform Parallel Bus testing\n");
@@ -696,9 +746,14 @@ int main(int argc, char *argv[])
     long       speedMultiplier   = 1;
     long       startAddr         = 0x0000;
     long       endAddr           = 0x1000;
-    int        memoryType        = 0;
+    long       fileOffset        = -1;
+    long       fileLen           = -1;
+  #if(DEBUG_ENABLED != 0)
+    int        debugLevel        = 0;
+  #endif
     int        helpFlag          = 0;
     int        verboseFlag       = 0;
+    uint8_t    memoryType        = 0;
 
     // Define parameters to be processed.
     struct optparse options;
@@ -714,6 +769,11 @@ int main(int argc, char *argv[])
         {"end",           'e',  OPTPARSE_REQUIRED},
         {"size",          's',  OPTPARSE_REQUIRED},
         {"device",        'D',  OPTPARSE_REQUIRED},
+        {"offset",        'O',  OPTPARSE_REQUIRED},
+        {"len",           'L',  OPTPARSE_REQUIRED},
+      #if(DEBUG_ENABLED != 0)
+        {"level",         'l',  OPTPARSE_REQUIRED},
+      #endif
         {"verbose",       'v',  OPTPARSE_NONE},
         {"save",          '0',  OPTPARSE_NONE},
         {"dump",          '1',  OPTPARSE_NONE},
@@ -726,6 +786,7 @@ int main(int argc, char *argv[])
         {"continue",      '8',  OPTPARSE_NONE},
         {"speed",         '9',  OPTPARSE_NONE},
         {"cpldcmd",       '+',  OPTPARSE_NONE},
+        {"debug",         'x',  OPTPARSE_NONE},
         {"adddev",        '-',  OPTPARSE_NONE},
         {"deldev",        ':',  OPTPARSE_NONE},
         {0}
@@ -768,11 +829,30 @@ int main(int argc, char *argv[])
                 endAddr = startAddr + strtol(options.optarg, NULL, 0);
                 //printf("End Addr:%04x\n", endAddr);
                 break;
+              
+            // File offset.
+            case 'O':
+                fileOffset = strtol(options.optarg, NULL, 0);
+                //printf("File Offset:%04x\n", fileOffset);
+                break;
+              
+            // Length.
+            case 'L':
+                fileLen = strtol(options.optarg, NULL, 0);
+                //printf("File Len:%04x\n", fileLen);
+                break;
 
             // Memory type flag, 0 = host, 1 = virtual RAM, 2 = virtual ROM, 3 = page table, 4 = iopage table.
             case 'T':
                 memoryType = atoi(options.optarg);
                 break;
+               
+          #if(DEBUG_ENABLED != 0)
+            // Debug level, 0 = off, 1 = driver, 2 = k64f, 3 = both.
+            case 'E':
+                debugLevel = atoi(options.optarg);
+                break;
+          #endif
 
             // Filename.
             case 'f':
@@ -800,7 +880,7 @@ int main(int argc, char *argv[])
                 strcpy(cmd, "LOADMZF");
                 break;
             case '3':
-                strcpy(cmd, "LOADROM");
+                strcpy(cmd, "LOADMEM");
                 break;
             case '4':
                 strcpy(cmd, "RESET");
@@ -828,6 +908,12 @@ int main(int argc, char *argv[])
                 break;
             case ':':
                 strcpy(cmd, "DELDEV");
+                break;
+          #if(DEBUG_ENABLED != 0)
+            case 'x':
+                strcpy(cmd, "DEBUG");
+                break;
+          #endif
 
             // Verbose mode.
             case 'v':
@@ -882,11 +968,11 @@ int main(int argc, char *argv[])
     // Basic string to method mapping. Started off with just 1 or two but has grown, may need a table!
     if(strcasecmp(cmd, "LOADMZF") == 0)
     {
-        z80load(fdZ80, fileName, 0, 0);
+        z80load(fdZ80, fileName, 0, -1, -1, 1, 1);
     } else
-    if(strcasecmp(cmd, "LOADROM") == 0)
+    if(strcasecmp(cmd, "LOADMEM") == 0)
     {
-        z80load(fdZ80, fileName, startAddr, 1);
+        z80load(fdZ80, fileName, startAddr, fileOffset, fileLen, memoryType, 0);
     } else
     if(strcasecmp(cmd, "RESET") == 0)
     {
@@ -940,6 +1026,12 @@ int main(int argc, char *argv[])
     {
         ctrlCmd(fdZ80, CPLD_CMD_SEND_CMD, hexData, 0, 0);
     } else
+  #if(DEBUG_ENABLED != 0)
+    if(strcasecmp(cmd, "DEBUG") == 0)
+    {
+        ctrlCmd(fdZ80, Z80_CMD_DEBUG, debugLevel, 0, 0);
+    } else
+  #endif
 
     // Test methods, if the code is built-in to the driver.
     if(strcasecmp(cmd, "Z80TEST") == 0)

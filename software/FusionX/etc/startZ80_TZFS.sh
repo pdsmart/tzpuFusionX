@@ -2,7 +2,7 @@
 
 FUSIONXDIR=/apps/FusionX
 
-# Setup screen width, used to load correct RFS ROM images.
+# Setup screen width, used to load correct Monitor ROM image.
 SCREENWIDTH=40
 if [[ "$#" -ne 0 ]]; then
     if [[ "$1" -eq 80 ]]; then
@@ -32,17 +32,18 @@ rmmod z80drv 2>/dev/null
 insmod z80drv.ko
 sleep 1
 
-# Load the original RFS ROM images.
-${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/rom/MROM_256_${SCREENWIDTH}c.bin         --addr 0x000000  --type 1
-${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/rom/USER_ROM_256_${SCREENWIDTH}c.bin     --addr 0x80000   --type 1
-${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/rom/USER_ROM_II_256_${SCREENWIDTH}c.bin  --addr 0x100000  --type 1
-${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/rom/USER_ROM_III_256_${SCREENWIDTH}c.bin --addr 0x180000  --type 1
+# Load the original Monitor and TZFS ROM images. This is done in the K64F daemon but can be manually enabled.
+#${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/roms/monitor_${SCREENWIDTH}c_sa1510.rom        --addr 0x000000  --type 1
+#${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/roms/tzfs.rom --offset 0x000000 --len 0x001800 --addr 0x00E800  --type 1
+#${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/roms/tzfs.rom --offset 0x001800 --len 0x001000 --addr 0x01F000  --type 1
+#${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/roms/tzfs.rom --offset 0x002800 --len 0x001000 --addr 0x02F000  --type 1
+#${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/roms/tzfs.rom --offset 0x003800 --len 0x001000 --addr 0x03F000  --type 1
 
-# Add the RFS Virtual Hardware to the driver.
-${FUSIONXDIR}/bin/z80ctrl --adddev --device rfs
+# Add the TZPU Virtual Hardware to the driver.
+${FUSIONXDIR}/bin/z80ctrl --adddev --device tzpu
 
-# Start the Z80 (ie. MZ-80A virtual processor).
-${FUSIONXDIR/bin/z80ctrl --start
+# Start the K64F Virtual CPU Emulation.
+${FUSIONXDIR}/bin/k64fcpu &
 
 # Ensure the system is set for performance mode with max frequency.
 # NB: Enabling this prior to starting the Z80 results in a kernel error.

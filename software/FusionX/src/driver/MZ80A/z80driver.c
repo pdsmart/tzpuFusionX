@@ -29,6 +29,12 @@
 //                                   in host memory at full speed.
 //                  Feb 2023 - v1.2  Added MZ-80A Rom Filing System device driver. This allows the FusionX
 //                                   hosted in an MZ-80A to run the original RFS Monitor and software.
+//                  Feb 2023 - v11.3 Added tranZPUter SW device driver. This allows the FusionX hosted
+//                                   in any supported host to run TZFS and the updated applications
+//                                   such as CP/M, SA-5510 Basic, MS-Basic etc. Adding this device driver
+//                                   prepares the ground to add the SOM GPU as the Video emulation of
+//                                   the Sharp machines.
+//
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -132,6 +138,10 @@ static inline void decodeMemoryMapSetup(zuint16 address, zuint8 data, uint8_t io
         rfsDecodeMemoryMapSetup(address, data, ioFlag, readFlag);
     } else
   #endif
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_TZPU)
+    {
+        rfsDecodeMemoryMapSetup(address, data, ioFlag, readFlag);
+    } else
     {
         // Decoding memory address or I/O address?
         if(ioFlag == 0)
@@ -332,7 +342,7 @@ static inline void decodeMemoryMapSetup(zuint16 address, zuint8 data, uint8_t io
                                             setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM, idx);
                                         }
                                     }
-                                    z80_instant_reset(&Z80CPU); 
+                                    resetZ80();
                                 }
                                 break;
 
@@ -386,9 +396,9 @@ static inline void decodeMemoryMapSetup(zuint16 address, zuint8 data, uint8_t io
     return;
 }
 
-// Method to decode address and invoke virtual hardware to handle accordingly.
+// Method to decode address and invoke virtual RAM, ROM or hardware to handle accordingly.
 //
-static inline zuint8 readVirtualHW(zuint16 address, uint8_t ioFlag)
+static inline zuint8 readVirtual(zuint16 address, uint8_t ioFlag)
 {
     // Locals.
     //
@@ -400,20 +410,27 @@ static inline zuint8 readVirtualHW(zuint16 address, uint8_t ioFlag)
     // RFS only has memory mapped registers.
     if((Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_RFS) && ioFlag == 0)
     {
-        data = rfsRead(address);
-    }
+        data = rfsRead(address, ioFlag);
+    } else
   #endif
-    if((Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_TZPU) && (ioFlag == 0 || isVirtualDevice(address, VIRTUAL_DEVICE_TZPU)))
+
+    if((Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_TZPU))
     {
-        data = tzpuRead(address);
+        data = tzpuRead(address, ioFlag);
+    }
+
+    else if(isVirtualMemory(address))
+    {
+        // Retrieve data from virtual memory.
+        data = isVirtualROM(address) ? readVirtualROM(address) : readVirtualRAM(address);
     }
 
     return(data);
 }
 
-// Method to decode address and invoke virtual hardware to handle accordingly.
+// Method to decode address and invoke virtual ROM, RAM or hardware to handle accordingly.
 //
-static inline void writeVirtualHW(zuint16 address, zuint8 data, uint8_t ioFlag)
+static inline void writeVirtual(zuint16 address, zuint8 data, uint8_t ioFlag)
 {
     // Locals.
   
@@ -423,12 +440,19 @@ static inline void writeVirtualHW(zuint16 address, zuint8 data, uint8_t ioFlag)
     // RFS only has memory mapped registers.
     if((Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_RFS) && ioFlag == 0)
     {
-        rfsWrite(address, data);
-    }
+        rfsWrite(address, data, ioFlag);
+    } else
   #endif
-    if((Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_TZPU) && (ioFlag == 0 || isVirtualDevice(address, VIRTUAL_DEVICE_TZPU)))
+
+    if((Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_TZPU))
     {
-        tzpuWrite(address, data);
+        tzpuWrite(address, data, ioFlag);
+    }
+
+    else if(isVirtualRAM(address))
+    {
+        // Update virtual memory.
+        writeVirtualRAM(address, data);
     }
 
     return;
@@ -513,15 +537,10 @@ static zuint8 z80_read(void *context, zuint16 address)
         // Pause until the Last T-State is detected.
         //while(CPLD_LAST_TSTATE() == 0);
     }
-    else if(isVirtualHW(address))
+    else if(isVirtual(address))
     {
-        // Decode the address and if virtual logic exists, invoke it.
-        data = readVirtualHW(address, 0);
-    }
-    else if(isVirtualMemory(address))
-    {
-        // Retrieve data from virtual memory.
-        data = isVirtualROM(address) ? readVirtualROM(address) : readVirtualRAM(address);
+        // Decode the address and if virtual RAM, ROM or logic exists, invoke it.
+        data = readVirtual(address, 0);
     }
 
     // Keyport data? Store.
@@ -533,6 +552,12 @@ static zuint8 z80_read(void *context, zuint16 address)
     {
         Z80Ctrl->keyportHotKey = 0x01;
     }
+  #if(DEBUG_ENABLED & 1)
+    if(Z80Ctrl->debug & 0x01)
+    {
+        pr_info("Read:%04x,%02x,%d\n", address, data, CPLD_Z80_INT());
+    }
+  #endif
 
     return(data);
 }
@@ -566,17 +591,22 @@ static void z80_write(void *context, zuint16 address, zuint8 data)
         // Pause until the Last T-State is detected.
         //while(CPLD_LAST_TSTATE() == 0);
     }
-    else if(isVirtualHW(address))
+    // Virtual ROM, technically isnt writable, but some devices such as the TZPU use RAM as ROM and mask it 
+    // according to operating mode. 
+    // Virtual Hardware is driver dependent, common method called to write to ROM/HW.
+    // Virtual RAM is generally a direct write but any driver may change the action.
+    else if(isVirtual(address))
     {
-        // Decode the address and if virtual logic exists, invoke and write to it.
-        writeVirtualHW(address, data, 0);
+        // Decode the address and process.
+        writeVirtual(address, data, 0);
     }
-    else if(isVirtualRAM(address))
+  #if(DEBUG_ENABLED & 1)
+    if(Z80Ctrl->debug & 0x01)
     {
-        // Update virtual memory.
-        writeVirtualRAM(address, data);
+        pr_info("Write:%04x,%02x,%d\n", address, data, CPLD_Z80_INT());
     }
-    // Cannot write to virtual ROM so no logic.
+  #endif
+    return;
 }
 
 // Primary Opcode fetch method. This method is called each time a single or multi-byte opcode is
@@ -628,12 +658,18 @@ static zuint8 z80_fetch_opcode(void *context, zuint16 address)
             for(idx=0; idx < Z80Ctrl->cpuGovernorDelayRAM; idx++);
         }
     }
-//if(address < 0x9e0 || address > 0xA00)
-//if(address >= 0xE800 && address < 0xF000)
-//pr_info("Fetch:%04x(%08x):%02x\n", address,   getPageAddr(address, MEMORY_TYPE_VIRTUAL_MASK),  opcode); 
+
     // Check if this operation is I/O or known memory I/O so we can look ahead to optimise sending request to CPLD.
     lookAhead(address, opcode, isVirtualROM((address+1)) ? readVirtualROM((address+1)) : readVirtualRAM((address+1)));
 
+  #if(DEBUG_ENABLED & 1)
+    if(Z80Ctrl->debug & 0x01)
+    {
+        if(address < 0xF036 || address > 0xF197)
+            pr_info("Fetch:%04x,%02x,%d\n", address, opcode, CPLD_Z80_INT());
+    }
+    //if(address >= 0xE800) pr_info("Fetch:%04x,%02x\n", address, opcode);
+  #endif
     return(opcode);
 }
 
@@ -669,9 +705,19 @@ static zuint8 z80_fetch(void *context, zuint16 address)
     }
 
     // Check for interrupts.
-    if(CPLD_Z80_NMI() != 0) z80_nmi(&Z80CPU);
+    if(CPLD_Z80_NMI() != 0)
+    {
+        z80_nmi(&Z80CPU);
+    }
     z80_int(&Z80CPU, CPLD_Z80_INT() != 0);
-//if(CPLD_Z80_INT() != 0) pr_info("Interrupt High\n"); 
+
+  #if(DEBUG_ENABLED & 1)
+    if(Z80Ctrl->debug & 0x01)
+    {
+        if(address < 0xF036 || address > 0xF197)
+            pr_info("FetchB:%04x,%02x,%d\n", address, data, CPLD_Z80_INT());
+    }
+  #endif
     return(data);
 }
 
@@ -705,9 +751,12 @@ static zuint8 z80_in(void *context, zuint16 port)
     if(isVirtualIO(port))
     {
         // Virtual I/O - call the handler.
-        value = readVirtualHW(port, 1);
+        value = readVirtual(port, 1);
     }
-//pr_info("z80_in:0x%x, 0x%x\n", port, value);
+
+  #if(DEBUG_ENABLED & 1)
+    if(Z80Ctrl->debug & 0x01) pr_info("z80_in:0x%x, 0x%x\n", port, value);
+  #endif
     return(value);
 }
 
@@ -741,9 +790,12 @@ static void z80_out(void *context, zuint16 port, zuint8 value)
     if(isVirtualIO(port))
     { 
         // Decode the address and if virtual logic exists, invoke and write to it.
-        writeVirtualHW(port, value, 1);
+        writeVirtual(port, value, 1);
     }
-//pr_info("z80_out:0x%x, 0x%x\n", port, value);
+
+  #if(DEBUG_ENABLED & 1)
+    if(Z80Ctrl->debug & 0x01) pr_info("z80_out:0x%x, 0x%x\n", port, value);
+  #endif
 }
 
 // NOP - No Operation method. This instruction is used for timing, padding out an application or during
@@ -760,7 +812,6 @@ static zuint8 z80_nop(void *context, zuint16 address)
         // If autorefresh is not enabled, send a single refresh request.
         if(Z80Ctrl->refreshDRAM == 0)
             SPI_SEND8(CPLD_CMD_REFRESH);
-pr_info("NOP");
     }
     return 0x00;
 }
@@ -816,7 +867,19 @@ static void z80_ldra(void *context)
 static void z80_reti(void *context)
 {
     Z_UNUSED(context)
-    pr_info("z80_reti\n");
+    if(CPLD_Z80_INT() != 0)
+    {
+      #if(DEBUG_ENABLED & 1)
+        if(Z80Ctrl->debug & 0x01)
+        {
+            pr_info("LOCKUP:%d\n", CPLD_Z80_INT());
+        }
+      #endif
+        z80_int(&Z80CPU, false);
+    }
+  #if(DEBUG_ENABLED & 1)
+    if(Z80Ctrl->debug & 0x01) pr_info("z80_reti\n");
+  #endif
 }
 static void z80_retn(void *context)
 {
@@ -859,8 +922,9 @@ int thread_z80(void * thread_nr)
         // Reset pressed?
         if(CPLD_RESET())
         {
-            z80_instant_reset(&Z80CPU); 
-            setupMemory(Z80Ctrl->defaultPageMode);
+            resetZ80();
+            //z80_instant_reset(&Z80CPU); 
+            //setupMemory(Z80Ctrl->defaultPageMode);
 
             // Wait for release before restarting CPU.
             while(CPLD_RESET());
@@ -905,8 +969,18 @@ int thread_z80(void * thread_nr)
 static int z80drv_release(struct inode *inodep, struct file *filep)
 {    
     // Locals.
+    struct task_struct *task = get_current();
 
-    mutex_unlock(&Z80DRV_MUTEX);
+    // Is this the K64F de-registering?
+    if(Z80Ctrl->ioTask == task) 
+    {
+        Z80Ctrl->ioTask = NULL;
+        pr_info("I/O processor stopped.\n");
+    } else
+    {
+        // Free up the mutex preventing more than one control process taking control at the same time.
+        mutex_unlock(&Z80DRV_MUTEX);
+    }
     //pr_info("z80drv: Device successfully closed\n");
 
     return(0);
@@ -920,16 +994,28 @@ static int z80drv_open(struct inode *inodep, struct file *filep)
 {
     // Locals.
     int ret = 0; 
+    struct task_struct *task = get_current();
 
+    // I/O Processor?
+    if(Z80Ctrl->ioTask == NULL && strcmp(task->comm, IO_PROCESSOR_NAME) == 0)
+    {
+        Z80Ctrl->ioTask = task;
+        pr_info("Registering I/O Processor:%s\n", Z80Ctrl->ioTask->comm);
+    } else
+    if(Z80Ctrl->ioTask != NULL && strcmp(task->comm, IO_PROCESSOR_NAME) == 0)
+    {
+        pr_info("I/O Processor already registered, PID:%d\n", Z80Ctrl->ioTask->pid);
+        ret = -EBUSY;
+        goto out;
+    } else
     if(!mutex_trylock(&Z80DRV_MUTEX))
     {
-        pr_alert("z80drv: device busy!\n");
+        pr_alert("z80drv: Device busy!\n");
         ret = -EBUSY;
         goto out;
     }
+    //pr_info("z80drv: Device successfully opened\n");
  
-    //pr_info("z80drv: Device opened\n");
-
 out:
     return(ret);
 }
@@ -1129,13 +1215,27 @@ void setupMemory(enum Z80_MEMORY_PROFILE mode)
     // Locals.
     uint32_t        idx;
 
+    // Check to see if the memory mode page has been allocated for current mode.
+    if(Z80Ctrl->page[Z80Ctrl->memoryMode] == NULL)
+    {
+        pr_info("Allocating memory page:%d\n", Z80Ctrl->memoryMode);
+        (Z80Ctrl->page[Z80Ctrl->memoryMode]) = (uint32_t *)kmalloc((MEMORY_BLOCK_SLOTS*sizeof(uint32_t)), GFP_KERNEL);
+        if ((Z80Ctrl->page[Z80Ctrl->memoryMode]) == NULL)
+        {
+            pr_info("z80drv: failed to allocate  memory mapping page:%d memory!", Z80Ctrl->memoryMode);
+            Z80Ctrl->page[Z80Ctrl->memoryMode] = Z80Ctrl->page[0];
+        }
+    }
+
+    // Setup default mode according to run mode, ie. Physical run or Virtual run.
+    //
     if(mode == USE_PHYSICAL_RAM)
     {
       #if(TARGET_HOST_MZ700 == 1)
       #endif
       #if(TARGET_HOST_MZ2000 == 1)
         // Initialise the page pointers and memory to use physical RAM.
-        for(idx=0x0000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
+        for(idx=0x0000; idx < MEMORY_PAGE_SIZE; idx+=MEMORY_BLOCK_GRANULARITY)
         {
             if(idx >= 0 && idx < 0x8000)
             {
@@ -1158,7 +1258,7 @@ void setupMemory(enum Z80_MEMORY_PROFILE mode)
       #endif
       #if(TARGET_HOST_MZ80A == 1)
         // Initialise the page pointers and memory to use physical RAM.
-        for(idx=0x0000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
+        for(idx=0x0000; idx < MEMORY_PAGE_SIZE; idx+=MEMORY_BLOCK_GRANULARITY)
         {
             if(idx >= 0 && idx < 0x1000)
             {
@@ -1185,7 +1285,7 @@ void setupMemory(enum Z80_MEMORY_PROFILE mode)
             }
         }
       #endif
-        for(idx=0x0000; idx < 0x10000; idx++)
+        for(idx=0x0000; idx < IO_PAGE_SIZE; idx++)
         {
             Z80Ctrl->iopage[idx] = idx | IO_TYPE_PHYSICAL_HW;
         }
@@ -1197,7 +1297,7 @@ void setupMemory(enum Z80_MEMORY_PROFILE mode)
       #if(TARGET_HOST_MZ2000 == 1)
         // Initialise the page pointers and memory to use virtual RAM.
         // MZ-2000 comes up in IPL mode where lower 32K is ROM and upper 32K is RAM remapped from 0x0000.
-        for(idx=0x0000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
+        for(idx=0x0000; idx < MEMORY_PAGE_SIZE; idx+=MEMORY_BLOCK_GRANULARITY)
         {
             if(idx >= 0 && idx < 0x8000)
             {
@@ -1208,7 +1308,7 @@ void setupMemory(enum Z80_MEMORY_PROFILE mode)
                 setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM, (Z80Ctrl->lowMemorySwap ? idx - 0x8000 : idx));
             }
         }
-        for(idx=0x0000; idx < 0x10000; idx++)
+        for(idx=0x0000; idx < IO_PAGE_SIZE; idx++)
         {
             Z80Ctrl->iopage[idx] = idx | IO_TYPE_PHYSICAL_HW;
         }
@@ -1217,34 +1317,30 @@ void setupMemory(enum Z80_MEMORY_PROFILE mode)
       #endif
       #if(TARGET_HOST_MZ80A == 1)
         // Initialise the page pointers and memory to use virtual RAM.
-        for(idx=0x0000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
+        for(idx=0x0000; idx < MEMORY_PAGE_SIZE; idx+=MEMORY_BLOCK_GRANULARITY)
         {
             if(idx >= 0 && idx < 0x1000)
             {
-                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_ROM, idx);
+                setMemoryType((idx/MEMORY_BLOCK_GRANULARITY), MEMORY_TYPE_VIRTUAL_ROM, idx);
             }
             else if(idx >= 0xD000 && idx < 0xE000)
             {
-                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_VRAM, idx);
+                setMemoryType((idx/MEMORY_BLOCK_GRANULARITY), MEMORY_TYPE_PHYSICAL_VRAM, idx);
             }
             else if(idx >= 0xE000 && idx < 0xE800)
             {
-                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_HW, idx);
+                setMemoryType((idx/MEMORY_BLOCK_GRANULARITY), MEMORY_TYPE_PHYSICAL_HW, idx);
             }
             else if(idx >= 0xE800 && idx < 0xF000)
             {
-                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_HW, idx);
+                setMemoryType((idx/MEMORY_BLOCK_GRANULARITY), MEMORY_TYPE_VIRTUAL_HW, idx);
             }
             else if(idx >= 0xF000 && idx < 0x10000)
             {
-                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_ROM, idx);
-            }
-            else
-            {
-                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM, idx);
+                setMemoryType((idx/MEMORY_BLOCK_GRANULARITY), MEMORY_TYPE_VIRTUAL_ROM, idx);
             }
         }
-        for(idx=0x0000; idx < 0x10000; idx++)
+        for(idx=0x0000; idx < IO_PAGE_SIZE; idx++)
         {
             Z80Ctrl->iopage[idx] = idx | IO_TYPE_PHYSICAL_HW;
         }
@@ -1292,7 +1388,9 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                 pr_info("IOCTL - Couldnt retrieve command!\n");
             else
             {
-                //pr_info("IOCTL - Command (%08x)\n", ioctlCmd.cmd);
+              #if(DEBUG_ENABLED & 1)
+                if(Z80Ctrl->debug & 0x01) pr_info("IOCTL - Command (%08x)\n", ioctlCmd.cmd);
+              #endif
                 switch(ioctlCmd.cmd)
                 {
                     // Command to stop the Z80 CPU and power off.
@@ -1303,7 +1401,9 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
                         z80_power(&Z80CPU, FALSE);
                         Z80_PC(Z80CPU) = 0;
-                        pr_info("Z80 stopped.\n");
+                      #if(DEBUG_ENABLED & 1)
+                        if(Z80Ctrl->debug & 0x01) pr_info("Z80 stopped.\n");
+                      #endif
                         break;
 
                     // Command to power on and start the Z80 CPU.
@@ -1311,19 +1411,25 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = Z80_RUNNING; mutex_unlock(&Z80RunModeMutex);
 
                         z80_power(&Z80CPU, TRUE);
-                        pr_info("Z80 started.\n");
+                      #if(DEBUG_ENABLED & 1)
+                        if(Z80Ctrl->debug & 0x01) pr_info("Z80 started.\n");
+                      #endif
                         break;
 
                     // Command to pause the Z80.
                     case IOCTL_CMD_Z80_PAUSE:
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = Z80_PAUSE; mutex_unlock(&Z80RunModeMutex);
-                        pr_info("Z80 paused.\n");
+                      #if(DEBUG_ENABLED & 1)
+                        if(Z80Ctrl->debug & 0x01) pr_info("Z80 paused.\n");
+                      #endif
                         break;
 
                     // Command to release a paused Z80.
                     case IOCTL_CMD_Z80_CONTINUE:
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = Z80_CONTINUE; mutex_unlock(&Z80RunModeMutex);
-                        pr_info("Z80 running.\n");
+                      #if(DEBUG_ENABLED & 1)
+                        if(Z80Ctrl->debug & 0x01) pr_info("Z80 running.\n");
+                      #endif
                         break;
 
                     // Command to perform a CPU reset.
@@ -1333,10 +1439,12 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                         do { mutex_lock(&Z80RunModeMutex); nextRunMode = Z80RunMode ; mutex_unlock(&Z80RunModeMutex);
                         } while(nextRunMode == Z80_STOP);
 
-                        z80_instant_reset(&Z80CPU);
-                        setupMemory(Z80Ctrl->defaultPageMode);
+                        resetZ80();
+
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = currentRunMode; mutex_unlock(&Z80RunModeMutex);
-                        pr_info("Z80 Reset.\n");
+                      #if(DEBUG_ENABLED & 1)
+                        if(Z80Ctrl->debug & 0x01) pr_info("Z80 Reset.\n");
+                      #endif
                         break;
                         
                     // Command to setup the page table to use host memory and physical hardware.
@@ -1347,11 +1455,12 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                         } while(nextRunMode == Z80_STOP);
 
                         Z80Ctrl->defaultPageMode = USE_PHYSICAL_RAM;
-                        setupMemory(Z80Ctrl->defaultPageMode);
-                        z80_instant_reset(&Z80CPU);
+                        resetZ80();
 
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = currentRunMode; mutex_unlock(&Z80RunModeMutex);
-                        pr_info("Z80 Set to use Host Memory.\n");
+                      #if(DEBUG_ENABLED & 1)
+                        if(Z80Ctrl->debug & 0x01) pr_info("Z80 Set to use Host Memory.\n");
+                      #endif
                         break;
 
                     // Command to setup the page table to use virtual memory, only physical hardware is accessed on the host.
@@ -1362,10 +1471,15 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                         } while(nextRunMode == Z80_STOP);
 
                         Z80Ctrl->defaultPageMode = USE_VIRTUAL_RAM;
-                        setupMemory(Z80Ctrl->defaultPageMode);
-                        z80_instant_reset(&Z80CPU);
+                        resetZ80();
+
+                        //setupMemory(Z80Ctrl->defaultPageMode);
+                       // z80_instant_reset(&Z80CPU);
+                    
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = currentRunMode; mutex_unlock(&Z80RunModeMutex);
-                        pr_info("Z80 Set to use Virtual Memory.\n");
+                      #if(DEBUG_ENABLED & 1)
+                        if(Z80Ctrl->debug & 0x01) pr_info("Z80 Set to use Virtual Memory.\n");
+                      #endif
                         break;
 
                     // Command to synchronise virtual memory to host DRAM.
@@ -1382,7 +1496,9 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                         }
 
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = currentRunMode; mutex_unlock(&Z80RunModeMutex);
-                        pr_info("Z80 Host DRAM syncd with Virtual Memory.\n");
+                      #if(DEBUG_ENABLED & 1)
+                        if(Z80Ctrl->debug & 0x01) pr_info("Z80 Host DRAM syncd with Virtual Memory.\n");
+                      #endif
                         break;
 
                     // Command to dump out host memory.
@@ -1586,6 +1702,13 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = currentRunMode; mutex_unlock(&Z80RunModeMutex);
                         break;
 
+                  #if(DEBUG_ENABLED & 1)
+                    // Method to turn on/off debug output.
+                    case IOCTL_CMD_DEBUG:
+                        Z80Ctrl->debug = ioctlCmd.debug.level;
+                        break;
+                  #endif
+
                     // Command to run a series of SOM to CPLD SPI tests.
                     case IOCTL_CMD_SPI_TEST:
                         // Stop the CPU prior to SPI testing.
@@ -1692,7 +1815,7 @@ static int __init ModuleInit(void)
     // Get device Major number.
     major = register_chrdev(0, DEVICE_NAME, &z80drv_fops);
     if (major < 0) {
-        pr_info("z80drv: fail to register major number!");
+        pr_info("z80drv: fail to register major number!\n");
         ret = major;
         goto initExit;
     }
@@ -1700,7 +1823,7 @@ static int __init ModuleInit(void)
     class = class_create(THIS_MODULE, CLASS_NAME);
     if (IS_ERR(class)){ 
         unregister_chrdev(major, DEVICE_NAME);
-        pr_info("z80drv: failed to register device class");
+        pr_info("z80drv: failed to register device class\n");
         ret = PTR_ERR(class);
         goto initExit;
     }
@@ -1717,21 +1840,36 @@ static int __init ModuleInit(void)
     Z80Ctrl = (t_Z80Ctrl *)kmalloc(sizeof(t_Z80Ctrl), GFP_KERNEL); 
     if (Z80Ctrl == NULL) 
     {
-        pr_info("z80drv: failed to allocate ctrl memory!");
+        pr_info("z80drv: failed to allocate ctrl memory!\n");
         ret = -ENOMEM; 
         goto initExit;
     }
     Z80Ctrl->ram= (uint8_t *)kmalloc(Z80_VIRTUAL_RAM_SIZE, GFP_KERNEL); 
     if (Z80Ctrl->ram == NULL) 
     {
-        pr_info("z80drv: failed to allocate RAM memory!");
+        pr_info("z80drv: failed to allocate RAM memory!\n");
         ret = -ENOMEM; 
         goto initExit;
     }
     Z80Ctrl->rom= (uint8_t *)kmalloc(Z80_VIRTUAL_ROM_SIZE, GFP_KERNEL); 
     if (Z80Ctrl->rom == NULL) 
     {
-        pr_info("z80drv: failed to allocate ROM memory!");
+        pr_info("z80drv: failed to allocate ROM memory!\n");
+        ret = -ENOMEM; 
+        goto initExit;
+    }
+    // Default memory mode is 0, ie. Original. Additional modes may be used by drivers such as the tzpu driver.
+    Z80Ctrl->memoryMode = 0;
+    for(idx=0; idx < MEMORY_MODES; idx++)
+    {
+        (Z80Ctrl->page[idx]) = NULL;
+    }
+
+    // Allocate standard memory mode mapping page.
+    (Z80Ctrl->page[Z80Ctrl->memoryMode]) = (uint32_t *)kmalloc((MEMORY_BLOCK_SLOTS*sizeof(uint32_t)), GFP_KERNEL);
+    if ((Z80Ctrl->page[Z80Ctrl->memoryMode]) == NULL) 
+    {
+        pr_info("z80drv: failed to allocate default memory mapping page memory!\n");
         ret = -ENOMEM; 
         goto initExit;
     }
@@ -1856,6 +1994,9 @@ static int __init ModuleInit(void)
     // Setup memory profile to use internal virtual RAM (SOM kernel RAM rather than HOST DRAM).
     setupMemory(Z80Ctrl->defaultPageMode);
 
+    // Initialise control handles.
+    Z80Ctrl->ioTask = NULL;
+
     // Initialse run control.
     mutex_init(&Z80RunModeMutex);
     mutex_lock(&Z80RunModeMutex); Z80RunMode = Z80_STOP; mutex_unlock(&Z80RunModeMutex);
@@ -1877,7 +2018,7 @@ static int __init ModuleInit(void)
     pr_info("Initialisation complete.\n");
 
     // Create thread to run the Z80 cpu.
-    kthread_z80 = kthread_create(thread_z80, &threadId_z80, "kthread_z80");
+    kthread_z80 = kthread_create(thread_z80, &threadId_z80, "z80");
     if(kthread_z80 != NULL)
     {
         pr_info("kthread - Thread Z80 was created, waking...!\n");
@@ -1900,10 +2041,28 @@ initExit:
 // the device from the /dev directory.
 static void __exit ModuleExit(void) 
 {
+    // Locals.
+    uint32_t        idx;
+    int             result;
+
     // Stop the internal threads.
-    kthread_stop(kthread_z80);
+    result = kthread_stop(kthread_z80);
+    if(result != 0)
+    {
+        pr_info("Failed to stop Z80 thread, reason:%d\n", result);
+    }
 
     // Return the memory used for the Z80 'virtual memory' and control variables.
+    for(idx=0; idx < MEMORY_MODES; idx++)
+    {
+        if(Z80Ctrl->page[idx] != NULL)
+        {
+            kfree(Z80Ctrl->page[idx]);
+            Z80Ctrl->page[idx] = NULL;
+        }
+    }
+    kfree(Z80Ctrl->ram); Z80Ctrl->ram = NULL;
+    kfree(Z80Ctrl->rom); Z80Ctrl->rom = NULL;
     kfree(Z80Ctrl);
 
     // Nothing to be done for the hardware.

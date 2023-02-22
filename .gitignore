@@ -341,6 +341,7 @@ software/FusionX/src/driver/Z80
 software/FusionX/src/driver/Z80/
 software/FusionX/src/driver/Z80.c.old
 software/FusionX/src/driver/z80ctrl
+software/FusionX/src/driver/k64fcpu
 software/FusionX/src/driver/Z80.rc.in
 software/FusionX/src/hello
 software/FusionX/src/spitools
@@ -1681,3 +1682,7 @@ software/FusionX/src/driver/MZ80A/z80vhw_rfs.c.bad
 software/FusionX/disk
 software/FusionX/roms
 software/linux/project/FusionX/
+software/FusionX/src/driver/MZ80A/k64fcpu.c.hld
+software/linux/buildroot/.config.old
+software/linux/kernel/scripts/kconfig/.mconf.cmd
+

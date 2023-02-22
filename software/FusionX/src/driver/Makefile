@@ -4,7 +4,7 @@ MODEL       := MZ80A
 KERNEL      := $(PWD)/../../../linux/kernel
 FUSIONX     := $(PWD)/../..
 CROSS       := arm-linux-gnueabihf-
-ccflags-y   += -O2 -I${src}/Zeta/API -I${src}/Z80/API -I${KERNEL}/drivers/sstar/include -I${KERNEL}/drivers/sstar/include/infinity2m -I${KERNEL}/drivers/sstar/gpio/infinity2m
+ccflags-y   += -O2 -I${src}/Zeta/API -I${src}/Z80/API -I${KERNEL}/drivers/sstar/include -I${KERNEL}/drivers/sstar/include/infinity2m -I${KERNEL}/drivers/sstar/gpio/infinity2m -D__KERNEL_DRIVER__
 CTRLINC     += -IZeta/API -IZ80/API
 
 obj-m       += z80drv.o
@@ -16,9 +16,14 @@ z80drv-objs += ../../../linux/kernel/drivers/sstar/gpio/infinity2m/padmux_tables
 
 
 all:
-	@echo "Build driver for host: $(MODEL)"
 	@echo ""
+	@echo "Build K64F Daemon for host: $(MODEL)"
+	$(CROSS)gcc $(CTRLINC) $(MODEL)/k64fcpu.c -o k64fcpu
+	@echo ""
+	@echo "Build driver for host: $(MODEL)"
 	make -C $(KERNEL) ARCH=arm CROSS_COMPILE=$(CROSS)  M="$(PWD)" modules
+	@echo ""
+	@echo "Build z80ctrl tool for host: $(MODEL)"
 	$(CROSS)gcc $(CTRLINC) $(MODEL)/z80ctrl.c -o z80ctrl
 
 install:

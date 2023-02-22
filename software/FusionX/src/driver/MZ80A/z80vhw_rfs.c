@@ -166,8 +166,6 @@ void rfsSetupMemory(enum Z80_MEMORY_PROFILE mode)
     // is controlled by the REG_BANK1 (MROM) and REG_BANK2 (UROM) registers with the upper UROM registers provided in REG_CTRL.
     // So on initial setup, map the MROM page to point to the Z80 ROM area 0x00000 which is the base of the first 512K Flash ROM (virtual).
 
-    pr_info("RFS Memory Setup complete.\n");
-
     // Setup defaults.
     RFSCtrl.regBank1        = 0x00;
     RFSCtrl.regBank2        = 0x00;
@@ -202,6 +200,7 @@ void rfsSetupMemory(enum Z80_MEMORY_PROFILE mode)
     }
   
     // No I/O Ports on the RFS board.
+    pr_info("RFS Memory Setup complete.\n");
 }
 
 // Perform any setup operations, such as variable initialisation, to enable use of this module.
@@ -561,7 +560,7 @@ void rfsSDCard(void)
 }
 
 // Method to read from either the memory mapped registers if enabled else the ROM.
-static inline uint8_t rfsRead(zuint16 address)
+static inline uint8_t rfsRead(zuint16 address, uint8_t ioFlag)
 {
     // Locals.
     uint8_t     data = 0xFF;
@@ -570,14 +569,14 @@ static inline uint8_t rfsRead(zuint16 address)
 
     // Any access to the control region increments the enable counter till it reaches terminal count and enables writes to the registers. When the counter
     // gets to 15 the registers are enabled and the EPROM, in the control region, is disabled.
-    if(address >= BNKCTRLRST && RFSCtrl.upCntr < 15)
+    if((address >= BNKCTRLRST && address <= BNKCTRL) && RFSCtrl.upCntr < 15)
     {
         RFSCtrl.upCntr++;
     }
 
     // Address in control region and register bank enabled?
     //
-    if(RFSCtrl.upCntr >= 15 && address >= BNKCTRLRST)
+    if(RFSCtrl.upCntr >= 15 && (address >= BNKCTRLRST && address <= BNKCTRL))
     {
         switch(address)
         {
@@ -616,7 +615,7 @@ static inline uint8_t rfsRead(zuint16 address)
     } else
     {
         // Return the contents of the ROM at given address.
-        data = readVirtualROM(address);
+        data = isVirtualROM(address) ? readVirtualROM(address) : readVirtualRAM(address);
     }
 
     //pr_info("RFS-Read:%04x, Data:%02x, BK1:%02x, BK2:%02x, CTRL:%02x, MROM:%08x, UROM:%08x\n", address, data, RFSCtrl.regBank1, RFSCtrl.regBank2, RFSCtrl.regCtrl, RFSCtrl.mromAddr, RFSCtrl.uromAddr);
@@ -624,7 +623,7 @@ static inline uint8_t rfsRead(zuint16 address)
 }
 
 // Method to handle writes to the RFS board. Generally the RFS board.
-static inline void rfsWrite(zuint16 address, zuint8 data)
+static inline void rfsWrite(zuint16 address, zuint8 data, uint8_t ioFlag)
 {
     // Locals.
     uint32_t     idx;
@@ -633,14 +632,14 @@ static inline void rfsWrite(zuint16 address, zuint8 data)
 
     // Any access to the control region increments the enable counter till it reaches terminal count and enables writes to the registers. When the counter
     // gets to 15 the registers are enabled and the EPROM, in the control region, is disabled.
-    if(address >= BNKCTRLRST && RFSCtrl.upCntr < 15)
+    if((address >= BNKCTRLRST && address <= BNKCTRL) && RFSCtrl.upCntr < 15)
     {
         RFSCtrl.upCntr++;
     }
 
     // Address in control region and register bank enabled?
     //
-    if(RFSCtrl.upCntr >= 15 && address >= BNKCTRLRST)
+    if(RFSCtrl.upCntr >= 15 && (address >= BNKCTRLRST && address <= BNKCTRL))
     {
         switch(address)
         {
@@ -708,6 +707,10 @@ static inline void rfsWrite(zuint16 address, zuint8 data)
                 }
                 break;
         }
+    } else
+    {
+        // Any unprocessed write is commited to RAM.
+        writeVirtualRAM(address, data);
     }
     //pr_info("RFS-Write:%04x, Data:%02x, BK1:%02x, BK2:%02x, CTRL:%02x, MROM:%08x, UROM:%08x\n", address, data, RFSCtrl.regBank1, RFSCtrl.regBank2, RFSCtrl.regCtrl, RFSCtrl.mromAddr, RFSCtrl.uromAddr);
     return;

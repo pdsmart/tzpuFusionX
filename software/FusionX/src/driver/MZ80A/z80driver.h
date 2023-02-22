@@ -39,7 +39,7 @@
 #define DRIVER_LICENSE                        "GPL"
 #define DRIVER_AUTHOR                         "Philip D Smart"
 #define DRIVER_DESCRIPTION                    "Z80 CPU Emulator and Hardware Interface Driver"
-#define DRIVER_VERSION                        "v1.2"
+#define DRIVER_VERSION                        "v1.3"
 #define DRIVER_VERSION_DATE                   "Feb 2023"
 #define DRIVER_COPYRIGHT                      "(C) 2018-2023"
 #define TARGET_HOST_MZ700                     0                  // Target compilation for an MZ700
@@ -52,6 +52,8 @@
 #define MAX_VIRTUAL_DEVICES                   5                  // Maximum number of allowed virtual devices.
 #define DEVICE_NAME                           "z80drv"
 #define  CLASS_NAME                           "mogu"
+#define IO_PROCESSOR_NAME                     "k64fcpu"          // Name of the I/O processor user space application.
+#define DEBUG_ENABLED                         1
 
 // Memory and IO page types. Used to create a memory page which maps type of address space to real address space on host or virtual memory.
 #define MEMORY_TYPE_VIRTUAL_MASK              0x00FFFFFF
@@ -64,7 +66,8 @@
 #define MEMORY_TYPE_PHYSICAL_HW               0x10000000
 #define MEMORY_TYPE_VIRTUAL_RAM               0x08000000
 #define MEMORY_TYPE_VIRTUAL_ROM               0x04000000
-#define MEMORY_TYPE_VIRTUAL_HW                0x02000000
+#define MEMORY_TYPE_VIRTUAL_RAM_RO            0x02000000
+#define MEMORY_TYPE_VIRTUAL_HW                0x01000000
 #define IO_TYPE_PHYSICAL_HW                   0x80000000
 #define IO_TYPE_VIRTUAL_HW                    0x40000000
 
@@ -88,6 +91,14 @@
 #define INSTRUCTION_DELAY_RAM_112MHZ          8
 #define INSTRUCTION_DELAY_RAM_224MHZ          4
 #define INSTRUCTION_DELAY_RAM_448MHZ          1
+#define INSTRUCTION_EQUIV_FREQ_3_54MHZ        3540000
+#define INSTRUCTION_EQUIV_FREQ_7MHZ           7000000
+#define INSTRUCTION_EQUIV_FREQ_14MHZ          14000000
+#define INSTRUCTION_EQUIV_FREQ_28MHZ          28000000
+#define INSTRUCTION_EQUIV_FREQ_56MHZ          56000000
+#define INSTRUCTION_EQUIV_FREQ_112MHZ         112000000
+#define INSTRUCTION_EQUIV_FREQ_224MHZ         224000000
+#define INSTRUCTION_EQUIV_FREQ_448MHZ         448000000
 
 enum Z80_INSTRUCTION_DELAY {
     ROM_DELAY_NORMAL                          = INSTRUCTION_DELAY_ROM_3_54MHZ,
@@ -106,6 +117,14 @@ enum Z80_INSTRUCTION_DELAY {
     RAM_DELAY_X32                             = INSTRUCTION_DELAY_RAM_112MHZ,
     RAM_DELAY_X64                             = INSTRUCTION_DELAY_RAM_224MHZ,
     RAM_DELAY_X128                            = INSTRUCTION_DELAY_RAM_448MHZ 
+    CPU_FREQUENCY_NORMAL                      = INSTRUCTION_EQUIV_FREQ_3_54MHZ,
+    CPU_FREQUENCY_X2                          = INSTRUCTION_EQUIV_FREQ_7MHZ,
+    CPU_FREQUENCY_X4                          = INSTRUCTION_EQUIV_FREQ_14MHZ,
+    CPU_FREQUENCY_X8                          = INSTRUCTION_EQUIV_FREQ_28MHZ,
+    CPU_FREQUENCY_X16                         = INSTRUCTION_EQUIV_FREQ_56MHZ,
+    CPU_FREQUENCY_X32                         = INSTRUCTION_EQUIV_FREQ_112MHZ,
+    CPU_FREQUENCY_X64                         = INSTRUCTION_EQUIV_FREQ_224MHZ,
+    CPU_FREQUENCY_X128                        = INSTRUCTION_EQUIV_FREQ_448MHZ,
 };
 #endif
 
@@ -127,6 +146,14 @@ enum Z80_INSTRUCTION_DELAY {
 #define INSTRUCTION_DELAY_RAM_128MHZ          7
 #define INSTRUCTION_DELAY_RAM_256MHZ          3
 #define INSTRUCTION_DELAY_RAM_512MHZ          1
+#define INSTRUCTION_EQUIV_FREQ_4MHZ           4000000
+#define INSTRUCTION_EQUIV_FREQ_8MHZ           8000000
+#define INSTRUCTION_EQUIV_FREQ_16MHZ          16000000
+#define INSTRUCTION_EQUIV_FREQ_32MHZ          32000000
+#define INSTRUCTION_EQUIV_FREQ_64MHZ          64000000
+#define INSTRUCTION_EQUIV_FREQ_128MHZ         128000000
+#define INSTRUCTION_EQUIV_FREQ_256MHZ         256000000
+#define INSTRUCTION_EQUIV_FREQ_512MHZ         512000000
 
 enum Z80_INSTRUCTION_DELAY {
     ROM_DELAY_NORMAL                          = INSTRUCTION_DELAY_ROM_4MHZ,
@@ -145,6 +172,14 @@ enum Z80_INSTRUCTION_DELAY {
     RAM_DELAY_X32                             = INSTRUCTION_DELAY_RAM_128MHZ,
     RAM_DELAY_X64                             = INSTRUCTION_DELAY_RAM_256MHZ,
     RAM_DELAY_X128                            = INSTRUCTION_DELAY_RAM_512MHZ,
+    CPU_FREQUENCY_NORMAL                      = INSTRUCTION_EQUIV_FREQ_4MHZ,
+    CPU_FREQUENCY_X2                          = INSTRUCTION_EQUIV_FREQ_8MHZ,
+    CPU_FREQUENCY_X4                          = INSTRUCTION_EQUIV_FREQ_16MHZ,
+    CPU_FREQUENCY_X8                          = INSTRUCTION_EQUIV_FREQ_32MHZ,
+    CPU_FREQUENCY_X16                         = INSTRUCTION_EQUIV_FREQ_64MHZ,
+    CPU_FREQUENCY_X32                         = INSTRUCTION_EQUIV_FREQ_128MHZ,
+    CPU_FREQUENCY_X64                         = INSTRUCTION_EQUIV_FREQ_256MHZ,
+    CPU_FREQUENCY_X128                        = INSTRUCTION_EQUIV_FREQ_512MHZ,
 };
 #endif
 
@@ -165,7 +200,15 @@ enum Z80_INSTRUCTION_DELAY {
 #define INSTRUCTION_DELAY_RAM_32MHZ           26
 #define INSTRUCTION_DELAY_RAM_64MHZ           13
 #define INSTRUCTION_DELAY_RAM_128MHZ          7
-#define INSTRUCTION_DELAY_RAM_256MHZ          3
+#define INSTRUCTION_DELAY_RAM_256MHZ          0
+#define INSTRUCTION_EQUIV_FREQ_2MHZ           2000000
+#define INSTRUCTION_EQUIV_FREQ_4MHZ           4000000
+#define INSTRUCTION_EQUIV_FREQ_8MHZ           8000000
+#define INSTRUCTION_EQUIV_FREQ_16MHZ          16000000
+#define INSTRUCTION_EQUIV_FREQ_32MHZ          32000000
+#define INSTRUCTION_EQUIV_FREQ_64MHZ          64000000
+#define INSTRUCTION_EQUIV_FREQ_128MHZ         128000000
+#define INSTRUCTION_EQUIV_FREQ_256MHZ         256000000
 
 enum Z80_INSTRUCTION_DELAY {
     ROM_DELAY_NORMAL                          = INSTRUCTION_DELAY_ROM_2MHZ,
@@ -184,6 +227,14 @@ enum Z80_INSTRUCTION_DELAY {
     RAM_DELAY_X32                             = INSTRUCTION_DELAY_RAM_64MHZ,
     RAM_DELAY_X64                             = INSTRUCTION_DELAY_RAM_128MHZ,
     RAM_DELAY_X128                            = INSTRUCTION_DELAY_RAM_256MHZ,
+    CPU_FREQUENCY_NORMAL                      = INSTRUCTION_EQUIV_FREQ_2MHZ,
+    CPU_FREQUENCY_X2                          = INSTRUCTION_EQUIV_FREQ_4MHZ,
+    CPU_FREQUENCY_X4                          = INSTRUCTION_EQUIV_FREQ_8MHZ,
+    CPU_FREQUENCY_X8                          = INSTRUCTION_EQUIV_FREQ_16MHZ,
+    CPU_FREQUENCY_X16                         = INSTRUCTION_EQUIV_FREQ_32MHZ,
+    CPU_FREQUENCY_X32                         = INSTRUCTION_EQUIV_FREQ_64MHZ,
+    CPU_FREQUENCY_X64                         = INSTRUCTION_EQUIV_FREQ_128MHZ,
+    CPU_FREQUENCY_X128                        = INSTRUCTION_EQUIV_FREQ_256MHZ,
 };
 #endif
 
@@ -203,11 +254,10 @@ enum Z80_INSTRUCTION_DELAY {
 #define IOCTL_CMD_SEND                        _IOW('c', 'c', int32_t *)
 #define IOCTL_CMD_SETPC                       _IOW('p', 'p', int32_t *)
 #define IOCTL_CMD_SYNC_TO_HOST_RAM            'V'
+#define IOCTL_CMD_DEBUG                       'd'
 #define IOCTL_CMD_SPI_TEST                    '1'
 #define IOCTL_CMD_PRL_TEST                    '2'
 #define IOCTL_CMD_Z80_MEMTEST                 '3'
-
-
  
 //  Chip Select map MZ80K-MZ700.
 // 
@@ -261,38 +311,75 @@ enum Z80_INSTRUCTION_DELAY {
 //  * = MZ-800 host only.
 
 // Macros to lookup and test to see if a given memory block or IO byte is of a given type. Also macros to read/write to the memory block and IO byte.
-#define MEMORY_BLOCK_GRANULARITY              0x800
-#define MEMORY_BLOCK_SLOTS                    (0x10000 / MEMORY_BLOCK_GRANULARITY)
-#define MEMORY_BLOCK_MASK                     (0x10000 - MEMORY_BLOCK_GRANULARITY)
-#define MEMORY_BLOCK_SHIFT                    11
-#define getPageData(a)                        (Z80Ctrl->page[(a & 0xF800) >> MEMORY_BLOCK_SHIFT])
-#define getIOPageData(a)                      (Z80Ctrl->iopage[(a & 0xFFFF])
+// The memory page arrays dont check for allocation due to speed, it is assumed a memory mode page has been allocated and defined prior to the memoryMode
+// variable being set to that page.
+#define MEMORY_MODES                          32                                       // Maximum number of different memory modes.
+#define MEMORY_PAGE_SIZE                      0x10000                                  // Total size of directly addressable memory.
+#define MEMORY_BLOCK_GRANULARITY              0x1                                      // Any change update MEMORY_BLOCK_SHIFT and mask in MEMORY_BLOCK_MASK
+#define MEMORY_BLOCK_SHIFT                    0
+#define MEMORY_BLOCK_SLOTS                    (MEMORY_PAGE_SIZE / MEMORY_BLOCK_GRANULARITY)
+#define MEMORY_BLOCK_MASK                     (MEMORY_PAGE_SIZE - MEMORY_BLOCK_GRANULARITY)
+#define IO_PAGE_SIZE                          0x10000                                  // Total size of directly addressable I/O.
+#define IO_BLOCK_GRANULARITY                  0x1                                      // Any change update MEMORY_BLOCK_SHIFT and mask in MEMORY_BLOCK_MASK
+#define IO_BLOCK_SHIFT                        0
+#define IO_BLOCK_SLOTS                        (IO_PAGE_SIZE / IO_BLOCK_GRANULARITY)
+#define IO_BLOCK_MASK                         (IO_PAGE_SIZE - IO_BLOCK_GRANULARITY)
+//#define getPageData(a)                        (Z80Ctrl->page[(a & 0xFFFF) >> MEMORY_BLOCK_SHIFT])
+//#define getIOPageData(a)                      (Z80Ctrl->iopage[(a & 0xFFFF])
+#define getPageData(a)                        (*(*(Z80Ctrl->page + Z80Ctrl->memoryMode) + ((a & MEMORY_BLOCK_MASK) >> MEMORY_BLOCK_SHIFT)))
+#define getIOPageData(a)                      (Z80Ctrl->iopage[(a & IO_BLOCK_MASK])
+
 #define getPageType(a, mask)                  (getPageData(a) & mask)
 #define getPageAddr(a, mask)                  ((getPageData(a) & mask) + (a & (MEMORY_BLOCK_GRANULARITY-1)))
 #define getIOPageType(a, mask)                (getIOPageData(a) & mask)
 #define getIOPageAddr(a, mask)                (getIOPageData(a) & mask)
-#define realAddress(a)                        (Z80Ctrl->page[getPageAddr(a, MEMORY_TYPE_REAL_MASK)])
-#define realPort(a)                           (Z80Ctrl->iopage[a & 0xFFFF] & IO_TYPE_MASK)
+//#define realAddress(a)                        (Z80Ctrl->page[getPageAddr(a, MEMORY_TYPE_REAL_MASK)])
+#define realAddress(a)                        (*(*(Z80Ctrl->page + Z80Ctrl->memoryMode) + (getPageAddr(a, MEMORY_TYPE_REAL_MASK))))
+#define realPort(a)                           (Z80Ctrl->iopage[a & IO_BLOCK_MASK] & IO_TYPE_MASK)
 #define isPhysicalRAM(a)                      (getPageType(a, MEMORY_TYPE_PHYSICAL_RAM))
 #define isPhysicalVRAM(a)                     (getPageType(a, MEMORY_TYPE_PHYSICAL_VRAM))
 #define isPhysicalROM(a)                      (getPageType(a, MEMORY_TYPE_PHYSICAL_ROM))
 #define isPhysicalMemory(a)                   (getPageType(a, (MEMORY_TYPE_PHYSICAL_ROM | MEMORY_TYPE_PHYSICAL_RAM | MEMORY_TYPE_PHYSICAL_VRAM))])
 #define isPhysicalHW(a)                       (getPageType(a, MEMORY_TYPE_PHYSICAL_HW))
 #define isPhysical(a)                         (getPageType(a, (MEMORY_TYPE_PHYSICAL_HW | MEMORY_TYPE_PHYSICAL_ROM | MEMORY_TYPE_PHYSICAL_RAM | MEMORY_TYPE_PHYSICAL_VRAM)))
-#define isPhysicalIO(a)                       (Z80Ctrl->iopage[a & 0xFFFF] & IO_TYPE_PHYSICAL_HW)
-#define isVirtualRAM(a)                       (getPageType(a, MEMORY_TYPE_VIRTUAL_RAM))
+#define isPhysicalIO(a)                       (Z80Ctrl->iopage[a & IO_BLOCK_MASK] & IO_TYPE_PHYSICAL_HW)
+#define isVirtualRAM(a)                       (getPageType(a, (MEMORY_TYPE_VIRTUAL_RAM | MEMORY_TYPE_VIRTUAL_RAM_RO)))
+#define isVirtualRO(a)                        (getPageType(a, MEMORY_TYPE_VIRTUAL_RAM_RO))
+#define isVirtualRW(a)                        (getPageType(a, MEMORY_TYPE_VIRTUAL_RAM))
 #define isVirtualROM(a)                       (getPageType(a, MEMORY_TYPE_VIRTUAL_ROM))
-#define isVirtualMemory(a)                    (getPageType(a, (MEMORY_TYPE_VIRTUAL_ROM | MEMORY_TYPE_VIRTUAL_RAM)))
+#define isVirtualMemory(a)                    (getPageType(a, (MEMORY_TYPE_VIRTUAL_ROM | MEMORY_TYPE_VIRTUAL_RAM | MEMORY_TYPE_VIRTUAL_RAM_RO)))
 #define isVirtualHW(a)                        (getPageType(a, MEMORY_TYPE_VIRTUAL_HW))
-#define isVirtualIO(a)                        (Z80Ctrl->iopage[a & 0xFFFF] & IO_TYPE_VIRTUAL_HW)
-#define isVirtualDevice(a, d)                 (Z80Ctrl->iopage[a & 0xFFFF] & d)
+#define isVirtualIO(a)                        (Z80Ctrl->iopage[a & IO_BLOCK_MASK] & IO_TYPE_VIRTUAL_HW)
+#define isVirtual(a)                          (getPageType(a, (MEMORY_TYPE_VIRTUAL_ROM | MEMORY_TYPE_VIRTUAL_RAM | MEMORY_TYPE_VIRTUAL_RAM_RO | MEMORY_TYPE_VIRTUAL_HW)))
+#define isVirtualDevice(a, d)                 (Z80Ctrl->iopage[a & IO_BLOCK_MASK] & d)
 #define isHW(a)                               (getPageType(a, (MEMORY_TYPE_PHYSICAL_HW | MEMORY_TYPE_VIRTUAL_HW)))
 #define readVirtualRAM(a)                     (Z80Ctrl->ram[ getPageAddr(a, MEMORY_TYPE_VIRTUAL_MASK) ])
 #define readVirtualROM(a)                     (Z80Ctrl->rom[ getPageAddr(a, MEMORY_TYPE_VIRTUAL_MASK) ])
 #define writeVirtualRAM(a, d)                 { Z80Ctrl->ram[ getPageAddr(a, MEMORY_TYPE_VIRTUAL_MASK) ] = d; }
-#define setMemoryType(_block_,_type_,_addr_)  { Z80Ctrl->page[_block_] = _type_ | _addr_; }
-#define backupMemoryType(_block_)             { Z80Ctrl->shadowPage[_block_] = Z80Ctrl->page[_block_]; }
-#define restoreMemoryType(_block_)            { Z80Ctrl->page[_block_] = Z80Ctrl->shadowPage[_block_]; }
+#define writeVirtualROM(a, d)                 { Z80Ctrl->rom[ getPageAddr(a, MEMORY_TYPE_VIRTUAL_MASK) ] = d; }
+//#define setMemoryType(_block_,_type_,_addr_)  { Z80Ctrl->page[_block_] = _type_ | _addr_; }
+#define setMemoryType(_block_,_type_,_addr_)  { *(*(Z80Ctrl->page + Z80Ctrl->memoryMode) +_block_) = _type_ | _addr_; }
+#define backupMemoryType(_block_)             { Z80Ctrl->shadowPage[_block_] = *(*(Z80Ctrl->page + Z80Ctrl->memoryMode) + (_block_)); }
+//#define restoreMemoryType(_block_)            { Z80Ctrl->page[_block_] = Z80Ctrl->shadowPage[_block_]; }
+#define restoreMemoryType(_block_)            { *(*(Z80Ctrl->page + Z80Ctrl->memoryMode) + (_block_)) = Z80Ctrl->shadowPage[_block_]; }
+#define sendSignal(_signal_)                  { struct siginfo sigInfo;\
+                                                if(Z80Ctrl->ioTask != NULL)\
+                                                {\
+                                                    memset(&sigInfo, 0, sizeof(struct siginfo));\
+                                                    sigInfo.si_signo = _signal_;\
+                                                    sigInfo.si_code = SI_QUEUE;\
+                                                    sigInfo.si_int = 1;\
+                                                    if(send_sig_info(_signal_, &sigInfo, Z80Ctrl->ioTask) < 0)\
+                                                    {\
+                                                        pr_info("Error: Failed to send Request to I/O Processor:%d, %s\n", _signal_, Z80Ctrl->ioTask->comm);\
+                                                    }\
+                                                }\
+                                              }
+#define resetZ80()                            {\
+                                                  sendSignal(SIGUSR1); \
+                                                  setupMemory(Z80Ctrl->defaultPageMode);\
+                                                  z80_instant_reset(&Z80CPU);\
+                                              }
 
 #define IO_ADDR_E0                            0xE0
 #define IO_ADDR_E1                            0xE1
@@ -343,7 +430,7 @@ typedef struct {
     // Page pointer map. 
     //
     // Each pointer points to a byte or block of bytes in the Z80 Memory frame, 64K Real + Banked.
-    // This is currently set at a block of size 0x800 per memory pointer for the MZ-700.
+    // This is currently set at a block of size 0x1 per memory pointer for the MZ-700.
     // The LSB of the pointer is a direct memory index to a byte or block of bytes, the upper byte of the pointer indicates type of memory space.
     //                  0x80<FFFFFF> - physical host RAM
     //                  0x40<FFFFFF> - physical host ROM
@@ -354,8 +441,12 @@ typedef struct {
     //                  0x02<FFFFFF> - virtual host hardware
     // 16bit Input Address -> map -> Pointer to 24bit memory address + type flag.
     //                            -> Pointer+<low bits of address> to 24bit memory address + type flag.
-    uint32_t                                  page[MEMORY_BLOCK_SLOTS];
-    uint32_t                                  shadowPage[MEMORY_BLOCK_SLOTS];
+    //uint32_t                                  page[MEMORY_BLOCK_SLOTS];
+    uint32_t                                 *page[MEMORY_MODES];
+    uint32_t                                  shadowPage[MEMORY_BLOCK_SLOTS];               // Shadow page is for manipulation and backup of an existing page.
+
+    // Current memory mode as used by active driver.
+    uint8_t                                   memoryMode;
 
     // I/O Page map.
     //
@@ -380,13 +471,13 @@ typedef struct {
     uint8_t                                   ioReadAhead;
     uint8_t                                   ioWriteAhead;
 
-#if(TARGET_HOST_MZ2000 == 1)
+  #if(TARGET_HOST_MZ2000 == 1)
     uint8_t                                   lowMemorySwap;
-#endif
-#if(TARGET_HOST_MZ80A == 1)
+  #endif
+  #if(TARGET_HOST_MZ80A == 1)
     // MZ-80A can relocate the lower 4K ROM by swapping RAM at 0xC000.
     uint8_t                                   memSwitch;
-#endif
+  #endif
 
     // Keyboard strobe and data. Required to detect hotkey press.
     uint8_t                                   keyportStrobe;
@@ -400,36 +491,52 @@ typedef struct {
     // is quicker than RAM (both are in the same kernel memory) as a pointer calculation needs to be made.
     uint32_t                                  cpuGovernorDelayROM;
     uint32_t                                  cpuGovernorDelayRAM;
+
+    // An I/O processor, running as a User Space daemon, can register to receive signals and events.
+    struct task_struct                        *ioTask;
+
+  #if(DEBUG_ENABLED == 1)
+    // Debugging flag.
+    uint8_t                                   debug;
+  #endif
 } t_Z80Ctrl;
 
 // IOCTL structure for passing data from user space to driver to perform commands.
 //
 struct z80_addr {
-   uint32_t                                   start;
-   uint32_t                                   end;
-   uint32_t                                   size;
+    uint32_t                                  start;
+    uint32_t                                  end;
+    uint32_t                                  size;
 };
 struct z80_ctrl {
-   uint16_t                                   pc;
+    uint16_t                                  pc;
 };
 struct speed {
-   uint32_t                                   speedMultiplier;
+    uint32_t                                  speedMultiplier;
 };
 struct virtual_device {
     enum VIRTUAL_DEVICE                       device;
 };
 struct cpld_ctrl {
-   uint32_t                                   cmd;
+    uint32_t                                  cmd;
 };
+#if(DEBUG_ENABLED == 1)
+struct debug {
+    uint8_t                                   level;
+};
+#endif
 struct ioctlCmd {
-   int32_t                                    cmd;
-   union {
-       struct z80_addr                        addr;
-       struct z80_ctrl                        z80;
-       struct speed                           speed;
-       struct virtual_device                  vdev;
-       struct cpld_ctrl                       cpld;
-   };
+    int32_t                                   cmd;
+    union {
+        struct z80_addr                       addr;
+        struct z80_ctrl                       z80;
+        struct speed                          speed;
+        struct virtual_device                 vdev;
+        struct cpld_ctrl                      cpld;
+      #if(DEBUG_ENABLED == 1)
+        struct debug                          debug;
+      #endif
+    };
 };
 
 // Prototypes.
