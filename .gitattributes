@@ -4,4 +4,4 @@
 *.cpp linguist-vendored=false
 *.pl linguist-vendored=false
 *.sh linguist-vendored=false
-*.vhdl linguist-vendored=false
+*.vhd linguist-vendored=false
