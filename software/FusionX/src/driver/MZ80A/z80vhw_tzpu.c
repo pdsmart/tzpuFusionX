@@ -167,7 +167,7 @@ static inline uint8_t tzpuRead(zuint16 address, uint8_t ioFlag)
     if(ioFlag)
     {
       #if(DEBUG_ENABLED & 0x01)
-        if(Z80Ctrl->debug & 0x01) pr_info("Read IO:%02x\n", address);
+        if(Z80Ctrl->debug >= 3) pr_info("Read IO:%02x\n", address);
       #endif
 
         // Only the lower 8 bits of the I/O address are processed as the upper byte is not used in the Sharp models.
@@ -252,7 +252,7 @@ static inline void tzpuWrite(zuint16 address, zuint8 data, uint8_t ioFlag)
                 if(Z80Ctrl->page[Z80Ctrl->memoryMode] == NULL)
                 {
                   #if(DEBUG_ENABLED & 0x01)
-                    if(Z80Ctrl->debug & 0x01) pr_info("Allocating memory page:%d\n", Z80Ctrl->memoryMode);
+                    if(Z80Ctrl->debug >=3) pr_info("Allocating memory page:%d\n", Z80Ctrl->memoryMode);
                   #endif
                     (Z80Ctrl->page[Z80Ctrl->memoryMode]) = (uint32_t *)kmalloc((MEMORY_BLOCK_SLOTS*sizeof(uint32_t)), GFP_KERNEL);
                     if ((Z80Ctrl->page[Z80Ctrl->memoryMode]) == NULL) 
@@ -425,9 +425,13 @@ static inline void tzpuWrite(zuint16 address, zuint8 data, uint8_t ioFlag)
                                 {
                                     setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM_RO, (SRAM_BANK0_ADDR+idx));
                                 }
-                                else if(idx >= 0x1000 && idx < 0xD000)
+                                else if(idx >= 0x1000 && idx < 0x1200)
                                 {
                                     setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM,    (SRAM_BANK0_ADDR+idx));
+                                }
+                                else if(idx >= 0x1200 && idx < 0xD000)
+                                {
+                                    setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM,    (SRAM_BANK3_ADDR+idx));
                                 }
                                 else if(idx >= 0xD000 && idx < 0xE000)
                                 {
@@ -655,27 +659,27 @@ static inline void tzpuWrite(zuint16 address, zuint8 data, uint8_t ioFlag)
 
             case IO_TZ_SETXMHZ:   
               #if(DEBUG_ENABLED & 0x01)
-                if(Z80Ctrl->debug & 0x01) pr_info("SETXMHZ:%02x\n", data);
+                if(Z80Ctrl->debug >= 3) pr_info("SETXMHZ:%02x\n", data);
               #endif
                 TZPUCtrl.clkSrc = 1;
                 break;
 
             case IO_TZ_SET2MHZ:   
               #if(DEBUG_ENABLED & 0x01)
-                if(Z80Ctrl->debug & 0x01) pr_info("SET2MHZ:%02x\n", data);
+                if(Z80Ctrl->debug >= 3) pr_info("SET2MHZ:%02x\n", data);
               #endif
                 TZPUCtrl.clkSrc = 0;
                 break;
 
             case IO_TZ_CLKSELRD:  
               #if(DEBUG_ENABLED & 0x01)
-                if(Z80Ctrl->debug & 0x01) pr_info("CKSELRD:%02x\n", data);
+                if(Z80Ctrl->debug >= 3) pr_info("CKSELRD:%02x\n", data);
               #endif
                 break;
 
             case IO_TZ_SVCREQ:    
               #if(DEBUG_ENABLED & 0x01)
-                if(Z80Ctrl->debug & 0x01) pr_info("SVCREQ:%02x\n", data);
+                if(Z80Ctrl->debug >= 3) pr_info("SVCREQ:%02x\n", data);
               #endif
 
                 // If a k64f process has registered, send it a service request signal.
@@ -696,32 +700,32 @@ static inline void tzpuWrite(zuint16 address, zuint8 data, uint8_t ioFlag)
                 
             case IO_TZ_SYSREQ:    
               #if(DEBUG_ENABLED & 0x01)
-                if(Z80Ctrl->debug & 0x01) pr_info("SYSREQ:%02x\n", data);
+                if(Z80Ctrl->debug >= 3) pr_info("SYSREQ:%02x\n", data);
               #endif
                 break;
 
             case IO_TZ_CPLDCMD:
               #if(DEBUG_ENABLED & 0x01)
-                if(Z80Ctrl->debug & 0x01) pr_info("CPLDCMD:%02x\n", data);
+                if(Z80Ctrl->debug >= 3) pr_info("CPLDCMD:%02x\n", data);
               #endif
                 TZPUCtrl.regCmd = data;
                 break;
 
             case IO_TZ_CPUINFO:   
               #if(DEBUG_ENABLED & 0x01)
-                if(Z80Ctrl->debug & 0x01) pr_info("CPUINFO:%02x\n", data);
+                if(Z80Ctrl->debug >= 3) pr_info("CPUINFO:%02x\n", data);
               #endif
                 break;
 
             case IO_TZ_CPLDCFG:   
               #if(DEBUG_ENABLED & 0x01)
-                if(Z80Ctrl->debug & 0x01) pr_info("CPLDCFG:%02x\n", data);
+                if(Z80Ctrl->debug >= 3) pr_info("CPLDCFG:%02x\n", data);
               #endif
                 break;
 
             case IO_TZ_CPLDINFO:  
               #if(DEBUG_ENABLED & 0x01)
-                if(Z80Ctrl->debug & 0x01) pr_info("CPLDINFO:%02x\n", data);
+                if(Z80Ctrl->debug >= 3) pr_info("CPLDINFO:%02x\n", data);
               #endif
                 break;
 

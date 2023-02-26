@@ -553,7 +553,7 @@ static zuint8 z80_read(void *context, zuint16 address)
         Z80Ctrl->keyportHotKey = 0x01;
     }
   #if(DEBUG_ENABLED & 1)
-    if(Z80Ctrl->debug & 0x01)
+    if(Z80Ctrl->debug >= 3)
     {
         pr_info("Read:%04x,%02x,%d\n", address, data, CPLD_Z80_INT());
     }
@@ -601,7 +601,7 @@ static void z80_write(void *context, zuint16 address, zuint8 data)
         writeVirtual(address, data, 0);
     }
   #if(DEBUG_ENABLED & 1)
-    if(Z80Ctrl->debug & 0x01)
+    if(Z80Ctrl->debug >= 3)
     {
         pr_info("Write:%04x,%02x,%d\n", address, data, CPLD_Z80_INT());
     }
@@ -663,10 +663,16 @@ static zuint8 z80_fetch_opcode(void *context, zuint16 address)
     lookAhead(address, opcode, isVirtualROM((address+1)) ? readVirtualROM((address+1)) : readVirtualRAM((address+1)));
 
   #if(DEBUG_ENABLED & 1)
-    if(Z80Ctrl->debug & 0x01)
+    if(Z80Ctrl->debug >= 3)
     {
         if(address < 0xF036 || address > 0xF197)
             pr_info("Fetch:%04x,%02x,%d\n", address, opcode, CPLD_Z80_INT());
+
+        // If max level, add delay so that the kernel log doesnt overflow.
+        if(Z80Ctrl->debug >= 15)
+        {
+           udelay(2000);
+        }
     }
     //if(address >= 0xE800) pr_info("Fetch:%04x,%02x\n", address, opcode);
   #endif
@@ -712,7 +718,7 @@ static zuint8 z80_fetch(void *context, zuint16 address)
     z80_int(&Z80CPU, CPLD_Z80_INT() != 0);
 
   #if(DEBUG_ENABLED & 1)
-    if(Z80Ctrl->debug & 0x01)
+    if(Z80Ctrl->debug >= 4)
     {
         if(address < 0xF036 || address > 0xF197)
             pr_info("FetchB:%04x,%02x,%d\n", address, data, CPLD_Z80_INT());
@@ -755,7 +761,7 @@ static zuint8 z80_in(void *context, zuint16 port)
     }
 
   #if(DEBUG_ENABLED & 1)
-    if(Z80Ctrl->debug & 0x01) pr_info("z80_in:0x%x, 0x%x\n", port, value);
+    if(Z80Ctrl->debug >= 3) pr_info("z80_in:0x%x, 0x%x\n", port, value);
   #endif
     return(value);
 }
@@ -794,7 +800,7 @@ static void z80_out(void *context, zuint16 port, zuint8 value)
     }
 
   #if(DEBUG_ENABLED & 1)
-    if(Z80Ctrl->debug & 0x01) pr_info("z80_out:0x%x, 0x%x\n", port, value);
+    if(Z80Ctrl->debug >= 3) pr_info("z80_out:0x%x, 0x%x\n", port, value);
   #endif
 }
 
@@ -870,7 +876,7 @@ static void z80_reti(void *context)
     if(CPLD_Z80_INT() != 0)
     {
       #if(DEBUG_ENABLED & 1)
-        if(Z80Ctrl->debug & 0x01)
+        if(Z80Ctrl->debug >= 2)
         {
             pr_info("LOCKUP:%d\n", CPLD_Z80_INT());
         }
@@ -878,7 +884,7 @@ static void z80_reti(void *context)
         z80_int(&Z80CPU, false);
     }
   #if(DEBUG_ENABLED & 1)
-    if(Z80Ctrl->debug & 0x01) pr_info("z80_reti\n");
+    if(Z80Ctrl->debug >= 3) pr_info("z80_reti\n");
   #endif
 }
 static void z80_retn(void *context)
@@ -923,8 +929,6 @@ int thread_z80(void * thread_nr)
         if(CPLD_RESET())
         {
             resetZ80();
-            //z80_instant_reset(&Z80CPU); 
-            //setupMemory(Z80Ctrl->defaultPageMode);
 
             // Wait for release before restarting CPU.
             while(CPLD_RESET());
@@ -1028,6 +1032,7 @@ out:
 static int z80drv_mmap(struct file *filp, struct vm_area_struct *vma)
 {
     // Locals.
+    int            idx;
     int            ret  = 0;
     struct page   *page = NULL;
     unsigned long  size = (unsigned long)(vma->vm_end - vma->vm_start);
@@ -1063,6 +1068,32 @@ static int z80drv_mmap(struct file *filp, struct vm_area_struct *vma)
         {
             goto out;
         }   
+    }
+    // Another one, as the memory bank page maps are allocated dynamically, need to send a size which indicates which memory block to map. This is done by the size of a memory map
+    // added to it the map slot as 0x1000 per slot.
+    else if(size >= ((MEMORY_BLOCK_SLOTS*sizeof(uint32_t)) + 0x1000) && size < ((MEMORY_BLOCK_SLOTS*sizeof(uint32_t)) + (MEMORY_MODES * 0x1000)))
+    {
+        // Loop through all the memory page slots, if active and the size is in range, then map the memory to user space.
+        for(idx=0; idx < MEMORY_MODES; idx++)
+        {
+            if(size >= ((MEMORY_BLOCK_SLOTS*sizeof(uint32_t)) + ((idx+1)*0x1000)) && size < ((MEMORY_BLOCK_SLOTS*sizeof(uint32_t)) + ((idx+2) * 0x1000)))
+            {
+                // Map the memory if allocated and exit.
+                if(Z80Ctrl->page[idx] != NULL)
+                {
+                    page = virt_to_page((unsigned long)Z80Ctrl->page[idx] + (vma->vm_pgoff << PAGE_SHIFT)); 
+                    ret = remap_pfn_range(vma, vma->vm_start, page_to_pfn(page), size, vma->vm_page_prot);
+                    if (ret != 0)
+                    {
+                        goto out;
+                    }   
+                } else
+                {
+                    ret = -EINVAL;
+                    goto out;  
+                } 
+            }
+        }
     }
     else
     {
@@ -1323,6 +1354,10 @@ void setupMemory(enum Z80_MEMORY_PROFILE mode)
             {
                 setMemoryType((idx/MEMORY_BLOCK_GRANULARITY), MEMORY_TYPE_VIRTUAL_ROM, idx);
             }
+            else if(idx >= 0x1000 && idx < 0xD000)
+            {
+                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY,   MEMORY_TYPE_VIRTUAL_RAM, idx);
+            }
             else if(idx >= 0xD000 && idx < 0xE000)
             {
                 setMemoryType((idx/MEMORY_BLOCK_GRANULARITY), MEMORY_TYPE_PHYSICAL_VRAM, idx);
@@ -1389,7 +1424,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
             else
             {
               #if(DEBUG_ENABLED & 1)
-                if(Z80Ctrl->debug & 0x01) pr_info("IOCTL - Command (%08x)\n", ioctlCmd.cmd);
+                if(Z80Ctrl->debug >=3) pr_info("IOCTL - Command (%08x)\n", ioctlCmd.cmd);
               #endif
                 switch(ioctlCmd.cmd)
                 {
@@ -1402,7 +1437,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                         z80_power(&Z80CPU, FALSE);
                         Z80_PC(Z80CPU) = 0;
                       #if(DEBUG_ENABLED & 1)
-                        if(Z80Ctrl->debug & 0x01) pr_info("Z80 stopped.\n");
+                        if(Z80Ctrl->debug >= 3) pr_info("Z80 stopped.\n");
                       #endif
                         break;
 
@@ -1412,7 +1447,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
                         z80_power(&Z80CPU, TRUE);
                       #if(DEBUG_ENABLED & 1)
-                        if(Z80Ctrl->debug & 0x01) pr_info("Z80 started.\n");
+                        if(Z80Ctrl->debug >= 3) pr_info("Z80 started.\n");
                       #endif
                         break;
 
@@ -1420,7 +1455,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                     case IOCTL_CMD_Z80_PAUSE:
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = Z80_PAUSE; mutex_unlock(&Z80RunModeMutex);
                       #if(DEBUG_ENABLED & 1)
-                        if(Z80Ctrl->debug & 0x01) pr_info("Z80 paused.\n");
+                        if(Z80Ctrl->debug >= 3) pr_info("Z80 paused.\n");
                       #endif
                         break;
 
@@ -1428,7 +1463,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                     case IOCTL_CMD_Z80_CONTINUE:
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = Z80_CONTINUE; mutex_unlock(&Z80RunModeMutex);
                       #if(DEBUG_ENABLED & 1)
-                        if(Z80Ctrl->debug & 0x01) pr_info("Z80 running.\n");
+                        if(Z80Ctrl->debug >= 3) pr_info("Z80 running.\n");
                       #endif
                         break;
 
@@ -1443,7 +1478,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = currentRunMode; mutex_unlock(&Z80RunModeMutex);
                       #if(DEBUG_ENABLED & 1)
-                        if(Z80Ctrl->debug & 0x01) pr_info("Z80 Reset.\n");
+                        if(Z80Ctrl->debug >= 3) pr_info("Z80 Reset.\n");
                       #endif
                         break;
                         
@@ -1459,7 +1494,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = currentRunMode; mutex_unlock(&Z80RunModeMutex);
                       #if(DEBUG_ENABLED & 1)
-                        if(Z80Ctrl->debug & 0x01) pr_info("Z80 Set to use Host Memory.\n");
+                        if(Z80Ctrl->debug >= 3) pr_info("Z80 Set to use Host Memory.\n");
                       #endif
                         break;
 
@@ -1478,7 +1513,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                     
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = currentRunMode; mutex_unlock(&Z80RunModeMutex);
                       #if(DEBUG_ENABLED & 1)
-                        if(Z80Ctrl->debug & 0x01) pr_info("Z80 Set to use Virtual Memory.\n");
+                        if(Z80Ctrl->debug >= 3) pr_info("Z80 Set to use Virtual Memory.\n");
                       #endif
                         break;
 
@@ -1497,7 +1532,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = currentRunMode; mutex_unlock(&Z80RunModeMutex);
                       #if(DEBUG_ENABLED & 1)
-                        if(Z80Ctrl->debug & 0x01) pr_info("Z80 Host DRAM syncd with Virtual Memory.\n");
+                        if(Z80Ctrl->debug >= 3) pr_info("Z80 Host DRAM syncd with Virtual Memory.\n");
                       #endif
                         break;
 
@@ -1706,6 +1741,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                     // Method to turn on/off debug output.
                     case IOCTL_CMD_DEBUG:
                         Z80Ctrl->debug = ioctlCmd.debug.level;
+                        pr_info("Debug level set to:%d\n", Z80Ctrl->debug);
                         break;
                   #endif
 
@@ -2013,6 +2049,11 @@ static int __init ModuleInit(void)
     // PC to start and power on the CPU
     Z80_PC(Z80CPU) = 0;
     z80_power(&Z80CPU, TRUE);
+
+    // Initialise Debug logic if compile time enabled.
+  #if(DEBUG_ENABLED != 0)
+    Z80Ctrl->debug            = 0;
+  #endif
 
     // Init done.
     pr_info("Initialisation complete.\n");

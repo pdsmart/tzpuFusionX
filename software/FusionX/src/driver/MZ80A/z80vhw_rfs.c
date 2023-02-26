@@ -185,7 +185,7 @@ void rfsSetupMemory(enum Z80_MEMORY_PROFILE mode)
     // Setup the initial state of the latch up-counter, used to enable access to the programmable registers.
     RFSCtrl.upCntr = ((RFSCtrl.regCtrl & 0x20) >> 2) | ((RFSCtrl.regCtrl & 0x10) >> 2) | ((RFSCtrl.regCtrl & 0x08) >> 2);
 
-    // Initialise the page pointers and memory to use physical RAM.
+    // Initialise the page pointers and memory to reflect an MZ-80A with an RFS board installed.
     for(idx=0x0000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
     {
         if(idx >= 0x0000 && idx < 0x1000)

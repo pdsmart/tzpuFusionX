@@ -124,9 +124,11 @@ enum CTRL_COMMANDS {
 
 
 // Shared memory between this process and the Z80 driver.
-static t_Z80Ctrl  *Z80Ctrl = NULL;
-static uint8_t    *Z80RAM = NULL;
-static uint8_t    *Z80ROM = NULL;
+static t_Z80Ctrl  *Z80Ctrl     = NULL;
+static uint8_t    *Z80RAM      = NULL;
+static uint8_t    *Z80ROM      = NULL;
+static uint32_t   *Z80PAGE[MEMORY_MODES];
+static uint8_t     memoryPage  = 0;
 
 // Method to obtain and return the output screen width.
 //
@@ -211,6 +213,13 @@ int memoryDump(uint32_t memaddr, uint32_t memsize, uint8_t memoryType, uint32_t 
     if(memoryType == 0)
         return(-1);
 
+    // Make sure the memory page is valid if we are dumping them out.
+    if(memoryType == 3 && Z80PAGE[memoryPage] == NULL)
+    {
+        printf("Page %d is not allocated.\n", memoryPage);
+        return(-1);
+    }
+
     // Reconfigure terminal to allow non-blocking key input.
     //
     set_conio_terminal_mode();
@@ -245,7 +254,10 @@ int memoryDump(uint32_t memaddr, uint32_t memsize, uint8_t memoryType, uint32_t 
             {
                 case 16:
                     if(pnt+i < endAddr)
-                        printf("%04X", memoryType == 1 ? (uint16_t)Z80RAM[pnt+i] : memoryType == 2 ? (uint16_t)Z80ROM[pnt+i] : memoryType == 3 ? (uint16_t)*(*(Z80Ctrl->page + Z80Ctrl->memoryMode) + (pnt+i)) : (uint16_t)Z80Ctrl->iopage[pnt+i]);
+                        printf("%04X", memoryType == 1 ? (uint16_t)Z80RAM[pnt+i] : 
+                                       memoryType == 2 ? (uint16_t)Z80ROM[pnt+i] : 
+                                       memoryType == 3 ? (uint16_t)*(*(Z80PAGE + memoryPage) + (pnt+i)) : 
+                                       (uint16_t)Z80Ctrl->iopage[pnt+i]);
                     else
                         printf("    ");
                     i++;
@@ -253,7 +265,10 @@ int memoryDump(uint32_t memaddr, uint32_t memsize, uint8_t memoryType, uint32_t 
 
                 case 32:
                     if(pnt+i < endAddr)
-                        printf("%08lX", memoryType == 1 ? (uint32_t)Z80RAM[pnt+i] : memoryType == 2 ? (uint32_t)Z80ROM[pnt+i] : memoryType == 3 ? (uint32_t)*(*(Z80Ctrl->page + Z80Ctrl->memoryMode) + (pnt+i)) : (uint32_t)Z80Ctrl->iopage[pnt+i]);
+                        printf("%08lX", memoryType == 1 ? (uint32_t)Z80RAM[pnt+i] : 
+                                        memoryType == 2 ? (uint32_t)Z80ROM[pnt+i] : 
+                                        memoryType == 3 ? (uint32_t)*(*(Z80PAGE + memoryPage) + (pnt+i)) : 
+                                        (uint32_t)Z80Ctrl->iopage[pnt+i]);
                     else
                         printf("        ");
                     i++;
@@ -262,7 +277,10 @@ int memoryDump(uint32_t memaddr, uint32_t memsize, uint8_t memoryType, uint32_t 
                 case 8:
                 default:
                     if(pnt+i < endAddr)
-                        printf("%02X", memoryType == 1 ? (uint8_t)Z80RAM[pnt+i] : memoryType == 2 ? (uint8_t)Z80ROM[pnt+i] : memoryType == 3 ? (uint8_t)*(*(Z80Ctrl->page + Z80Ctrl->memoryMode) + (pnt+i)) : (uint8_t)Z80Ctrl->iopage[pnt+i]);
+                        printf("%02X", memoryType == 1 ? (uint8_t)Z80RAM[pnt+i] : 
+                                       memoryType == 2 ? (uint8_t)Z80ROM[pnt+i] : 
+                                       memoryType == 3 ? (uint8_t)*(*(Z80PAGE + memoryPage) + (pnt+i)) : 
+                                       (uint8_t)Z80Ctrl->iopage[pnt+i]);
                     else
                         printf("  ");
                     i++;
@@ -277,7 +295,9 @@ int memoryDump(uint32_t memaddr, uint32_t memsize, uint8_t memoryType, uint32_t 
         // print single ascii char
         for (i=0; i < displayWidth; i++)
         {
-            c = memoryType == 1 ? (char)Z80RAM[pnt+i] : memoryType == 2 ? (char)Z80ROM[pnt+i] : memoryType == 3 ? (char)*(*(Z80Ctrl->page + Z80Ctrl->memoryMode) + (pnt+i)) : (char)Z80Ctrl->iopage[pnt+i];
+            c = memoryType == 1 ? (char)Z80RAM[pnt+i] : memoryType == 2 ? (char)Z80ROM[pnt+i] : 
+                memoryType == 3 ? (char)*(*(Z80PAGE + (uint32_t)memoryPage) + (pnt+i)) : 
+                (char)Z80Ctrl->iopage[pnt+i];
             if ((pnt+i < endAddr) && (c >= ' ') && (c <= '~'))
                 fputc((char)c, stdout);
             else
@@ -721,10 +741,10 @@ void showArgs(char *progName, struct optparse *options)
     printf("                                                                                   # Load contents of binary file into memory at address. default = 0x000000.\n");
     printf("                          = LOADMEM --file <binary filename> --addr <24 bit addr> --type <0 - Host RAM, 1 = Virtual RAM, 2 = Virtual ROM> [--offset <offset> --len <length>]\n");
     printf("                          = SAVE    --file <filename>  --addr <24bit addr> --end <24bit addr> [--size <24bit>] --type <0 - Host RAM, 1 = Virtual RAM, 2 = Virtual ROM, 3 = PageTable, 4 = IOPageTable>\n");
-    printf("                          = DUMP    --addr <24bit addr> --end <24bit addr> [--size <24bit>] --type <0 - Host RAM, 1 = Virtual RAM, 2 = Virtual ROM, 3 = PageTable, 4 = IOPageTable>\n");
+    printf("                          = DUMP    --addr <24bit addr> --end <24bit addr> [--size <24bit>] --type <0 - Host RAM, 1 = Virtual RAM, 2 = Virtual ROM, 3 = MemoryPageTable, 4 = IOPageTable> [--memorypage <0..31>]\n");
     printf("                          = CPLDCMD --data <32bit command>                         # Send adhoc 32bit command to CPLD.\n");
   #if(DEBUG_ENABLED != 0)
-    printf("                          = DEBUG --level <level>                                  # 0 = off, 1 = driver, 2 = k64f, 3 = both.\n");
+    printf("                          = DEBUG   --level <level>                                # 0 = off, 1..15 debug level, 15 is very verbose.\n");
   #endif
     printf("                          = Z80TEST                                                # Perform various debugging tests\n");
     printf("                          = SPITEST                                                # Perform SPI testing\n");
@@ -741,6 +761,7 @@ int main(int argc, char *argv[])
     char       cmd[64]           = { 0 };
     char       fileName[256]     = { 0 };
     char       devName[32]       = { 0 };
+    int        idx;
     int        opt;
     uint32_t   hexData           = 0;
     long       speedMultiplier   = 1;
@@ -771,6 +792,7 @@ int main(int argc, char *argv[])
         {"device",        'D',  OPTPARSE_REQUIRED},
         {"offset",        'O',  OPTPARSE_REQUIRED},
         {"len",           'L',  OPTPARSE_REQUIRED},
+        {"memorypage",    'm',  OPTPARSE_REQUIRED},
       #if(DEBUG_ENABLED != 0)
         {"level",         'l',  OPTPARSE_REQUIRED},
       #endif
@@ -847,9 +869,15 @@ int main(int argc, char *argv[])
                 memoryType = atoi(options.optarg);
                 break;
                
+            // Memory Page - which page, in the page table, to view.
+            case 'm':
+                memoryPage = atoi(options.optarg);
+                //printf("Memory Page:%02x\n", memoryPage);
+                break;
+               
           #if(DEBUG_ENABLED != 0)
-            // Debug level, 0 = off, 1 = driver, 2 = k64f, 3 = both.
-            case 'E':
+            // Debug level, 0 = off, 1..15 debug level, 15 is very verbose.
+            case 'l':
                 debugLevel = atoi(options.optarg);
                 break;
           #endif
@@ -959,6 +987,13 @@ int main(int argc, char *argv[])
             close(fdZ80);  
             exit(1);
         }
+        // Loop through all the memory mapping pages, each page specifies a 64K mapping block, all memory accesses go through this map.
+        for(idx=0; idx < MEMORY_MODES; idx++)
+        {
+            // Try and bind the page, if it doesnt exist, then the pointer will be NULL so it wont be used.
+            Z80PAGE[idx] = (uint32_t *)mmap(0, ((MEMORY_BLOCK_SLOTS*sizeof(uint32_t)) + (0x1000*(idx+1))), PROT_READ | PROT_WRITE,  MAP_SHARED,  fdZ80,  0);
+            if(Z80PAGE[idx] == (void *)-1) Z80PAGE[idx] = NULL;
+        }
     } else
     {
         printf("Failed to open the Z80 Driver, exiting...\n");
@@ -1029,7 +1064,7 @@ int main(int argc, char *argv[])
   #if(DEBUG_ENABLED != 0)
     if(strcasecmp(cmd, "DEBUG") == 0)
     {
-        ctrlCmd(fdZ80, Z80_CMD_DEBUG, debugLevel, 0, 0);
+        ctrlCmd(fdZ80, Z80_CMD_DEBUG, (long)debugLevel, 0, 0);
     } else
   #endif
 

@@ -286,6 +286,10 @@
 #define MZ_MROM_STACK_ADDR           0x01000                             // Monitor ROM start stack address.
 #define MZ_MROM_STACK_SIZE           0x000EF                             // Monitor ROM stack size.
 #define MZ_UROM_ADDR                 0x0E800                             // User ROM start address.
+
+#define MZ_FULLRAM_START_ADDR        0x01200                             // Start of full memory area available for bank switching.
+#define MZ_FULLRAM_SIZE              0xD000 - 0x1200                     // Size of full memory area.
+
 #define MZ_BANKRAM_ADDR              0x0F000                             // Floppy API address which is used in TZFS as the paged RAM for additional functionality.
 #define MZ_CMT_ADDR                  0x010F0                             // Address of the CMT (tape) header record.
 #define MZ_CMT_DEFAULT_LOAD_ADDR     0x01200                             // The default load address for a CMT, anything below this is normally illegal.

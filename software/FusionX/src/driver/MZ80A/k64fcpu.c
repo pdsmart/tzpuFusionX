@@ -19,6 +19,7 @@
 //
 // History:         Feb 2023 v1.0  - Source copied from zSoft and modified to run as a daemon, stripping
 //                                   out all low level control methods.
+//                           v1.01 - Updates to make compatible with the TZFS changes.
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -64,7 +65,7 @@ extern "C" {
 #include "z80driver.h"
 #include "tzpu.h"
 
-#define VERSION                      "1.0"
+#define VERSION                      "1.01"
 #define AUTHOR                       "P.D.Smart"
 #define COPYRIGHT                    "(c) 2018-23"
   
@@ -596,7 +597,7 @@ FRESULT loadZ80Memory(const char *src, uint32_t fileOffset, uint32_t addr, uint3
         fr0 = (fseek(File, fileOffset, SEEK_SET) != -1) ? FR_OK : FR_DISK_ERR;
 
   #if(DEBUG_ENABLED & 0x02)
-    if(Z80Ctrl->debug & 0x02) printf("Loading file(%s,%08lx,%08lx)\n", src, addr, size);   
+    if(Z80Ctrl->debug >= 2) printf("Loading file(%s,%08lx,%08lx)\n", src, addr, size);   
   #endif
 
     // If no errors in opening the file, proceed with reading and loading into memory.
@@ -2223,7 +2224,7 @@ uint8_t svcWriteCPMDrive(void)
     if(!result)
     {
       #if(DEBUG_ENABLED & 0x02)
-        if(Z80Ctrl->debug & 0x02) 
+        if(Z80Ctrl->debug >= 3) 
         {
             printf("Writing offset=%08lx\n", fileOffset);
             for(uint16_t idx=0; idx < TZSVC_SECTOR_SIZE; idx++)
@@ -2359,7 +2360,7 @@ uint8_t loadBIOS(const char *biosFileName, uint32_t loadAddr)
 {
     // Locals.
     uint8_t result = FR_OK;
-   
+
     // Load up the given BIOS into tranZPUter memory.
     if((result=loadZ80Memory(biosFileName, 0, loadAddr, 0, 0, TRANZPUTER)) != FR_OK)
     {
@@ -2397,9 +2398,13 @@ FRESULT loadTZFS(char *biosFile, uint32_t loadAddr)
     {
         printf("Error: Failed to load page 3 of %s into tranZPUter memory.\n", MZ_ROM_TZFS);
     }
-    if(!result && (result=loadZ80Memory((const char *)OS_BASE_DIR TZSVC_DEFAULT_TZFS_DIR "/" MZ_ROM_TZFS, 0x3800, MZ_BANKRAM_ADDR+0x30000, 0x1000, 0, TRANZPUTER) != FR_OK))
+    if(!result && (result=loadZ80Memory((const char *)OS_BASE_DIR TZSVC_DEFAULT_TZFS_DIR "/" MZ_ROM_TZFS, 0x3800, MZ_FULLRAM_START_ADDR+0x30000, MZ_FULLRAM_SIZE, 0, TRANZPUTER) != FR_OK))
     {
-        printf("Error: Failed to load page 4 of %s into tranZPUter memory.\n", MZ_ROM_TZFS);
+        printf("Error: Failed to load page 4/1 of %s into tranZPUter memory.\n", MZ_ROM_TZFS);
+    }
+    if(!result && (result=loadZ80Memory((const char *)OS_BASE_DIR TZSVC_DEFAULT_TZFS_DIR "/" MZ_ROM_TZFS, 0x3800+MZ_FULLRAM_SIZE, MZ_BANKRAM_ADDR+0x30000, 0x1000, 0, TRANZPUTER) != FR_OK))
+    {
+        printf("Error: Failed to load page 4/2 of %s into tranZPUter memory.\n", MZ_ROM_TZFS);
     }
     return(result);
 }
@@ -2431,7 +2436,7 @@ void loadTranZPUterDefaultROMS(uint8_t cpuConfig)
             if(!result)
             {
               #if(DEBUG_ENABLED & 0x2)
-                if(Z80Ctrl->debug & 0x02) printf("Loading 1Z_013B\n");
+                if(Z80Ctrl->debug >= 2) printf("Loading 1Z_013B\n");
               #endif
 
                 //result = loadBIOS(MZ_ROM_1Z_013B,      MZ800, MZ_800_MROM_ADDR);
@@ -2446,7 +2451,7 @@ void loadTranZPUterDefaultROMS(uint8_t cpuConfig)
             if(!result)
             {
               #if(DEBUG_ENABLED & 0x2)
-                if(Z80Ctrl->debug & 0x02) printf("Loading 9Z_504M\n");
+                if(Z80Ctrl->debug >= 2) printf("Loading 9Z_504M\n");
               #endif
                 result = loadBIOS(MZ_ROM_9Z_504M,      MZ_800_IPL_ADDR);
             }
@@ -2455,7 +2460,7 @@ void loadTranZPUterDefaultROMS(uint8_t cpuConfig)
             if(!result)
             {
               #if(DEBUG_ENABLED & 0x2)
-                if(Z80Ctrl->debug & 0x02) printf("Loading BASIC IOCS\n");
+                if(Z80Ctrl->debug >= 2) printf("Loading BASIC IOCS\n");
               #endif
                 result = loadBIOS(MZ_ROM_800_IOCS,     MZ_800_IOCS_ADDR);
             }
@@ -2469,7 +2474,7 @@ void loadTranZPUterDefaultROMS(uint8_t cpuConfig)
         case HW_MZ2000:
             // Load up the IPL BIOS at least try even if the CGROM failed.
           #if(DEBUG_ENABLED & 0x2)
-            if(Z80Ctrl->debug & 0x02) printf("Loading IPL\n");
+            if(Z80Ctrl->debug >= 2) printf("Loading IPL\n");
           #endif
             result = loadBIOS(MZ_ROM_MZ2000_IPL_TZPU,  MZ_MROM_ADDR);
             if(result != FR_OK)
@@ -2622,7 +2627,7 @@ void processServiceRequest(void)
 
             // Load the 40 column version of the default host bios into memory.
             case TZSVC_CMD_LOAD40ABIOS:
-                loadBIOS(MZ_ROM_SA1510_40C, MZ_MROM_ADDR);
+                loadBIOS((const char *)OS_BASE_DIR TZSVC_DEFAULT_TZFS_DIR "/" MZ_ROM_SA1510_40C, MZ_MROM_ADDR);
                
                 // Set the frequency of the CPU if we are emulating the hardware.
                 if(z80Control.hostType != HW_MZ80A)
@@ -2634,7 +2639,7 @@ void processServiceRequest(void)
               
             // Load the 80 column version of the default host bios into memory.
             case TZSVC_CMD_LOAD80ABIOS:
-                loadBIOS(MZ_ROM_SA1510_80C, MZ_MROM_ADDR);
+                loadBIOS((const char *)OS_BASE_DIR TZSVC_DEFAULT_TZFS_DIR "/" MZ_ROM_SA1510_80C, MZ_MROM_ADDR);
                
                 // Set the frequency of the CPU if we are emulating the hardware.
                 if(z80Control.hostType != HW_MZ80A)
@@ -2646,7 +2651,7 @@ void processServiceRequest(void)
                
             // Load the 40 column MZ700 1Z-013A bios into memory for compatibility switch.
             case TZSVC_CMD_LOAD700BIOS40:
-                loadBIOS(MZ_ROM_1Z_013A_40C, MZ_MROM_ADDR);
+                loadBIOS((const char *)OS_BASE_DIR TZSVC_DEFAULT_TZFS_DIR "/" MZ_ROM_1Z_013A_40C, MZ_MROM_ADDR);
 
                 // Set the frequency of the CPU if we are emulating the hardware.
                 if(z80Control.hostType != HW_MZ700)
@@ -2658,7 +2663,7 @@ void processServiceRequest(void)
 
             // Load the 80 column MZ700 1Z-013A bios into memory for compatibility switch.
             case TZSVC_CMD_LOAD700BIOS80:
-                loadBIOS(MZ_ROM_1Z_013A_80C, MZ_MROM_ADDR);
+                loadBIOS((const char *)OS_BASE_DIR TZSVC_DEFAULT_TZFS_DIR "/" MZ_ROM_1Z_013A_80C, MZ_MROM_ADDR);
               
                 // Set the frequency of the CPU if we are emulating the hardware.
                 if(z80Control.hostType != HW_MZ700)
@@ -2670,7 +2675,7 @@ void processServiceRequest(void)
               
             // Load the MZ800 9Z-504M bios into memory for compatibility switch.
             case TZSVC_CMD_LOAD800BIOS:
-                loadBIOS(MZ_ROM_9Z_504M,  MZ_MROM_ADDR);
+                loadBIOS((const char *)OS_BASE_DIR TZSVC_DEFAULT_TZFS_DIR "/" MZ_ROM_9Z_504M,  MZ_MROM_ADDR);
 
                 // Set the frequency of the CPU if we are emulating the hardware.
                 if(z80Control.hostType != HW_MZ800)
@@ -2682,7 +2687,7 @@ void processServiceRequest(void)
                
             // Load the MZ-80B IPL ROM into memory for compatibility switch.
             case TZSVC_CMD_LOAD80BIPL:
-                loadBIOS(MZ_ROM_MZ80B_IPL, MZ_MROM_ADDR);
+                loadBIOS((const char *)OS_BASE_DIR TZSVC_DEFAULT_TZFS_DIR "/" MZ_ROM_MZ80B_IPL, MZ_MROM_ADDR);
               
                 // Set the frequency of the CPU if we are emulating the hardware.
                 if(z80Control.hostType != HW_MZ80B)
@@ -2694,7 +2699,7 @@ void processServiceRequest(void)
                
             // Load the MZ-2000 IPL ROM into memory for compatibility switch.
             case TZSVC_CMD_LOAD2000IPL:
-                loadBIOS(MZ_ROM_MZ2000_IPL, MZ_MROM_ADDR);
+                loadBIOS((const char *)OS_BASE_DIR TZSVC_DEFAULT_TZFS_DIR "/" MZ_ROM_MZ2000_IPL, MZ_MROM_ADDR);
               
                 // Set the frequency of the CPU if we are emulating the hardware.
                 if(z80Control.hostType != HW_MZ2000)

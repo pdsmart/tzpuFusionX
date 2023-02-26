@@ -51,4 +51,4 @@ echo performance > /sys/devices//system/cpu/cpufreq/policy0/scaling_governor
 echo 1200000 > /sys/devices//system/cpu/cpufreq/policy0/scaling_min_freq 
 
 # Done.
-echo "FusionX loaded and configured in RFS mode."
+echo "FusionX loaded and configured in TZFS mode."

@@ -53,7 +53,7 @@
 #define DEVICE_NAME                           "z80drv"
 #define  CLASS_NAME                           "mogu"
 #define IO_PROCESSOR_NAME                     "k64fcpu"          // Name of the I/O processor user space application.
-#define DEBUG_ENABLED                         1
+#define DEBUG_ENABLED                         0                  // 0 = disabled, 1 = z80driver, 2 = k64fcpu, 3 = both.
 
 // Memory and IO page types. Used to create a memory page which maps type of address space to real address space on host or virtual memory.
 #define MEMORY_TYPE_VIRTUAL_MASK              0x00FFFFFF
@@ -71,6 +71,23 @@
 #define IO_TYPE_PHYSICAL_HW                   0x80000000
 #define IO_TYPE_VIRTUAL_HW                    0x40000000
 
+//*********************************************************************************************
+// Delay periods for the various hosts, which need adding to the primary opcode fetch in 
+// order to govern the virtual Z80 to a known speed. The timings are only used within
+// virtual memory, if an opcode is being fetched from physical memory will self govern to the
+// host speed. 
+// NB. As of v1.0 FusionX hardware, unless a method is forthcoming due to the low speed of the
+// SSD202 CPU GPIO access (72MHz bus speed, 1x72MHz per bit, in theory 2.2M 32bit words per 
+// second, in practice 2MBytes per second! This is a shortcoming of the SSD202 CPU, others,
+// such as the NXP K64FX512 Cortex-M4 has 32bit registers where a single access can write
+// /read/toggle/clear 32bits and the bus is operating at 85MHz! If SigmaStar release an updated
+// CPU, or another compatible system becomes available, v1.1 of the FusionX hardware will be
+// created in order to allow full speed program execution within host memory.
+// NBB: Actual Z80 transactions run at full speed, it is just the period from completion
+// of 1 cycle to the next taking too much time in the SSD202 to setup. Workarounds using
+// lookahead and queue techniques have been adopted to ensure I/O timing for things such as
+// floppy drives functions as per the original host.
+//*********************************************************************************************
 
 // Approximate governor delays to regulate emulated CPU speed.
 // MZ-700
@@ -184,23 +201,47 @@ enum Z80_INSTRUCTION_DELAY {
 #endif
 
 // MZ-80A - These values are dependent on the CPU Freq of the SSD202. Values are for 1.2GHz, in brackets for 1.0GHz
+// The reason for having 2 sets of delays is due to original coding where ROM memory required less instructions 
+// than RAM. Also depending upon build slight differences need to be catered for, ie. when including debug logic
+// there are extra instructions to process during the fetch cycle.
 #if(TARGET_HOST_MZ80A == 1)
-#define INSTRUCTION_DELAY_ROM_2MHZ            436  // (420)
-#define INSTRUCTION_DELAY_ROM_4MHZ            218
-#define INSTRUCTION_DELAY_ROM_8MHZ            109
-#define INSTRUCTION_DELAY_ROM_16MHZ           54
-#define INSTRUCTION_DELAY_ROM_32MHZ           27
-#define INSTRUCTION_DELAY_ROM_64MHZ           14
-#define INSTRUCTION_DELAY_ROM_128MHZ          7
-#define INSTRUCTION_DELAY_ROM_256MHZ          3
-#define INSTRUCTION_DELAY_RAM_2MHZ            420
-#define INSTRUCTION_DELAY_RAM_4MHZ            210
-#define INSTRUCTION_DELAY_RAM_8MHZ            105
-#define INSTRUCTION_DELAY_RAM_16MHZ           52
-#define INSTRUCTION_DELAY_RAM_32MHZ           26
-#define INSTRUCTION_DELAY_RAM_64MHZ           13
-#define INSTRUCTION_DELAY_RAM_128MHZ          7
-#define INSTRUCTION_DELAY_RAM_256MHZ          0
+
+#if(DEBUG_ENABLED > 0)
+  #define INSTRUCTION_DELAY_ROM_2MHZ          427  // (420)
+  #define INSTRUCTION_DELAY_ROM_4MHZ          218
+  #define INSTRUCTION_DELAY_ROM_8MHZ          109
+  #define INSTRUCTION_DELAY_ROM_16MHZ         54
+  #define INSTRUCTION_DELAY_ROM_32MHZ         27
+  #define INSTRUCTION_DELAY_ROM_64MHZ         14
+  #define INSTRUCTION_DELAY_ROM_128MHZ        7
+  #define INSTRUCTION_DELAY_ROM_256MHZ        3
+  #define INSTRUCTION_DELAY_RAM_2MHZ          425
+  #define INSTRUCTION_DELAY_RAM_4MHZ          212
+  #define INSTRUCTION_DELAY_RAM_8MHZ          106
+  #define INSTRUCTION_DELAY_RAM_16MHZ         53
+  #define INSTRUCTION_DELAY_RAM_32MHZ         26
+  #define INSTRUCTION_DELAY_RAM_64MHZ         13
+  #define INSTRUCTION_DELAY_RAM_128MHZ        7
+  #define INSTRUCTION_DELAY_RAM_256MHZ        0
+#endif
+#if(DEBUG_ENABLED == 0)
+  #define INSTRUCTION_DELAY_ROM_2MHZ          429  // (420)
+  #define INSTRUCTION_DELAY_ROM_4MHZ          218
+  #define INSTRUCTION_DELAY_ROM_8MHZ          109
+  #define INSTRUCTION_DELAY_ROM_16MHZ         54
+  #define INSTRUCTION_DELAY_ROM_32MHZ         27
+  #define INSTRUCTION_DELAY_ROM_64MHZ         14
+  #define INSTRUCTION_DELAY_ROM_128MHZ        7
+  #define INSTRUCTION_DELAY_ROM_256MHZ        3
+  #define INSTRUCTION_DELAY_RAM_2MHZ          425
+  #define INSTRUCTION_DELAY_RAM_4MHZ          210
+  #define INSTRUCTION_DELAY_RAM_8MHZ          105
+  #define INSTRUCTION_DELAY_RAM_16MHZ         52
+  #define INSTRUCTION_DELAY_RAM_32MHZ         26
+  #define INSTRUCTION_DELAY_RAM_64MHZ         13
+  #define INSTRUCTION_DELAY_RAM_128MHZ        7
+  #define INSTRUCTION_DELAY_RAM_256MHZ        0
+#endif
 #define INSTRUCTION_EQUIV_FREQ_2MHZ           2000000
 #define INSTRUCTION_EQUIV_FREQ_4MHZ           4000000
 #define INSTRUCTION_EQUIV_FREQ_8MHZ           8000000
@@ -210,6 +251,7 @@ enum Z80_INSTRUCTION_DELAY {
 #define INSTRUCTION_EQUIV_FREQ_128MHZ         128000000
 #define INSTRUCTION_EQUIV_FREQ_256MHZ         256000000
 
+// Table of governor delays to be used to control run frequency,
 enum Z80_INSTRUCTION_DELAY {
     ROM_DELAY_NORMAL                          = INSTRUCTION_DELAY_ROM_2MHZ,
     ROM_DELAY_X2                              = INSTRUCTION_DELAY_ROM_4MHZ,
@@ -495,7 +537,7 @@ typedef struct {
     // An I/O processor, running as a User Space daemon, can register to receive signals and events.
     struct task_struct                        *ioTask;
 
-  #if(DEBUG_ENABLED == 1)
+  #if(DEBUG_ENABLED != 0)
     // Debugging flag.
     uint8_t                                   debug;
   #endif
@@ -520,7 +562,7 @@ struct virtual_device {
 struct cpld_ctrl {
     uint32_t                                  cmd;
 };
-#if(DEBUG_ENABLED == 1)
+#if(DEBUG_ENABLED != 0)
 struct debug {
     uint8_t                                   level;
 };
@@ -533,7 +575,7 @@ struct ioctlCmd {
         struct speed                          speed;
         struct virtual_device                 vdev;
         struct cpld_ctrl                      cpld;
-      #if(DEBUG_ENABLED == 1)
+      #if(DEBUG_ENABLED != 0)
         struct debug                          debug;
       #endif
     };
