@@ -86,8 +86,30 @@
 
 #define BNKCTRLDEF                            BBMOSI+SDCS+BBCLK                         // Default on startup for the Bank Control register.
 
+// RFS Board ROM rom filename definitions. 
+#define ROM_DIR                               "/apps/FusionX/roms/"
+#define ROM_MROM_40C_FILENAME                 ROM_DIR "MROM_256_40c.bin"
+#define ROM_USER_I_40C_FILENAME               ROM_DIR "USER_ROM_256_40c.bin"
+#define ROM_USER_II_40C_FILENAME              ROM_DIR "USER_ROM_II_256_40c.bin"
+#define ROM_USER_III_40C_FILENAME             ROM_DIR "USER_ROM_III_256_40c.bin"
+#define ROM_MROM_80C_FILENAME                 ROM_DIR "MROM_256_80c.bin"
+#define ROM_USER_I_80C_FILENAME               ROM_DIR "USER_ROM_256_80c.bin"
+#define ROM_USER_II_80C_FILENAME              ROM_DIR "USER_ROM_II_256_80c.bin"
+#define ROM_USER_III_80C_FILENAME             ROM_DIR "USER_ROM_III_256_80c.bin"
+
+// RFS Board ROM rom load and size definitions. 
+#define ROM_MROM_LOAD_ADDR                    0x000000
+#define ROM_USER_I_LOAD_ADDR                  0x080000 
+#define ROM_USER_II_LOAD_ADDR                 0x100000  
+#define ROM_USER_III_LOAD_ADDR                0x180000 
+#define ROM_MROM_SIZE                         0x80000
+#define ROM_USER_I_SIZE                       0x80000
+#define ROM_USER_II_SIZE                      0x80000
+#define ROM_USER_III_SIZE                     0x80000
+
 // SD Drive constants.
-#define SD_CARD_FILENAME                      "/apps/FusionX/SD/SHARP_MZ80A_RFS_CPM_IMAGE_1.img"// SD Card Binary Image.
+#define SD_DIR                                "/apps/FusionX/SD/"
+#define SD_CARD_FILENAME                      SD_DIR "SHARP_MZ80A_RFS_CPM_IMAGE_1.img"// SD Card Binary Image.
 
 // MMC/SD command (SPI mode)
 #define CMD0                                  0x40 + 0                                  // GO_IDLE_STATE 
@@ -203,9 +225,45 @@ void rfsSetupMemory(enum Z80_MEMORY_PROFILE mode)
     pr_info("RFS Memory Setup complete.\n");
 }
 
-// Perform any setup operations, such as variable initialisation, to enable use of this module.
-void rfsInit(void)
+// Method to load a ROM image into the ROM memory.
+//
+uint8_t loadROM(const char* romFileName, uint32_t loadAddr, uint32_t loadSize)
 {
+    // Locals.
+    uint8_t     result = 0;
+    long        noBytes;
+    struct file *fp;
+
+    fp = filp_open(romFileName, O_RDONLY, 0);
+    if(IS_ERR(fp))
+    {
+        pr_info("Error opening ROM Image:%s\n:", romFileName);
+        result = 1;
+    } else
+    {
+        vfs_llseek(fp, 0, SEEK_SET);
+        noBytes = kernel_read(fp, fp->f_pos, &Z80Ctrl->rom[loadAddr], loadSize);
+        if(noBytes < loadSize)
+        {
+            // pr_info("Short load, ROM Image:%s, bytes loaded:%08x\n:", romFileName, loadSize);
+        }
+        filp_close(fp,NULL);
+    }
+
+    return(result);
+}
+
+// Perform any setup operations, such as variable initialisation, to enable use of this module.
+void rfsInit(uint8_t mode80c)
+{
+    // Locals.
+    
+    // Load ROMS according to the display configuration, 40 char = standard, 80 char = 40/80 board installed.
+    loadROM(mode80c == 0 ? ROM_MROM_40C_FILENAME     : ROM_MROM_80C_FILENAME,    ROM_MROM_LOAD_ADDR,     ROM_MROM_SIZE);
+    loadROM(mode80c == 0 ? ROM_USER_I_40C_FILENAME   : ROM_USER_I_80C_FILENAME,  ROM_USER_I_LOAD_ADDR,   ROM_MROM_SIZE);
+    loadROM(mode80c == 0 ? ROM_USER_II_40C_FILENAME  : ROM_USER_II_80C_FILENAME, ROM_USER_II_LOAD_ADDR,  ROM_MROM_SIZE);
+    loadROM(mode80c == 0 ? ROM_USER_III_40C_FILENAME : ROM_USER_II_80C_FILENAME, ROM_USER_III_LOAD_ADDR, ROM_MROM_SIZE);
+
     pr_info("Enabling RFS driver.\n");
 }
 

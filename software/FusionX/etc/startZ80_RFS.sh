@@ -32,14 +32,15 @@ rmmod z80drv 2>/dev/null
 insmod z80drv.ko
 sleep 1
 
-# Load the original RFS ROM images.
-${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/rom/MROM_256_${SCREENWIDTH}c.bin         --addr 0x000000  --type 1
-${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/rom/USER_ROM_256_${SCREENWIDTH}c.bin     --addr 0x80000   --type 1
-${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/rom/USER_ROM_II_256_${SCREENWIDTH}c.bin  --addr 0x100000  --type 1
-${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/rom/USER_ROM_III_256_${SCREENWIDTH}c.bin --addr 0x180000  --type 1
-
 # Add the RFS Virtual Hardware to the driver.
 ${FUSIONXDIR}/bin/z80ctrl --adddev --device rfs
+
+# Load the original RFS ROM images. These are loaded by the RFS driver but here for reference or to load alternate. If
+# alternate roms are loaded then ensure they are loaded prior to the start command below.
+#${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/rom/MROM_256_${SCREENWIDTH}c.bin         --addr 0x000000  --type 1
+#${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/rom/USER_ROM_256_${SCREENWIDTH}c.bin     --addr 0x80000   --type 1
+#${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/rom/USER_ROM_II_256_${SCREENWIDTH}c.bin  --addr 0x100000  --type 1
+#${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/rom/USER_ROM_III_256_${SCREENWIDTH}c.bin --addr 0x180000  --type 1
 
 # Start the Z80 (ie. MZ-80A virtual processor).
 ${FUSIONXDIR/bin/z80ctrl --start

@@ -581,9 +581,13 @@ int ctrlCmd(int fdZ80, enum CTRL_COMMANDS cmd, long param1, long param2, long pa
             break;
         case Z80_CMD_ADD_DEVICE:
             ioctlCmd.vdev.device = VIRTUAL_DEVICE_NONE;
-            if(strcasecmp((char *)param1, "RFS") == 0)
+            if(strcasecmp((char *)param1, "RFS") == 0 || strcasecmp((char *)param1, "RFS80") == 0)
             {
-                ioctlCmd.vdev.device = VIRTUAL_DEVICE_RFS;
+                ioctlCmd.vdev.device = VIRTUAL_DEVICE_RFS80;
+            }
+            if(strcasecmp((char *)param1, "RFS40") == 0)
+            {
+                ioctlCmd.vdev.device = VIRTUAL_DEVICE_RFS40;
             }
             else if(strcasecmp((char *)param1, "TZPU") == 0)
             {
@@ -597,9 +601,13 @@ int ctrlCmd(int fdZ80, enum CTRL_COMMANDS cmd, long param1, long param2, long pa
             break;
         case Z80_CMD_DEL_DEVICE:
             ioctlCmd.vdev.device = VIRTUAL_DEVICE_NONE;
-            if(strcasecmp((char *)param1, "RFS") == 0)
+            if(strcasecmp((char *)param1, "RFS") == 0 || strcasecmp((char *)param1, "RFS80") == 0)
             {
-                ioctlCmd.vdev.device = VIRTUAL_DEVICE_RFS;
+                ioctlCmd.vdev.device = VIRTUAL_DEVICE_RFS80;
+            }
+            else if(strcasecmp((char *)param1, "RFS40") == 0)
+            {
+                ioctlCmd.vdev.device = VIRTUAL_DEVICE_RFS40;
             }
             else if(strcasecmp((char *)param1, "TZPU") == 0)
             {
@@ -734,8 +742,8 @@ void showArgs(char *progName, struct optparse *options)
     printf("                          = CONTINUE                                               # Continue Z80 execution\n");
     printf("                          = HOSTRAM                                                # Use HOST DRAM\n");
     printf("                          = VIRTRAM                                                # Use Virtual RAM\n");
-    printf("                          = ADDDEV  --device <RFS, TZPU>                           # Add a virtual device into the Z80 configuration.\n");
-    printf("                          = DELDEV  --device <RFS, TZPU>                           # Remove a virtual device from the Z80 configuration.\n");
+    printf("                          = ADDDEV  --device <RFS40, RFS80, TZPU>                  # Add a virtual device into the Z80 configuration.\n");
+    printf("                          = DELDEV  --device <RFS40, RFS80, TZPU>                  # Remove a virtual device from the Z80 configuration.\n");
     printf("                          = SPEED   --mult <1, 2, 4, 8, 16, 32, 64, 128>           # In Virtual RAM mode, set CPU speed to base clock x factor.\n");
     printf("                          = LOADMZF --file <mzf filename>                          # Load MZF file into RAM.\n");
     printf("                                                                                   # Load contents of binary file into memory at address. default = 0x000000.\n");

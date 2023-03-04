@@ -32,18 +32,18 @@ rmmod z80drv 2>/dev/null
 insmod z80drv.ko
 sleep 1
 
+# Add the TZPU Virtual Hardware to the driver.
+${FUSIONXDIR}/bin/z80ctrl --adddev --device tzpu
+
+# Start the K64F Virtual CPU Emulation.
+${FUSIONXDIR}/bin/k64fcpu &
+
 # Load the original Monitor and TZFS ROM images. This is done in the K64F daemon but can be manually enabled.
 #${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/roms/monitor_${SCREENWIDTH}c_sa1510.rom        --addr 0x000000  --type 1
 #${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/roms/tzfs.rom --offset 0x000000 --len 0x001800 --addr 0x00E800  --type 1
 #${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/roms/tzfs.rom --offset 0x001800 --len 0x001000 --addr 0x01F000  --type 1
 #${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/roms/tzfs.rom --offset 0x002800 --len 0x001000 --addr 0x02F000  --type 1
 #${FUSIONXDIR}/bin/z80ctrl --loadrom --file  ${FUSIONXDIR}/roms/tzfs.rom --offset 0x003800 --len 0x001000 --addr 0x03F000  --type 1
-
-# Add the TZPU Virtual Hardware to the driver.
-${FUSIONXDIR}/bin/z80ctrl --adddev --device tzpu
-
-# Start the K64F Virtual CPU Emulation.
-${FUSIONXDIR}/bin/k64fcpu &
 
 # Ensure the system is set for performance mode with max frequency.
 # NB: Enabling this prior to starting the Z80 results in a kernel error.

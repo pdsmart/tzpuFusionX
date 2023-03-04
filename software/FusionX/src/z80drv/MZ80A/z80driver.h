@@ -451,8 +451,10 @@ enum Z80_MEMORY_PROFILE {
 };
 enum VIRTUAL_DEVICE {
     VIRTUAL_DEVICE_NONE                     = 0x00000000,
-    VIRTUAL_DEVICE_RFS                      = 0x02000000,
-    VIRTUAL_DEVICE_TZPU                     = 0x01000000
+    VIRTUAL_DEVICE_RFS40                    = 0x01000000,
+    VIRTUAL_DEVICE_RFS80                    = 0x02000000,
+    VIRTUAL_DEVICE_RFS                      = 0x03000000,
+    VIRTUAL_DEVICE_TZPU                     = 0x04000000
 };
 
 typedef struct {

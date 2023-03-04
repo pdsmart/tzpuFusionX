@@ -1,12 +1,12 @@
 [submodule "software/FusionX/src/driver/Z80"]
-	path = software/FusionX/src/driver/Z80
+	path = software/FusionX/src/z80drv/Z80
 	url = https://github.com/redcode/Z80.git
 [submodule "software/FusionX/src/driver/Zeta"]
-	path = software/FusionX/src/driver/Zeta
+	path = software/FusionX/src/z80drv/Zeta
 	url = https://github.com/redcode/Zeta.git
 [submodule "software/FusionX/src/driver/6502"]
-	path = software/FusionX/src/driver/6502
+	path = software/FusionX/src/z80drv/6502
 	url = https://github.com/redcode/6502.git
 [submodule "software/FusionX/src/driver/software/FusionX/src/driver/6502"]
-	path = software/FusionX/src/driver/software/FusionX/src/driver/6502
+	path = software/FusionX/src/z80drv/software/FusionX/src/driver/6502
 	url = https://github.com/redcode/6502.git

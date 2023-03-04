@@ -1629,8 +1629,10 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                         }
                         if(idx < Z80Ctrl->virtualDeviceCnt)
                             break;
+
                       #if(TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ2000 == 1)
-                        pr_info("RFS Board currently supported on MZ-80A Host only.\n");
+                        if(ioctlCmd.vdev.device & VIRTUAL_DEVICE_RFS)
+                            pr_info("RFS Board currently supported on MZ-80A Host only.\n");
                         break;
                       #endif
 
@@ -1644,10 +1646,11 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                         switch(ioctlCmd.vdev.device)
                         {
                           #if(TARGET_HOST_MZ80A == 1)
-                            case VIRTUAL_DEVICE_RFS:
-                                Z80Ctrl->virtualDevice[Z80Ctrl->virtualDeviceCnt++] = VIRTUAL_DEVICE_RFS;
-                                Z80Ctrl->virtualDeviceBitMap |= VIRTUAL_DEVICE_RFS;
-                                rfsInit();
+                            case VIRTUAL_DEVICE_RFS40:
+                            case VIRTUAL_DEVICE_RFS80:
+                                Z80Ctrl->virtualDevice[Z80Ctrl->virtualDeviceCnt++] = ioctlCmd.vdev.device;
+                                Z80Ctrl->virtualDeviceBitMap |= ioctlCmd.vdev.device;
+                                rfsInit(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_RFS40 ? 0 : 1);
                                 break;
                           #endif
 
@@ -1698,8 +1701,9 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                         // Delete the device, removing hooks etc as required.
                         switch(ioctlCmd.vdev.device)
                         {
-                            case VIRTUAL_DEVICE_RFS:
-                                Z80Ctrl->virtualDeviceBitMap &= ~VIRTUAL_DEVICE_RFS;
+                            case VIRTUAL_DEVICE_RFS40:
+                            case VIRTUAL_DEVICE_RFS80:
+                                Z80Ctrl->virtualDeviceBitMap &= ~ioctlCmd.vdev.device;
                                 break;
 
                             case VIRTUAL_DEVICE_TZPU:
