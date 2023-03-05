@@ -12,10 +12,9 @@
 //                  The primary code base is take from tranzputer.c/.h which is part of the zSoft OS 
 //                  package. It is customised for this application.
 //
-// Credits:         Zilog Z80 CPU Emulator v0.2 written by Manuel Sainz de Baranda y Goñi
-//                  The Z80 CPU Emulator is the heart of the Z80 device driver.
+// Credits:
+// 
 // Copyright:       (c) 2019-2023 Philip Smart <philip.smart@net2net.org>
-//                  (c) 1999-2023 Manuel Sainz de Baranda y Goñi
 //
 // History:         Feb 2023 v1.0  - Source copied from zSoft and modified to run as a daemon, stripping
 //                                   out all low level control methods.
@@ -2825,6 +2824,7 @@ void showArgs(char *progName, struct optparse *options)
     printf("%s %s %s %s\n\n", progName, VERSION, COPYRIGHT, AUTHOR);
     printf("Synopsis:\n");
     printf("%s --help                                                                   # This help screen.\n", progName);
+    printf("%*c --startz80                                                               # Start Z80 and reset host.\n", strlen(progName), ' ');
     return;
 }
 
@@ -2843,6 +2843,7 @@ int main(int argc, char *argv[])
     long       fileOffset        = -1;
     long       fileLen           = -1;
     int        helpFlag          = 0;
+    int        startFlag         = 0;
     int        verboseFlag       = 0;
     uint8_t    memoryType        = 0;
     struct ioctlCmd ioctlCmd;
@@ -2851,6 +2852,7 @@ int main(int argc, char *argv[])
     struct optparse options;
     static struct optparse_long long_options[] =
     {
+        {"startz80",      's',  OPTPARSE_NONE},
         {"help",          'h',  OPTPARSE_NONE},
         {"verbose",       'v',  OPTPARSE_NONE},
         {0}
@@ -2867,6 +2869,11 @@ int main(int argc, char *argv[])
             case 'd':
                 sscanf(options.optarg, "0x%08x", &hexData);
                 printf("Hex data:%08x\n", hexData);
+                break;
+               
+            // Start the Z80 processor, default is to wait for a service command or signal. 
+            case 's':
+                startFlag = 1;
                 break;
 
             // Verbose mode.
@@ -2932,7 +2939,10 @@ int main(int argc, char *argv[])
     signal(SIGTERM, shutdownRequest);
 
     // Initiate a reset which loads the default roms and caches SD directory.
-    z80ResetRequest(0);
+    if(startFlag == 1)
+    {
+        z80ResetRequest(0);
+    }
 
     // Enter a loop, process requests as the come in and terminate if requested by signals.
     runControl = 1;

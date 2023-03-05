@@ -122,8 +122,8 @@
 #define MBADDR_TEMP                  0xE008                              // As above, different name used in original source when writing.
 #define MBADDR_MEMSW                 0xE00C                              // Memory swap, 0000->C000, C000->0000
 #define MBADDR_MEMSWR                0xE010                              // Reset memory swap.
-#define MBADDR_INVDSP                0xE014                              // Invert display.
-#define MBADDR_NRMDSP                0xE015                              // Return display to normal.
+#define MBADDR_NRMDSP                0xE014                              // Return display to normal.
+#define MBADDR_INVDSP                0xE015                              // Invert display.
 #define MBADDR_SCLDSP                0xE200                              // Hardware scroll, a read to each location adds 8 to the start of the video access address therefore creating hardware scroll. 00 - reset to power up
 #define MBADDR_SCLBASE               0xE2                                // High byte scroll base.
 #define MBADDR_DSPCTL                0xDFFF                              // Display 40/80 select register (bit 7)
@@ -192,6 +192,11 @@
 #define PAGEDOWN                     0xE1
 #define CURHOMEKEY                   0xE2
 #define ALPHAGRAPHKEY                0xE3
+#define HOTKEY_ORIGINAL              0xE8
+#define HOTKEY_RFS80                 0xE9
+#define HOTKEY_RFS40                 0xEA
+#define HOTKEY_TZFS                  0xEB
+#define HOTKEY_LINUX                 0xEC
 #define NOKEY                        0xF0
 #define CURSRIGHT                    0xF1
 #define CURSLEFT                     0xF2

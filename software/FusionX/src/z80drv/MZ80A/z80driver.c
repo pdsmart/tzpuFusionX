@@ -544,14 +544,31 @@ static zuint8 z80_read(void *context, zuint16 address)
     }
 
     // Keyport data? Store.
-    if(isHW(address) && address == 0xE001 && (Z80Ctrl->keyportStrobe & 0x0f) == 8 && (data & 0x41) == 0)
+    if(isHW(address) && address == 0xE001 && (Z80Ctrl->keyportStrobe & 0x0f) == 0)
     {
-        Z80Ctrl->keyportShiftCtrl = 0x01;
+        Z80Ctrl->keyportShiftCtrl = (data & 0x80) == 0 ? 0x01 : 0x00;
     } else
-    if(isHW(address) && address == 0xE001 && (Z80Ctrl->keyportStrobe & 0x0f) == 0 && (data & 0x80) == 0)
+    // If CTRL key pressed followed by a key on Row 8/9 (Keypad), set Hotkey for later processing.
+    if(isHW(address) && address == 0xE001 && Z80Ctrl->keyportShiftCtrl == 1)
     {
-        Z80Ctrl->keyportHotKey = 0x01;
+        if((Z80Ctrl->keyportStrobe & 0x0f) == 8 && (data & 0x1D) != 0x1D)
+        {
+            Z80Ctrl->keyportHotKey = (data & 0x01) == 0 ? HOTKEY_ORIGINAL :
+                                     (data & 0x04) == 0 ? HOTKEY_RFS80    :
+                                     (data & 0x08) == 0 ? HOTKEY_RFS40    :
+                                     (data & 0x10) == 0 ? HOTKEY_LINUX    : 0x00;
+            Z80Ctrl->keyportTrigger = Z80Ctrl->keyportHotKey;
+        } else
+        if((Z80Ctrl->keyportStrobe & 0x09) == 9 && (data & 0x04) != 0x04)
+        {
+            Z80Ctrl->keyportHotKey = HOTKEY_TZFS;
+            Z80Ctrl->keyportTrigger = 1;
+        } else
+        {
+            Z80Ctrl->keyportTrigger = 0;
+        }
     }
+
   #if(DEBUG_ENABLED & 1)
     if(Z80Ctrl->debug >= 3)
     {
@@ -943,12 +960,13 @@ int thread_z80(void * thread_nr)
             mutex_unlock(&Z80RunModeMutex);
 
             // Hotkey pressed? Bring up user menu.
-            if(Z80Ctrl->keyportShiftCtrl && Z80Ctrl->keyportHotKey)
+            if(Z80Ctrl->keyportTrigger != 0x00 && Z80Ctrl->keyportTriggerLast == 0)
             {
                 z80menu();
+                sendSignal(Z80Ctrl->arbTask, SIGUSR1);
                 Z80Ctrl->keyportShiftCtrl = 0;
-                Z80Ctrl->keyportHotKey = 0;
             }
+            Z80Ctrl->keyportTriggerLast = Z80Ctrl->keyportTrigger;
         }
     }
 
@@ -981,6 +999,12 @@ static int z80drv_release(struct inode *inodep, struct file *filep)
         Z80Ctrl->ioTask = NULL;
         pr_info("I/O processor stopped.\n");
     } else
+    // Is this the Arbiter de-registering?
+    if(Z80Ctrl->arbTask == task) 
+    {
+        Z80Ctrl->arbTask = NULL;
+        pr_info("Arbiter stopped.\n");
+    } else
     {
         // Free up the mutex preventing more than one control process taking control at the same time.
         mutex_unlock(&Z80DRV_MUTEX);
@@ -1009,6 +1033,18 @@ static int z80drv_open(struct inode *inodep, struct file *filep)
     if(Z80Ctrl->ioTask != NULL && strcmp(task->comm, IO_PROCESSOR_NAME) == 0)
     {
         pr_info("I/O Processor already registered, PID:%d\n", Z80Ctrl->ioTask->pid);
+        ret = -EBUSY;
+        goto out;
+    } else
+    // Arbiter?
+    if(Z80Ctrl->arbTask == NULL && strcmp(task->comm, ARBITER_NAME) == 0)
+    {
+        Z80Ctrl->arbTask = task;
+        pr_info("Registering Aribter:%s\n", Z80Ctrl->arbTask->comm);
+    } else
+    if(Z80Ctrl->arbTask != NULL && strcmp(task->comm, ARBITER_NAME) == 0)
+    {
+        pr_info("Arbiter already registered, PID:%d\n", Z80Ctrl->arbTask->pid);
         ret = -EBUSY;
         goto out;
     } else
@@ -1388,9 +1424,36 @@ void setupMemory(enum Z80_MEMORY_PROFILE mode)
   #if(TARGET_HOST_MZ80A == 1)
     if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_RFS)
         rfsSetupMemory(mode);
+    else
   #endif
     if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_TZPU)
         tzpuSetupMemory(mode);
+    else
+    {
+        // Original mode, ie. no virtual devices active, copy the host BIOS into the Virtual ROM and initialise remainder of ROM memory
+        // such that the host behaves as per original spec.
+        pr_info("Sync Host BIOS to virtual ROM.\n");
+        for(idx=0; idx < Z80_VIRTUAL_ROM_SIZE; idx++)
+        {
+          #if(TARGET_HOST_MZ700 == 1)
+            if(idx >= 0x0000 && idx < 0x1000)
+          #endif
+          #if(TARGET_HOST_MZ80A == 1)
+            if((idx >= 0x0000 && idx < 0x1000) || (idx >= 0xF000 && idx < 0x10000))
+          #endif
+          #if(TARGET_HOST_MZ2000 == 1)
+            if(idx >= 0x0000 && idx < 0x8000)
+          #endif
+            {
+                SPI_SEND32((uint32_t)idx << 16 | CPLD_CMD_READ_ADDR);
+                while(CPLD_READY() == 0);
+                Z80Ctrl->rom[idx] = z80io_PRL_Read8(1);
+            } else
+            {
+                Z80Ctrl->rom[idx] = 0x00;
+            }
+        }
+    }
 
     // Enable autorefresh if refreshDRAM is set.
     SPI_SEND8(Z80Ctrl->refreshDRAM == 1 ? CPLD_CMD_SET_AUTO_REFRESH : CPLD_CMD_CLEAR_AUTO_REFRESH);
@@ -1623,7 +1686,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                         {
                             if(Z80Ctrl->virtualDevice[idx] == ioctlCmd.vdev.device)
                             {
-                                pr_info("Virtual Device already installed.\n");
+                                //pr_info("Virtual Device already installed.\n");
                                 break;
                             }
                         }
@@ -1670,7 +1733,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
                         // Z80 can continue.
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = currentRunMode; mutex_unlock(&Z80RunModeMutex);
-                        pr_info("Virtual device added.\n");
+                        //pr_info("Virtual device added.\n");
                         break;
 
                     // Command to remove a device from the Z80 configuration.
@@ -1683,7 +1746,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                         }
                         if(idx == Z80Ctrl->virtualDeviceCnt)
                         {
-                            pr_info("Virtual Device not found.\n");
+                            //pr_info("Virtual Device not found.\n");
                             break;
                         }
                        
@@ -1701,13 +1764,17 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                         // Delete the device, removing hooks etc as required.
                         switch(ioctlCmd.vdev.device)
                         {
+                          #if(TARGET_HOST_MZ80A == 1)
                             case VIRTUAL_DEVICE_RFS40:
                             case VIRTUAL_DEVICE_RFS80:
                                 Z80Ctrl->virtualDeviceBitMap &= ~ioctlCmd.vdev.device;
+                                rfsRemove();
                                 break;
+                          #endif
 
                             case VIRTUAL_DEVICE_TZPU:
                                 Z80Ctrl->virtualDeviceBitMap &= ~VIRTUAL_DEVICE_TZPU;
+                                tzpuRemove();
                                 break;
 
                             case VIRTUAL_DEVICE_NONE:
@@ -1720,7 +1787,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
                         // Z80 can continue.
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = currentRunMode; mutex_unlock(&Z80RunModeMutex);
-                        pr_info("Device removed\n");
+                        //pr_info("Device removed\n");
                         break;
 
                     // Method to send adhoc commands to the CPLD, ie for switching active display etc.
@@ -1981,29 +2048,6 @@ static int __init ModuleInit(void)
       Z80Ctrl->ram[0x120f] = 0x00;
     #endif
 
-    // Copy the host BIOS into the Virtual ROM and initialise remainder of ROM.
-    pr_info("Sync Host BIOS to virtual ROM.\n");
-    for(idx=0; idx < Z80_VIRTUAL_ROM_SIZE; idx++)
-    {
-      #if(TARGET_HOST_MZ700 == 1)
-        if(idx >= 0x0000 && idx < 0x1000)
-      #endif
-      #if(TARGET_HOST_MZ80A == 1)
-        if((idx >= 0x0000 && idx < 0x1000) || (idx >= 0xE800 && idx < 0x10000))
-      #endif
-      #if(TARGET_HOST_MZ2000 == 1)
-        if(idx >= 0x0000 && idx < 0x8000)
-      #endif
-        {
-            SPI_SEND32((uint32_t)idx << 16 | CPLD_CMD_READ_ADDR);
-            while(CPLD_READY() == 0);
-            Z80Ctrl->rom[idx] = z80io_PRL_Read8(1);
-        } else
-        {
-            Z80Ctrl->rom[idx] = 0x00;
-        }
-    }
-
   #if(TARGET_HOST_MZ2000 == 1)
     Z80Ctrl->lowMemorySwap    = 1;
   #endif
@@ -2035,7 +2079,8 @@ static int __init ModuleInit(void)
     setupMemory(Z80Ctrl->defaultPageMode);
 
     // Initialise control handles.
-    Z80Ctrl->ioTask = NULL;
+    Z80Ctrl->ioTask  = NULL;
+    Z80Ctrl->arbTask = NULL;
 
     // Initialse run control.
     mutex_init(&Z80RunModeMutex);
@@ -2046,9 +2091,11 @@ static int __init ModuleInit(void)
     Z80Ctrl->ioWriteAhead = 0;
 
     // Initialse hotkey detection variables.
-    Z80Ctrl->keyportStrobe    = 0x00;
-    Z80Ctrl->keyportShiftCtrl = 0x00;
-    Z80Ctrl->keyportHotKey    = 0x00;
+    Z80Ctrl->keyportStrobe      = 0x00;
+    Z80Ctrl->keyportShiftCtrl   = 0x00;
+    Z80Ctrl->keyportHotKey      = 0x00;
+    Z80Ctrl->keyportTrigger     = 0x00;
+    Z80Ctrl->keyportTriggerLast = 0x00;
 
     // PC to start and power on the CPU
     Z80_PC(Z80CPU) = 0;
@@ -2056,7 +2103,7 @@ static int __init ModuleInit(void)
 
     // Initialise Debug logic if compile time enabled.
   #if(DEBUG_ENABLED != 0)
-    Z80Ctrl->debug            = 0;
+    Z80Ctrl->debug              = 0;
   #endif
 
     // Init done.

@@ -1038,23 +1038,23 @@ static t_scanCodeMap scanCodeMap[] = {
         NOKEY    ,                                           //
         NOKEY    ,                                           // 
         // S8   40 - 47 - Keypad keys.
-        '8'      ,                                           // Keypad 8
-        '7'      ,                                           //        7
-        '5'      ,                                           //        5
-        '4'      ,                                           //        4
-        '2'      ,                                           //        2
-        '1'      ,                                           //        1
-        DBLZERO  ,                                           //       00 
-        '0'      ,                                           //        0
+        NOKEY    ,                                           // Keypad 8
+        NOKEY    ,                                           //        7
+        NOKEY    ,                                           //        5
+        HOTKEY_LINUX,                                        //        4 - Hotkey to invoke Linux mode.
+        HOTKEY_RFS40,                                        //        2 - Hotkey to invoke RFS 40 mode.
+        HOTKEY_RFS80,                                        //        1 - Hotkey to invoke RFS 80 mode.
+        NOKEY    ,                                           //       00 
+        HOTKEY_ORIGINAL,                                     //        0 - Hotkey to invoke original mode.
         // S9   48 - 4F - Keypad keys.
-        '+'      ,                                           //        +
-        '0'      ,                                           //        9
-        '-'      ,                                           //        -
-        '6'      ,                                           //        6
+        NOKEY    ,                                           //        +
+        NOKEY    ,                                           //        9
+        NOKEY    ,                                           //        -
+        NOKEY    ,                                           //        6
         NOKEY    ,                                           //
-        '3'      ,                                           //        3
+        HOTKEY_TZFS,                                         //        3 - Hotkey to invoke TZFS mode.
         NOKEY    ,
-        '.'                                                  //        .
+        NOKEY                                                //        .
     }},
     // MZ_80A KANA
     {{
@@ -1268,6 +1268,12 @@ uint8_t mzInitMBHardware(void)
     // Set timer timer to run.
     WRITE_HARDWARE(1, MBADDR_CONTF, 0x80);  
 
+    // Reset display.
+    READ_HARDWARE_INIT(1, MBADDR_NRMDSP);                                        // Restore screen to non-inverted.
+    READ_HARDWARE_INIT(1, MBADDR_SCLDSP);                                        // Hardware scroll needs to be reset.
+   
+    // Disable the hardware sound output.
+    WRITE_HARDWARE(0, MBADDR_SUNDG, 0x00);                                       // Sound could be enabled on start, disable it.
     return(0);
 }
 

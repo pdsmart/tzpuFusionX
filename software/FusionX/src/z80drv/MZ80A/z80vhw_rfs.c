@@ -87,7 +87,7 @@
 #define BNKCTRLDEF                            BBMOSI+SDCS+BBCLK                         // Default on startup for the Bank Control register.
 
 // RFS Board ROM rom filename definitions. 
-#define ROM_DIR                               "/apps/FusionX/roms/"
+#define ROM_DIR                               "/apps/FusionX/host/MZ-80A/RFS/"
 #define ROM_MROM_40C_FILENAME                 ROM_DIR "MROM_256_40c.bin"
 #define ROM_USER_I_40C_FILENAME               ROM_DIR "USER_ROM_256_40c.bin"
 #define ROM_USER_II_40C_FILENAME              ROM_DIR "USER_ROM_II_256_40c.bin"
@@ -108,7 +108,7 @@
 #define ROM_USER_III_SIZE                     0x80000
 
 // SD Drive constants.
-#define SD_DIR                                "/apps/FusionX/SD/"
+#define SD_DIR                                "/apps/FusionX/host/MZ-80A/RFS/"
 #define SD_CARD_FILENAME                      SD_DIR "SHARP_MZ80A_RFS_CPM_IMAGE_1.img"// SD Card Binary Image.
 
 // MMC/SD command (SPI mode)
@@ -218,6 +218,10 @@ void rfsSetupMemory(enum Z80_MEMORY_PROFILE mode)
         {
             // Memory is both ROM and hardware, the registers share the same address space.
             setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_ROM | MEMORY_TYPE_VIRTUAL_HW, (RFSCtrl.uromAddr+(idx-0xE800)));
+        }   
+        else if(idx >= 0xF000 && idx < 0x10000)
+        {
+            setMemoryType((idx/MEMORY_BLOCK_GRANULARITY), MEMORY_TYPE_VIRTUAL_ROM, (idx+(Z80_VIRTUAL_ROM_SIZE - 0x10000)));
         }
     }
   
@@ -257,6 +261,7 @@ uint8_t loadROM(const char* romFileName, uint32_t loadAddr, uint32_t loadSize)
 void rfsInit(uint8_t mode80c)
 {
     // Locals.
+    uint32_t    idx;
     
     // Load ROMS according to the display configuration, 40 char = standard, 80 char = 40/80 board installed.
     loadROM(mode80c == 0 ? ROM_MROM_40C_FILENAME     : ROM_MROM_80C_FILENAME,    ROM_MROM_LOAD_ADDR,     ROM_MROM_SIZE);
@@ -264,7 +269,22 @@ void rfsInit(uint8_t mode80c)
     loadROM(mode80c == 0 ? ROM_USER_II_40C_FILENAME  : ROM_USER_II_80C_FILENAME, ROM_USER_II_LOAD_ADDR,  ROM_MROM_SIZE);
     loadROM(mode80c == 0 ? ROM_USER_III_40C_FILENAME : ROM_USER_II_80C_FILENAME, ROM_USER_III_LOAD_ADDR, ROM_MROM_SIZE);
 
+    // Copy the Floppy ROM to the top portion of ROM. USER III isnt normally used and if it is, 4K will be free.
+    for(idx=0xF000; idx < 0x10000; idx++)
+    {
+        SPI_SEND32((uint32_t)idx << 16 | CPLD_CMD_READ_ADDR);
+        while(CPLD_READY() == 0);
+        Z80Ctrl->rom[idx+(Z80_VIRTUAL_ROM_SIZE-0x10000)] = z80io_PRL_Read8(1);
+    }
     pr_info("Enabling RFS driver.\n");
+    return;
+}
+
+// Perform any de-initialisation when the driver is removed.
+void rfsRemove(void)
+{
+    pr_info("Removing RFS driver.\n");
+    return;
 }
 
 // Method to decode an address and make any system memory map changes as required.

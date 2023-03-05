@@ -1717,4 +1717,6 @@ software/FusionX/src/z80drv/x.mzf
 software/FusionX/src/z80drv/z80ctrl
 software/FusionX/src/z80drv/z80drv.ko
 software/FusionX/src/z80drv/z80drv.mod.c
+software/FusionX/host/
+software/FusionX/src/z80drv/sharpbiter
 

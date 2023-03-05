@@ -53,6 +53,7 @@
 #define DEVICE_NAME                           "z80drv"
 #define  CLASS_NAME                           "mogu"
 #define IO_PROCESSOR_NAME                     "k64fcpu"          // Name of the I/O processor user space application.
+#define ARBITER_NAME                          "sharpbiter"       // Name of the Sharp MZ Arbiter process user space application.
 #define DEBUG_ENABLED                         0                  // 0 = disabled, 1 = z80driver, 2 = k64fcpu, 3 = both.
 
 // Memory and IO page types. Used to create a memory page which maps type of address space to real address space on host or virtual memory.
@@ -70,6 +71,13 @@
 #define MEMORY_TYPE_VIRTUAL_HW                0x01000000
 #define IO_TYPE_PHYSICAL_HW                   0x80000000
 #define IO_TYPE_VIRTUAL_HW                    0x40000000
+
+// Hotkeys handled. 
+#define HOTKEY_ORIGINAL                       0xE8
+#define HOTKEY_RFS80                          0xE9
+#define HOTKEY_RFS40                          0xEA
+#define HOTKEY_TZFS                           0xEB
+#define HOTKEY_LINUX                          0xEC
 
 //*********************************************************************************************
 // Delay periods for the various hosts, which need adding to the primary opcode fetch in 
@@ -404,21 +412,22 @@ enum Z80_INSTRUCTION_DELAY {
 #define backupMemoryType(_block_)             { Z80Ctrl->shadowPage[_block_] = *(*(Z80Ctrl->page + Z80Ctrl->memoryMode) + (_block_)); }
 //#define restoreMemoryType(_block_)            { Z80Ctrl->page[_block_] = Z80Ctrl->shadowPage[_block_]; }
 #define restoreMemoryType(_block_)            { *(*(Z80Ctrl->page + Z80Ctrl->memoryMode) + (_block_)) = Z80Ctrl->shadowPage[_block_]; }
-#define sendSignal(_signal_)                  { struct siginfo sigInfo;\
-                                                if(Z80Ctrl->ioTask != NULL)\
+#define sendSignal(__task__, _signal_)        { struct siginfo sigInfo;\
+                                                if(__task__ != NULL)\
                                                 {\
                                                     memset(&sigInfo, 0, sizeof(struct siginfo));\
                                                     sigInfo.si_signo = _signal_;\
                                                     sigInfo.si_code = SI_QUEUE;\
                                                     sigInfo.si_int = 1;\
-                                                    if(send_sig_info(_signal_, &sigInfo, Z80Ctrl->ioTask) < 0)\
+                                                    if(send_sig_info(_signal_, &sigInfo, __task__) < 0)\
                                                     {\
-                                                        pr_info("Error: Failed to send Request to I/O Processor:%d, %s\n", _signal_, Z80Ctrl->ioTask->comm);\
+                                                        pr_info("Error: Failed to send signal:%02x to:%s\n", _signal_, __task__->comm);\
                                                     }\
                                                 }\
                                               }
 #define resetZ80()                            {\
-                                                  sendSignal(SIGUSR1); \
+                                                  if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_TZPU)\
+                                                      sendSignal(Z80Ctrl->ioTask, SIGUSR1); \
                                                   setupMemory(Z80Ctrl->defaultPageMode);\
                                                   z80_instant_reset(&Z80CPU);\
                                               }
@@ -527,6 +536,8 @@ typedef struct {
     uint8_t                                   keyportStrobe;
     uint8_t                                   keyportShiftCtrl;
     uint8_t                                   keyportHotKey;
+    uint8_t                                   keyportTrigger;
+    uint8_t                                   keyportTriggerLast;
 
     // Governor is the delay in a 32bit loop per Z80 opcode, used to govern execution speed when using virtual memory.
     // This mechanism will eventually be tied into the M/T-state calculation for a more precise delay, but at the moment,
@@ -538,6 +549,9 @@ typedef struct {
 
     // An I/O processor, running as a User Space daemon, can register to receive signals and events.
     struct task_struct                        *ioTask;
+ 
+    // Sharp MZ Arbiter, running as a User Space daemon, registers to receive signals and events in order to direct the persona of the FusionX.
+    struct task_struct                        *arbTask;
 
   #if(DEBUG_ENABLED != 0)
     // Debugging flag.

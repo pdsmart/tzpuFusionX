@@ -80,8 +80,7 @@ MODULE_INFO(copyright, DRIVER_COPYRIGHT);
 
 // Device control variables.
 static t_TTYMZ            *ttymzConnections[SHARPMZ_TTY_MINORS];    // Initially all NULL, no devices connected.
-static struct tty_port    ttymzPort[SHARPMZ_TTY_MINORS];
-static struct tty_driver  *ttymzDriver;
+static t_TTYMZCtrl         ttymzCtrl;
 
 // Read method. Keys entered on the host keyboard are sent to the user process via this method.
 //
@@ -194,8 +193,24 @@ static void ttymz_keyboardTimer(unsigned long timerAddr)
     // Scan the Sharp MZ host keyboard, push any character received. Mode 2 = Ansi scan without wait.
     if((key = mzGetKey(2)) != -1)
     {
-        //pr_info("%d ", key);
-        ttymz_read(tty, (char)key);
+        switch(key)
+        {
+            // Hotkeys, send to the Arbiter, not the user process.
+            case HOTKEY_ORIGINAL:
+            case HOTKEY_RFS80:
+            case HOTKEY_RFS40:
+            case HOTKEY_TZFS:
+            case HOTKEY_LINUX:
+                //pr_info("Hotkey detected:%02x\n", key);
+                ttymzCtrl.hotkey = (uint32_t)key;
+                sendSignal(ttymzCtrl.arbTask, SIGUSR2);
+                break;
+
+            default:
+                //pr_info("%d, %08x ", key, (size_t)tty->port);
+                ttymz_read(tty, (char)key);
+                break;
+        }
     }
 
     // Resubmit the timer again.
@@ -236,10 +251,11 @@ static void ttymz_displayTimer(unsigned long timerAddr)
 static int ttymz_open(struct tty_struct *tty, struct file *file)
 {
     // Locals.
-    t_TTYMZ        *ttymz;
-    int            index;
-    int            ret = 0;
-    struct winsize ws;
+    t_TTYMZ            *ttymz;
+    int                 index;
+    int                 ret = 0;
+    struct winsize      ws;
+    struct task_struct *task = get_current();
 
     // Initialize the pointer in case something fails
     tty->driver_data = NULL;
@@ -247,6 +263,7 @@ static int ttymz_open(struct tty_struct *tty, struct file *file)
     // Get the serial object associated with this tty pointer
     index = tty->index;
     ttymz = ttymzConnections[index];
+
     if(ttymz == NULL)
     {
         // First time accessing this device, let's create it
@@ -265,6 +282,7 @@ static int ttymz_open(struct tty_struct *tty, struct file *file)
     // Save our structure within the tty structure
     tty->driver_data = ttymz;
     ttymz->tty = tty;
+    ttymz->tty->port = tty->port;
 
     // Setup the default terminal size based on compilation (ie. 40/80 cols).
     ws.ws_row    = VC_MAX_ROWS;
@@ -273,7 +291,8 @@ static int ttymz_open(struct tty_struct *tty, struct file *file)
 
     // Port opened, perform initialisation.
     //
-    if(++ttymz->open_count == 1)
+    ++ttymz->open_count;
+    if(ttymz->open_count == 1 && tty->index == 0)
     {
         // Create the keyboard sweep timer and submit it
       #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
@@ -301,11 +320,27 @@ static int ttymz_open(struct tty_struct *tty, struct file *file)
         ttymz->timerDisplay.expires = jiffies + 1;
         add_timer(&ttymz->timerDisplay);
     } else
+    // SSD202 Framebuffer?
+    if(ttymz->open_count == 1 && tty->index == 1)
     {
-        // Not allowed to open the port more than once.
+        pr_info("SSD202 Framebuffer not yet implemented.\n");
         ret = -EBUSY;
-    }
-
+    } else
+    // Control port is just opened, no associated hardware.
+    if(tty->index == 2)
+    {
+        // Arbiter connection?
+        if(ttymzCtrl.arbTask == NULL && strcmp(task->comm, ARBITER_NAME) == 0)
+        {
+            ttymzCtrl.arbTask = task;
+            pr_info("Sharpbiter: Registering Arbiter:%s\n", ttymzCtrl.arbTask->comm);
+        } else
+        if(ttymzCtrl.arbTask != NULL && strcmp(task->comm, ARBITER_NAME) == 0)
+        {
+            pr_info("Arbiter already registered, PID:%d\n", ttymzCtrl.arbTask->pid);
+            ret = -EBUSY;
+        }
+    } 
     mutex_unlock(&ttymz->mutex);
     return(ret);
 }
@@ -315,6 +350,8 @@ static int ttymz_open(struct tty_struct *tty, struct file *file)
 static void do_close(t_TTYMZ *ttymz)
 {
     // Locals.
+    uint32_t  idx;
+    struct task_struct *task = get_current();
 
     mutex_lock(&ttymz->mutex);
 
@@ -324,13 +361,36 @@ static void do_close(t_TTYMZ *ttymz)
         goto exit;
     }
 
-    // Shutdown hardware tasks to exit.
-    if(--ttymz->open_count <= 0)
+    // Go through all the connections to find active connection.
+    for(idx = 0; idx < SHARPMZ_TTY_MINORS; idx++)
     {
-        // Shut down our timers.
-        del_timer(&ttymz->timerKeyboard);
-        del_timer(&ttymz->timerDisplay);
+        // Match the handle to find the index.
+        if(ttymz == ttymzConnections[idx])
+        {
+            // Active consoles, ie. host and framebuffer, close hardware and free up timers etc.
+            if(idx < 2)
+            {
+                // Shutdown hardware tasks to exit.
+                // Shut down our timers.
+                del_timer(&ttymz->timerKeyboard);
+                del_timer(&ttymz->timerDisplay);
+            } else
+            if(idx == 2)
+            {
+                // Is this the Arbiter de-registering?
+                if(ttymzCtrl.arbTask == task) 
+                {
+                    ttymzCtrl.arbTask = NULL;
+                    pr_info("Arbiter stopped.\n");
+                }
+
+                // Free up the connection resources.
+                kfree(ttymzConnections[idx]);
+                ttymzConnections[idx] = NULL;
+            }
+        }
     }
+
 exit:
     mutex_unlock(&ttymz->mutex);
 }
@@ -368,70 +428,90 @@ static void ttymz_set_termios(struct tty_struct *tty, struct ktermios *old_termi
         }
     }
 
+    // As this is not a serial based TTY, most of the settings are ignored, they are here for reference
+    // and in-place if something is needed in future.
+
     // Get the byte size
     switch(cflag & CSIZE)
     {
         case CS5:
-            pr_info(" - data bits = 5\n");
             break;
         case CS6:
-            pr_info(" - data bits = 6\n");
             break;
         case CS7:
-            pr_info(" - data bits = 7\n");
             break;
         default:
         case CS8:
-            pr_info(" - data bits = 8\n");
             break;
     }
 
     // Determine the parity
     if (cflag & PARENB)
         if (cflag & PARODD)
-            pr_info(" - parity = odd\n");
+        {
+            ;
+        }
         else
-            pr_info(" - parity = even\n");
+        {
+            ;
+        }
     else
-        pr_info(" - parity = none\n");
+    {
+        ;
+    }
 
     // Figure out the stop bits requested 
     if (cflag & CSTOPB)
-        pr_info(" - stop bits = 2\n");
+    {
+        ;
+    }
     else
-        pr_info(" - stop bits = 1\n");
+    {
+        ;
+    }
 
     // Figure out the hardware flow control settings
     if (cflag & CRTSCTS)
-        pr_info(" - RTS/CTS is enabled\n");
+    {
+        ;
+    }
     else
-        pr_info(" - RTS/CTS is disabled\n");
+    {
+        ;
+    }
 
     // Determine software flow control
     // if we are implementing XON/XOFF, set the start and
     // stop character in the device
     if (I_IXOFF(tty) || I_IXON(tty))
     {
-        unsigned char stop_char  = STOP_CHAR(tty);
-        unsigned char start_char = START_CHAR(tty);
+        //unsigned char stop_char  = STOP_CHAR(tty);
+        //unsigned char start_char = START_CHAR(tty);
 
         // If we are implementing INBOUND XON/XOFF
-        if (I_IXOFF(tty))
-            pr_info(" - INBOUND XON/XOFF is enabled, "
-                "XON = %2x, XOFF = %2x", start_char, stop_char);
+        if(I_IXOFF(tty))
+        {
+            ;
+        }
         else
-            pr_info(" - INBOUND XON/XOFF is disabled");
+        {
+            ;
+        }
 
         // if we are implementing OUTBOUND XON/XOFF
-        if (I_IXON(tty))
-            pr_info(" - OUTBOUND XON/XOFF is enabled, "
-                "XON = %2x, XOFF = %2x", start_char, stop_char);
+        if(I_IXON(tty))
+        {
+            ;
+        }
         else
-            pr_info(" - OUTBOUND XON/XOFF is disabled");
+        {
+            ;
+        }
     }
 
     // Get the baud rate wanted
-    pr_info(" - baud rate = %d", tty_get_baud_rate(tty));
+    // baud = tty_get_baud_rate(tty));
+    return;
 }
 
 static int ttymz_tiocmget(struct tty_struct *tty)
@@ -608,6 +688,14 @@ static int ttymz_ioctl(struct tty_struct *tty, unsigned int cmd, unsigned long a
         case TIOCGICOUNT:
             return ttymz_ioctl_tiocgicount(tty, cmd, arg);
 
+        // Fetch last hotkey. This method returns any active hotkey to the caller. Normally this is queried after receiving a SIGUSR2 signal.
+        case IOCTL_CMD_FETCH_HOTKEY:
+            if(copy_to_user((int32_t*)arg, &ttymzCtrl.hotkey, sizeof(ttymzCtrl.hotkey)))
+            {
+                pr_err("Failed to send hotkey to user space.\n");
+            }
+            return(0);
+
         // Suspend control. This method stops all physical hardware updates of the host framebuffer and keyboard 
         // scan whilst maintining the functionality of the tty within the mirrored framebuffer. This mode is
         // necessary if the user wishes to switch into a Z80 driver and use the host as original.
@@ -734,39 +822,39 @@ static int __init ttymz_init(void)
     char buf[80];
 
     // Allocate the tty driver handles, one per potential device.
-    ttymzDriver = alloc_tty_driver(SHARPMZ_TTY_MINORS);
-    if(!ttymzDriver)
+    ttymzCtrl.ttymzDriver = alloc_tty_driver(SHARPMZ_TTY_MINORS);
+    if(!ttymzCtrl.ttymzDriver)
         return -ENOMEM;
 
     // Initialize the tty driver
-    ttymzDriver->owner                = THIS_MODULE;
-    ttymzDriver->driver_name          = DRIVER_NAME;
-    ttymzDriver->name                 = DEVICE_NAME;
-    ttymzDriver->major                = SHARPMZ_TTY_MAJOR,
-    ttymzDriver->type                 = TTY_DRIVER_TYPE_SERIAL,
-    ttymzDriver->subtype              = SERIAL_TYPE_NORMAL,
-    ttymzDriver->flags                = TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV,
-    ttymzDriver->init_termios         = tty_std_termios;
-    ttymzDriver->init_termios.c_cflag = B9600 | CS8 | CREAD | HUPCL | CLOCAL;
-    tty_set_operations(ttymzDriver, &serial_ops);
+    ttymzCtrl.ttymzDriver->owner                = THIS_MODULE;
+    ttymzCtrl.ttymzDriver->driver_name          = DRIVER_NAME;
+    ttymzCtrl.ttymzDriver->name                 = DEVICE_NAME;
+    ttymzCtrl.ttymzDriver->major                = SHARPMZ_TTY_MAJOR,
+    ttymzCtrl.ttymzDriver->type                 = TTY_DRIVER_TYPE_SERIAL,
+    ttymzCtrl.ttymzDriver->subtype              = SERIAL_TYPE_NORMAL,
+    ttymzCtrl.ttymzDriver->flags                = TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV,
+    ttymzCtrl.ttymzDriver->init_termios         = tty_std_termios;
+    ttymzCtrl.ttymzDriver->init_termios.c_cflag = B9600 | CS8 | CREAD | HUPCL | CLOCAL;
+    tty_set_operations(ttymzCtrl.ttymzDriver, &serial_ops);
     for (i = 0; i < SHARPMZ_TTY_MINORS; i++)
     {
-        tty_port_init(ttymzPort + i);
-        tty_port_link_device(ttymzPort + i, ttymzDriver, i);
+        tty_port_init(ttymzCtrl.ttymzPort + i);
+        tty_port_link_device(ttymzCtrl.ttymzPort + i, ttymzCtrl.ttymzDriver, i);
     }
 
     // Register the tty driver
-    retval = tty_register_driver(ttymzDriver);
+    retval = tty_register_driver(ttymzCtrl.ttymzDriver);
     if(retval)
     {
         pr_err("Failed to register SharpMZ tty driver");
-        put_tty_driver(ttymzDriver);
+        put_tty_driver(ttymzCtrl.ttymzDriver);
         return retval;
     }
 
     // Register the devices.
     for (i = 0; i < SHARPMZ_TTY_MINORS; ++i)
-        tty_register_device(ttymzDriver, i, NULL);
+        tty_register_device(ttymzCtrl.ttymzDriver, i, NULL);
 
     // Initialise the hardware to host interface.
     z80io_init();
@@ -796,10 +884,10 @@ static void __exit ttymz_exit(void)
     // De-register the devices and driver.
     for(idx = 0; idx < SHARPMZ_TTY_MINORS; ++idx)
     {
-        tty_unregister_device(ttymzDriver, idx);
-        tty_port_destroy(ttymzPort + idx);
+        tty_unregister_device(ttymzCtrl.ttymzDriver, idx);
+        tty_port_destroy(ttymzCtrl.ttymzPort + idx);
     }
-    tty_unregister_driver(ttymzDriver);
+    tty_unregister_driver(ttymzCtrl.ttymzDriver);
 
     // Shut down all of the timers and free the memory.
     for(idx = 0; idx < SHARPMZ_TTY_MINORS; ++idx)

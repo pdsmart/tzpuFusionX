@@ -121,6 +121,13 @@ void tzpuInit(void)
     pr_info("Enabling TZPU driver.\n");
 }
 
+// Perform any de-initialisation when the driver is removed.
+void tzpuRemove(void)
+{
+    pr_info("Removing TZPU driver.\n");
+    return;
+}
+
 // Method to decode an address and make any system memory map changes as required.
 //
 static inline void tzpuDecodeMemoryMapSetup(zuint16 address, zuint8 data, uint8_t ioFlag, uint8_t readFlag)
@@ -683,7 +690,7 @@ static inline void tzpuWrite(zuint16 address, zuint8 data, uint8_t ioFlag)
               #endif
 
                 // If a k64f process has registered, send it a service request signal.
-                sendSignal(SIGIO);
+                sendSignal(Z80Ctrl->ioTask, SIGIO);
 
                 // A strange race state exists with CP/M and interrupts during disk requests. If no delay is
                 // given for read/write requests, the interrupt line will eventually lockup active and the Z80

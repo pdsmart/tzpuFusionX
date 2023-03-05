@@ -17,6 +17,9 @@ z80drv-objs += ../../../linux/kernel/drivers/sstar/gpio/infinity2m/padmux_tables
 
 all:
 	@echo ""
+	@echo "Build Sharp MZ Arbiter for host: $(MODEL)"
+	$(CROSS)gcc $(CTRLINC) $(MODEL)/sharpbiter.c -o sharpbiter
+	@echo ""
 	@echo "Build K64F Daemon for host: $(MODEL)"
 	$(CROSS)gcc $(CTRLINC) $(MODEL)/k64fcpu.c -o k64fcpu
 	@echo ""
