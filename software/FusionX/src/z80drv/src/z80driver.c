@@ -29,11 +29,15 @@
 //                                   in host memory at full speed.
 //                  Feb 2023 - v1.2  Added MZ-80A Rom Filing System device driver. This allows the FusionX
 //                                   hosted in an MZ-80A to run the original RFS Monitor and software.
-//                  Feb 2023 - v11.3 Added tranZPUter SW device driver. This allows the FusionX hosted
+//                  Feb 2023 - v1.3  Added tranZPUter SW device driver. This allows the FusionX hosted
 //                                   in any supported host to run TZFS and the updated applications
 //                                   such as CP/M, SA-5510 Basic, MS-Basic etc. Adding this device driver
 //                                   prepares the ground to add the SOM GPU as the Video emulation of
 //                                   the Sharp machines.
+//                  Mar 2023 - v1.4  With the advent of the PCW-8XXX series, seperated distinct machine
+//                                   configurations into device driver modules, which are only built
+//                                   if same as the target machine. This then allows the z80 driver to be
+//                                   a vanilla Z80 or customisations for hosts pulled in.
 //
 //
 // Notes:           See Makefile to enable/disable conditional components
@@ -111,9 +115,23 @@ static DEFINE_MUTEX(Z80DRV_MUTEX);
 
 // Include the virtual hardware drivers.
 #if(TARGET_HOST_MZ80A == 1)
+  #include "z80vhw_mz80a.c"
+#endif
+#if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
   #include "z80vhw_rfs.c"
 #endif
-#include "z80vhw_tzpu.c"
+#if(TARGET_HOST_MZ700 == 1)
+  #include "z80vhw_mz700.c"
+#endif
+#if(TARGET_HOST_MZ2000 == 1)
+  #include "z80vhw_mz2000.c"
+#endif
+#if(TARGET_HOST_PCW == 0)
+  #include "z80vhw_tzpu.c"
+#endif
+#if(TARGET_HOST_PCW == 1)
+  #include "z80vhw_pcw.c"
+#endif
 
 //-------------------------------------------------------------------------------------------------------------------------------
 //
@@ -128,269 +146,46 @@ static DEFINE_MUTEX(Z80DRV_MUTEX);
 static inline void decodeMemoryMapSetup(zuint16 address, zuint8 data, uint8_t ioFlag, uint8_t readFlag)
 {
     // Locals.
-    uint32_t    idx;
 
     // If the RFS module is enabled, it must set the map otherwise use the default handler.
     //
   #if(TARGET_HOST_MZ80A == 1)
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ80A)
+    {
+        mz80aDecodeMemoryMapSetup(address, data, ioFlag, readFlag);
+    } else
+  #endif
+  #if(TARGET_HOST_MZ700 == 1)
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ700)
+    {
+        mz700DecodeMemoryMapSetup(address, data, ioFlag, readFlag);
+    } else
+  #endif
+  #if(TARGET_HOST_MZ2000 == 1)
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ2000)
+    {
+        mz2000DecodeMemoryMapSetup(address, data, ioFlag, readFlag);
+    } else
+  #endif
+  #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
     if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_RFS)
     {
         rfsDecodeMemoryMapSetup(address, data, ioFlag, readFlag);
     } else
   #endif
+  #if(TARGET_HOST_PCW == 1)
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_PCW)
+    {
+        pcwDecodeMemoryMapSetup(address, data, ioFlag, readFlag);
+    } else
+  #endif
+  #if(TARGET_HOST_PCW == 0)
     if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_TZPU)
     {
-        rfsDecodeMemoryMapSetup(address, data, ioFlag, readFlag);
+        tzpuDecodeMemoryMapSetup(address, data, ioFlag, readFlag);
     } else
+  #endif
     {
-        // Decoding memory address or I/O address?
-        if(ioFlag == 0)
-        {
-            // Certain machines have memory mapped I/O, these need to be handled in-situ as some reads may change the memory map.
-            // These updates are made whilst waiting for the CPLD to retrieve the requested byte.
-            //
-            // 0000 - 0FFF : MZ80K/A/700   = Monitor ROM or RAM (MZ80A rom swap)
-            // 1000 - CFFF : MZ80K/A/700   = RAM
-            // C000 - CFFF : MZ80A         = Monitor ROM (MZ80A rom swap)
-            // D000 - D7FF : MZ80K/A/700   = VRAM
-            // D800 - DFFF : MZ700         = Colour VRAM (MZ700)
-            // E000 - E003 : MZ80K/A/700   = 8255       
-            // E004 - E007 : MZ80K/A/700   = 8254
-            // E008 - E00B : MZ80K/A/700   = LS367
-            // E00C - E00F : MZ80A         = Memory Swap (MZ80A)
-            // E010 - E013 : MZ80A         = Reset Memory Swap (MZ80A)
-            // E014        : MZ80A/700     = Normat CRT display
-            // E015        : MZ80A/700     = Reverse CRT display
-            // E200 - E2FF : MZ80A/700     = VRAM roll up/roll down.
-            // E800 - EFFF : MZ80K/A/700   = User ROM socket or DD Eprom (MZ700)
-            // F000 - F7FF : MZ80K/A/700   = Floppy Disk interface.
-            // F800 - FFFF : MZ80K/A/700   = Floppy Disk interface.
-            switch(address)
-            {
-              #if(TARGET_HOST_MZ700 == 1)
-              #endif
-              #if(TARGET_HOST_MZ2000 == 1)
-              #endif
-
-              #if(TARGET_HOST_MZ80A == 1)
-                // Memory map switch.
-                case 0xE00C: case 0xE00D: case 0xE00E: case 0xE00F:
-                    if(readFlag)
-                    {
-                        for(idx=0x0000; idx < 0x1000; idx+=MEMORY_BLOCK_GRANULARITY)
-                        {
-                            setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM, (0xC000+idx));
-                            setMemoryType((idx+0xC000)/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_ROM, idx);
-                        }
-                    }
-                    Z80Ctrl->memSwitch = 1;
-                    break;
-                    
-                // Reset memory map switch.
-                case 0xE010: case 0xE011: case 0xE012: case 0xE013:
-                    if(readFlag)
-                    {
-                        for(idx=0x0000; idx < 0x1000; idx+=MEMORY_BLOCK_GRANULARITY)
-                        {
-                            setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_ROM, idx);
-                            setMemoryType((idx+0xC000)/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM, (idx+0xC000));
-                        }
-                    }
-                    Z80Ctrl->memSwitch = 0;
-                    break;
-              #endif
-
-                default:
-                    break;
-            }
-        } else
-        {
-            // Determine if this is a memory management port and update the memory page if required.
-            switch(address & 0x00FF)
-            {
-              //  MZ700 memory mode switch.
-              // 
-              //              MZ-700                                                     
-              //             |0000:0FFF|1000:CFFF|D000:FFFF          
-              //             ------------------------------          
-              //  OUT 0xE0 = |DRAM     |         |                   
-              //  OUT 0xE1 = |         |         |DRAM               
-              //  OUT 0xE2 = |MONITOR  |         |                   
-              //  OUT 0xE3 = |         |         |Memory Mapped I/O  
-              //  OUT 0xE4 = |MONITOR  |DRAM     |Memory Mapped I/O  
-              //  OUT 0xE5 = |         |         |Inhibit            
-              //  OUT 0xE6 = |         |         |<return>           
-              // 
-              //  <return> = Return to the state prior to the complimentary command being invoked.
-              #if(TARGET_HOST_MZ700 == 1)
-                // Enable lower 4K block as DRAM
-                case IO_ADDR_E0:
-                    for(idx=0x0000; idx < 0x1000; idx+=MEMORY_BLOCK_GRANULARITY)
-                    {
-                        setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM, idx);
-                    }
-                    break;
-
-                // Enable upper 12K block, including Video/Memory Mapped peripherals area, as DRAM.
-                case IO_ADDR_E1:
-                    if(!Z80Ctrl->inhibitMode)
-                    {
-                        for(idx=0xD000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
-                        {
-                            // MZ-700 mode we only work in first 64K block.
-                            setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM, idx);
-                        }
-                    }
-                    break;
-                  
-                // Enable MOnitor ROM in lower 4K block
-                case IO_ADDR_E2:
-                    for(idx=0x0000; idx < 0x1000; idx+=MEMORY_BLOCK_GRANULARITY)
-                    {
-                        setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_ROM, idx);
-                    }
-                    break;
-                   
-                // Enable Video RAM and Memory mapped peripherals in upper 12K block.
-                case IO_ADDR_E3:
-                    if(!Z80Ctrl->inhibitMode)
-                    {
-                        for(idx=0xD000; idx < 0xE000; idx+=MEMORY_BLOCK_GRANULARITY)
-                        {
-                            setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_VRAM, idx);
-                        }
-                        for(idx=0xE000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
-                        {
-                            setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_HW, idx);
-                        }
-                    }
-                    break;
-
-                // Reset to power on condition memory map.
-                case IO_ADDR_E4:
-                    // Lower 4K set to Monitor ROM.
-                    for(idx=0x0000; idx < 0x1000; idx+=MEMORY_BLOCK_GRANULARITY)
-                    {
-                        setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_ROM, idx);
-                    }
-                    if(!Z80Ctrl->inhibitMode)
-                    {
-                        // Upper 12K to hardware.
-                        for(idx=0xD000; idx < 0xE000; idx+=MEMORY_BLOCK_GRANULARITY)
-                        {
-                            setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_VRAM, idx);
-                        }
-                        for(idx=0xE000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
-                        {
-                            setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_HW, idx);
-                        }
-                    }
-                    break;
-
-                // Inhibit. Backup current page data in region 0xD000-0xFFFF and inhibit it.
-                case IO_ADDR_E5:
-                    for(idx=0xD000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
-                    {
-                        backupMemoryType(idx/MEMORY_BLOCK_GRANULARITY);
-                        setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_INHIBIT, idx);
-                    }
-                    Z80Ctrl->inhibitMode = 1;
-                    break;
-
-                // Restore D000-FFFF to its original state.
-                case IO_ADDR_E6:
-                    for(idx=0xD000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
-                    {
-                        restoreMemoryType(idx/MEMORY_BLOCK_GRANULARITY);
-                    }
-                    Z80Ctrl->inhibitMode = 0;
-                    break;
-              #endif
-
-              #if(TARGET_HOST_MZ2000 == 1)
-                case IO_ADDR_E0:
-                    break;
-
-                case IO_ADDR_E1:
-                    break;
-
-                case IO_ADDR_E2:
-                    break;
-
-                case IO_ADDR_E3:
-                    // Program control register.
-                    if(value & 0x80)
-                    {
-                    } else
-                    {
-                        switch((value >> 1) & 0x07)
-                        {
-                            // NST toggle.
-                            case 1:
-                                // NST pages in all RAM and resets cpu.
-                                if(value & 0x01)
-                                {
-                                    Z80Ctrl->lowMemorySwap = 0;
-                                    for(idx=0x0000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
-                                    {
-                                        if(Z80Ctrl->defaultPageMode == USE_PHYSICAL_RAM)
-                                        {
-                                            setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_RAM, idx);
-                                        }
-                                        else
-                                        {
-                                            setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM, idx);
-                                        }
-                                    }
-                                    resetZ80();
-                                }
-                                break;
-
-                            default:
-                                break;
-                        }
-                    }
-                    break;
-
-                case IO_ADDR_E8:
-                    // NEED FLAG TO SET THIS WHEN CALLED WITH NON MEMORY SWITCH BYTE
-                    if(isPhysical(0xD000) && (value & 0x80) == 0)
-                    {
-                        for(idx=0xC000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
-                        {
-                            if(Z80Ctrl->defaultPageMode == USE_PHYSICAL_RAM)
-                            {
-                                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_RAM, idx);
-                            } else
-                            {
-                                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM, (Z80Ctrl->lowMemorySwap ? idx - 0x8000 : idx));
-                            }
-                        }
-                    } else
-                    if(value & 0x80)
-                    {
-                        if(value & 0x40)
-                        {
-                            setMemoryType(0xD000/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_VRAM, 0xD000);
-                        } else
-                        {
-                            for(idx=0xC000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
-                            {
-                                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_VRAM, idx);
-                            }
-                        }
-                    }
-                    break;
-              #endif
-
-              #if(TARGET_HOST_MZ80A == 1)
-              #endif
-
-                // Port is not a memory management port.
-                default:
-                    break;
-            }
-        }
     }
 
     return;
@@ -407,6 +202,31 @@ static inline zuint8 readVirtual(zuint16 address, uint8_t ioFlag)
     // Invoke the specific hardware emulation.
     //
   #if(TARGET_HOST_MZ80A == 1)
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ80A)
+    {
+        data = mz80aRead(address, ioFlag);
+    } else
+  #endif
+  #if(TARGET_HOST_MZ700 == 1)
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ700)
+    {
+        data = mz700Read(address, ioFlag);
+    } else
+  #endif
+  #if(TARGET_HOST_MZ2000 == 1)
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ2000)
+    {
+        data = mz2000Read(address, ioFlag);
+    } else
+  #endif
+  #if(TARGET_HOST_PCW == 1)
+    if((Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_PCW))
+    {
+        data = pcwRead(address, ioFlag);
+    } else
+  #endif
+
+  #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
     // RFS only has memory mapped registers.
     if((Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_RFS) && ioFlag == 0)
     {
@@ -414,15 +234,14 @@ static inline zuint8 readVirtual(zuint16 address, uint8_t ioFlag)
     } else
   #endif
 
+  #if(TARGET_HOST_PCW == 0)
     if((Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_TZPU))
     {
         data = tzpuRead(address, ioFlag);
-    }
+    } else
+  #endif
 
-    else if(isVirtualMemory(address))
     {
-        // Retrieve data from virtual memory.
-        data = isVirtualROM(address) ? readVirtualROM(address) : readVirtualRAM(address);
     }
 
     return(data);
@@ -437,6 +256,31 @@ static inline void writeVirtual(zuint16 address, zuint8 data, uint8_t ioFlag)
     // Invoke the specific hardware emulation.
     //
   #if(TARGET_HOST_MZ80A == 1)
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ80A)
+    {
+        mz80aWrite(address, data, ioFlag);
+    } else
+  #endif
+  #if(TARGET_HOST_MZ700 == 1)
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ700)
+    {
+        mz700Write(address, data, ioFlag);
+    } else
+  #endif
+  #if(TARGET_HOST_MZ2000 == 1)
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ2000)
+    {
+        mz2000Write(address, data, ioFlag);
+    } else
+  #endif
+  #if(TARGET_HOST_PCW == 1)
+    if((Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_PCW))
+    {
+        pcwWrite(address, data, ioFlag);
+    } else
+  #endif
+
+  #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
     // RFS only has memory mapped registers.
     if((Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_RFS) && ioFlag == 0)
     {
@@ -444,15 +288,14 @@ static inline void writeVirtual(zuint16 address, zuint8 data, uint8_t ioFlag)
     } else
   #endif
 
+  #if(TARGET_HOST_PCW == 0)
     if((Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_TZPU))
     {
         tzpuWrite(address, data, ioFlag);
-    }
+    } else
+  #endif
 
-    else if(isVirtualRAM(address))
     {
-        // Update virtual memory.
-        writeVirtualRAM(address, data);
     }
 
     return;
@@ -464,43 +307,133 @@ static inline void writeVirtual(zuint16 address, zuint8 data, uint8_t ioFlag)
 // time critical operations such as Floppy Disk read/write.
 //
 // This method attempts to decode the current opcode and if it is a hardware operation, make the request ahead of the Z80 emulator.
-static inline void lookAhead(zuint16 address, zuint8 opcode, zuint8 opcode2)
+static inline uint8_t lookAhead(zuint16 address, zuint8 opcode, zuint8 opcode2)
 {
-    // Locals.
-    //
-
-    //                        IN r,(C)                INI, INIR, IND, INDR
-    if( (opcode == 0xED && (( (opcode2 & 0x78) != 0) || ((opcode2 & 0xBA) != 0)) && ((opcode2 & 0x01) == 0x00)) )
+    //  IN A,(C) ED 78
+    //  IN B,(C) ED 40
+    //  IN C,(C) ED 48
+    //  IN D,(C) ED 50
+    //  IN E,(C) ED 58
+    //  IN H,(C) ED 60
+    //  IN L,(C) ED 68
+    if( opcode == 0xED && (opcode2 == 0x78 || opcode2 == 0x40 || opcode2 == 0x48 || opcode2 == 0x50 || opcode2 == 0x58 || opcode2 == 0x60 || opcode2 == 0x68) )
     {
-        SPI_SEND32( (Z80CPU.bc.uint16_value << 16) | CPLD_CMD_READIO_ADDR);
-        Z80Ctrl->ioReadAhead = 1;
+        if(isPhysicalIO(Z80CPU.bc.uint16_value))
+        {
+            if((Z80CPU.bc.uint16_value&0x00ff) < 8)
+            {
+                SPI_SEND_8(CPLD_CMD_READIO_ADDR + (Z80CPU.bc.uint16_value&0x00ff));
+            } else
+            {
+                //SPI_SEND_16((Z80CPU.bc.uint16_value&0x00ff) << 8  | CPLD_CMD_READIO_ADDR);
+                SPI_SEND_32(Z80CPU.bc.uint16_value, CPLD_CMD_READIO_ADDR);
+            }
+            Z80Ctrl->ioReadAhead = 1;
+        }
     }
-    //       IN A, (N)
+    //  IND   ED AA
+    //  INDR  ED BA
+    //  INI   ED A2
+    //  INIR  ED B2
+    else if( opcode == 0xED && (opcode2 == 0xAA || opcode2 == 0xBA || opcode2 == 0xA2 || opcode2 == 0xB2) )
+    {
+        if(isPhysicalIO(Z80CPU.bc.uint16_value))
+        {
+          #if(TARGET_HOST_PCW == 0)
+            if((Z80CPU.bc.uint16_value&0x00ff) < 8)
+            {
+                SPI_SEND_8(CPLD_CMD_READIO_ADDR + (Z80CPU.bc.uint16_value&0x00ff));
+            } else
+            {
+                SPI_SEND_32(Z80CPU.bc.uint16_value, CPLD_CMD_READIO_ADDR);
+            }
+            Z80Ctrl->ioReadAhead = 1;
+          #else
+            if((Z80CPU.bc.uint16_value&0x00ff) < 8)
+            {
+                SPI_SEND_8(CPLD_CMD_READIO_WRITE_ADDR + (Z80CPU.bc.uint16_value&0x00ff));
+            } else
+            {
+                //SPI_SEND_32(Z80CPU.bc.uint16_value, CPLD_CMD_READIO_WRITE_ADDR);
+                SPI_SEND_16((Z80CPU.bc.uint16_value&0x00ff) << 8  | CPLD_CMD_READIO_WRITE_ADDR);
+            }
+        
+            // Send destination address.
+            SPI_SEND_P_16(Z80CPU.hl.uint16_value);
+            Z80Ctrl->ioReadAhead = 2;
+          #endif
+        }
+    }
+    // IN A,(N) DB XX
     else if(opcode == 0xDB)
     {
-        SPI_SEND32( ((Z80CPU.bc.uint16_value & 0xff00) | opcode2) << 16 | CPLD_CMD_READIO_ADDR);
-        Z80Ctrl->ioReadAhead = 1;
+        if(isPhysicalIO(opcode2))
+        {
+            if(opcode2 < 8)
+            {
+                SPI_SEND_8(CPLD_CMD_READIO_ADDR + opcode2);
+            } else
+            {
+                SPI_SEND_32(((Z80CPU.bc.uint16_value & 0xff00) | opcode2), CPLD_CMD_READIO_ADDR);
+              //  SPI_SEND_16(opcode2 << 8  | CPLD_CMD_READIO_ADDR);
+            }
+            //SPI_SEND_32(((Z80CPU.bc.uint16_value & 0xff00) | opcode2), CPLD_CMD_READIO_ADDR);
+            Z80Ctrl->ioReadAhead = 1;
+        }
     }
-    //                        OUT (C), r                 OTDR, OTIR, OUTD, OUTI
-    else if( (opcode == 0xED && (( (opcode2 & 0x79) != 0) || ((opcode2 & 0xBB) != 0)) && ((opcode2 & 0x01) == 0x01)) )
+
+    //  OUT (C),A  ED 79
+    //  OUT (C),B  ED 41
+    //  OUT (C),C  ED 49
+    //  OUT (C),D  ED 51
+    //  OUT (C),E  ED 59
+    //  OUT (C),H  ED 61
+    //  OUT (C),L  ED 69
+    //  OTDR  ED BB
+    //  OTIR  ED B3
+    //  OUTD  ED AB
+    //  OUTI  ED A3
+    else if( opcode == 0xED && (opcode2 == 0x79 || opcode2 == 0x41 || opcode2 == 0x49 || opcode2 == 0x51 || opcode2 == 0x59 || opcode2 == 0x61 || opcode2 == 0x69 || opcode2 == 0xBB || opcode2 == 0xB3 || opcode2 == 0xAB || opcode2 == 0xA3) )
     {
-        SPI_SEND32( (Z80CPU.bc.uint16_value << 16) | ((opcode2 == 0x79 ? Z80CPU.af.uint8_values.at_1 :
-                                                       opcode2 == 0x41 ? Z80CPU.bc.uint8_values.at_1 :
-                                                       opcode2 == 0x49 ? Z80CPU.bc.uint8_values.at_0 :
-                                                       opcode2 == 0x51 ? Z80CPU.de.uint8_values.at_1 :
-                                                       opcode2 == 0x59 ? Z80CPU.de.uint8_values.at_0 :
-                                                       opcode2 == 0x61 ? Z80CPU.hl.uint8_values.at_1 :
-                                                       opcode2 == 0x69 ? Z80CPU.hl.uint8_values.at_0 :
-                                                       isVirtualROM((Z80CPU.hl.uint16_value)) ? readVirtualROM((Z80CPU.hl.uint16_value)) : readVirtualRAM((Z80CPU.hl.uint16_value))) << 8)
-                                                   | CPLD_CMD_WRITEIO_ADDR);
-        Z80Ctrl->ioWriteAhead = 1;
+        uint16_t data = ((opcode2 == 0x79 ? Z80CPU.af.uint8_values.at_1 :
+                          opcode2 == 0x41 ? Z80CPU.bc.uint8_values.at_1 :
+                          opcode2 == 0x49 ? Z80CPU.bc.uint8_values.at_0 :
+                          opcode2 == 0x51 ? Z80CPU.de.uint8_values.at_1 :
+                          opcode2 == 0x59 ? Z80CPU.de.uint8_values.at_0 :
+                          opcode2 == 0x61 ? Z80CPU.hl.uint8_values.at_1 :
+                          opcode2 == 0x69 ? Z80CPU.hl.uint8_values.at_0 :
+                          isVirtualROM((Z80CPU.hl.uint16_value)) ? readVirtualROM((Z80CPU.hl.uint16_value)) : readVirtualRAM((Z80CPU.hl.uint16_value))) << 8) | CPLD_CMD_WRITEIO_ADDR;
+
+        if(isPhysicalIO(Z80CPU.bc.uint16_value))
+        {
+            if((Z80CPU.bc.uint16_value&0x00ff) < 8)
+            {
+                SPI_SEND_16(data + (Z80CPU.bc.uint16_value&0x00ff));
+            } else
+            {
+                SPI_SEND_32(Z80CPU.bc.uint16_value, data);
+            }
+            Z80Ctrl->ioWriteAhead = 1;
+        }
     }
-    //       OUT (N), A
+
+    // OUT (N),A  D3 XX
     else if(opcode == 0xD3)
     {
-        SPI_SEND32( ((Z80CPU.bc.uint16_value & 0xff00) | opcode2) << 16 | (Z80CPU.af.uint8_values.at_1 << 8) | CPLD_CMD_WRITEIO_ADDR);
-        Z80Ctrl->ioWriteAhead = 1;
+        if(isPhysicalIO(((Z80CPU.bc.uint16_value & 0xff00) | opcode2)))
+        {
+            if(opcode2 < 8)
+            {
+                SPI_SEND_16((Z80CPU.af.uint8_values.at_1 << 8) | (CPLD_CMD_WRITEIO_ADDR + opcode2));
+            } else
+            {
+                SPI_SEND_32(((Z80CPU.bc.uint16_value & 0xff00) | opcode2), (Z80CPU.af.uint8_values.at_1 << 8) | CPLD_CMD_WRITEIO_ADDR);
+            }
+            Z80Ctrl->ioWriteAhead = 1;
+        }
     }
+
+    return(Z80Ctrl->ioReadAhead | Z80Ctrl->ioWriteAhead);
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------
@@ -522,10 +455,14 @@ static zuint8 z80_read(void *context, zuint16 address)
     Z_UNUSED(context)
        
     // Only read if the address is in physical RAM.
+  #if(TARGET_HOST_PCW == 0)
     if(isPhysical(address))
+  #else
+    if(isPhysicalHW(address))
+  #endif
     {
         // Commence cycle to retrieve the data from Real RAM.
-        SPI_SEND32((uint32_t)address << 16 | CPLD_CMD_READ_ADDR);
+        SPI_SEND_32(address, CPLD_CMD_READ_ADDR);
 
         // Decode address to action any host specific memory map changes.
         decodeMemoryMapSetup(address, 0, 0, true);
@@ -543,6 +480,7 @@ static zuint8 z80_read(void *context, zuint16 address)
         data = readVirtual(address, 0);
     }
 
+  #if (TARGET_HOST_MZ80A == 1)
     // Keyport data? Store.
     if(isHW(address) && address == 0xE001 && (Z80Ctrl->keyportStrobe & 0x0f) == 0)
     {
@@ -554,8 +492,8 @@ static zuint8 z80_read(void *context, zuint16 address)
         if((Z80Ctrl->keyportStrobe & 0x0f) == 8 && (data & 0x1D) != 0x1D)
         {
             Z80Ctrl->keyportHotKey = (data & 0x01) == 0 ? HOTKEY_ORIGINAL :
-                                     (data & 0x04) == 0 ? HOTKEY_RFS80    :
-                                     (data & 0x08) == 0 ? HOTKEY_RFS40    :
+                                     (data & 0x04) == 0 ? HOTKEY_RFS40    :
+                                     (data & 0x08) == 0 ? HOTKEY_RFS80    :
                                      (data & 0x10) == 0 ? HOTKEY_LINUX    : 0x00;
             Z80Ctrl->keyportTrigger = Z80Ctrl->keyportHotKey;
         } else
@@ -568,6 +506,27 @@ static zuint8 z80_read(void *context, zuint16 address)
             Z80Ctrl->keyportTrigger = 0;
         }
     }
+  #elif (TARGET_HOST_MZ700 == 1)
+    // Keyport data? Store.
+    if(isHW(address) && address == 0xE001 && (Z80Ctrl->keyportStrobe & 0x0f) == 8)
+    {
+        Z80Ctrl->keyportShiftCtrl = (data & 0x40) == 0 ? 0x01 : 0x00;
+    } else
+    if(isHW(address) && address == 0xE001 && Z80Ctrl->keyportShiftCtrl == 1)
+    {
+        if((Z80Ctrl->keyportStrobe & 0x0f) == 5 && (data & 0xF0) != 0xF0)
+        {
+            Z80Ctrl->keyportHotKey = (data & 0x80) == 0 ? HOTKEY_ORIGINAL :
+                                     (data & 0x40) == 0 ? HOTKEY_RFS40    :
+                                     (data & 0x20) == 0 ? HOTKEY_TZFS     :
+                                     (data & 0x10) == 0 ? HOTKEY_LINUX    : 0x00;
+            Z80Ctrl->keyportTrigger = Z80Ctrl->keyportHotKey;
+        } else
+        {
+            Z80Ctrl->keyportTrigger = 0;
+        }
+    }
+  #endif
 
   #if(DEBUG_ENABLED & 1)
     if(Z80Ctrl->debug >= 3)
@@ -586,17 +545,27 @@ static void z80_write(void *context, zuint16 address, zuint8 data)
     // Locals.
     Z_UNUSED(context)
 
+  #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
     // To detect Hotkey presses, we need to store the keyboard strobe data and on keydata read.
     if(isHW(address) && address == 0xE000)
     {
         Z80Ctrl->keyportStrobe = data;
     }
+  #endif
 
     // Write to physical host?
-    if(isPhysical(address))
+    if(Z80Ctrl->ioReadAhead == 2)
+    {
+        // Write-thru to virtual memory if we update real memory.
+        if(isPhysicalRAM(address))
+            writeVirtualRAM(address, data);
+        Z80Ctrl->ioReadAhead = 0;
+    }
+    else if(isPhysical(address))
     {
         // Commence cycle to write the data to real RAM.
-        SPI_SEND32((uint32_t)address << 16 | data << 8 | CPLD_CMD_WRITE_ADDR);
+        SPI_SEND_32(address, data << 8 | CPLD_CMD_WRITE_ADDR);
+        //SPI_SEND32(address << 16 | data << 8 | CPLD_CMD_WRITE_ADDR);
         
         // Write-thru to virtual memory if we update real memory.
         if(isPhysicalRAM(address))
@@ -639,11 +608,17 @@ static void z80_write(void *context, zuint16 address, zuint8 data)
 static zuint8 z80_fetch_opcode(void *context, zuint16 address)
 {
     // Locals.
-    zuint8            opcode = 0x00;
-    volatile uint32_t idx;            // Leave as volatile otherwise optimiser will optimise out the delay code.
+    zuint8            opcode    = 0x00;
+  #if(TARGET_HOST_PCW == 1)
+    static zuint8     opcodeNxt = 0x00;
+  #endif
+    volatile uint32_t idx;               // Leave as volatile otherwise optimiser will optimise out the delay code.
     Z_UNUSED(context)
 
     // Normally only opcode fetches occur in RAM but allow any physical address as it could be a Z80 programming trick.
+    
+    // PCW machines operate with write-thru < 128K and virtual >= 128K
+#if(TARGET_HOST_PCW == 0)
   #if(TARGET_HOST_MZ80A == 1)
     // MZ-80A floppy disk controller uses address 0xF3FE/0xF7FE to direct program flow according to READY state of the 
     // MB8866 controller.
@@ -653,37 +628,97 @@ static zuint8 z80_fetch_opcode(void *context, zuint16 address)
   #endif
     {
         // Commence cycle to fetch the opcode from potentially Real RAM albeit it could be any physical hardware.
-        SPI_SEND32((uint32_t)address << 16 | CPLD_CMD_FETCH_ADDR);
+        SPI_SEND_32(address, CPLD_CMD_FETCH_ADDR);
+
+        // Set up to bypass governor if this is floppy access.
+        if(address == 0xF3FE)
+            Z80Ctrl->governorSkip = INSTRUCTION_GOVERNOR_IO_SKIP;
+
+        // Wait for the data and retrieve.
         while(CPLD_READY() == 0);
         opcode = z80io_PRL_Read();
-
-        // Pause until the Last T-State is detected.
-        //while(CPLD_LAST_TSTATE() == 0);
     } else
+#endif
+
+  #if(TARGET_HOST_PCW == 1)
     // Virtual fetches only occur in memory as we are not emulating original hardware.
     if(isVirtualMemory(address))
     {
-        // Delay loop is to govern execution speed to the same as the original host. Timing is primarily based on the main opcode
-        // fetch so long as the additional opcode parameter and read/write take less time than original host.
+        // Read the opcode and operand, operand needed for lookahead decisions.
         if(isVirtualROM(address))
         {
-            opcode = readVirtualROM(address);
-            for(idx=0; idx < Z80Ctrl->cpuGovernorDelayROM; idx++);
+            opcode    = readVirtualROM(address);
+            opcodeNxt = readVirtualROM((address+1));
         } else
         {
-            opcode = readVirtualRAM(address);
-            for(idx=0; idx < Z80Ctrl->cpuGovernorDelayRAM; idx++);
+            opcode    = readVirtualRAM(address);
+            opcodeNxt = readVirtualRAM((address+1));
+        }
+       
+        // Multibyte opcodes, if triggered by an initial I/O read/write ahead operation, return immediately with the opcode.
+        if(Z80Ctrl->ioReadAhead == 0 && Z80Ctrl->ioWriteAhead == 0)
+        {
+            // Check if this operation is I/O or known memory I/O so we can look ahead to optimise sending request to CPLD.
+            if(!lookAhead(address, opcode, opcodeNxt) && !Z80Ctrl->governorSkip)
+            {
+                // Delay loop is to govern execution speed to the same as the original host. Timing is primarily based on the main opcode
+                // fetch so long as the additional opcode parameter and read/write take less time than original host.
+                if(isVirtualROM(address))
+                {
+                    //    opcode = readVirtualROM(address);
+                    for(idx=0; idx < Z80Ctrl->cpuGovernorDelayROM; idx++);
+                } else
+                {
+                    //    opcode = readVirtualRAM(address);
+                    for(idx=0; idx < Z80Ctrl->cpuGovernorDelayRAM; idx++);
+                }
+            } else
+            {
+                // If skip is active, we bypass the delay governor in order to catch up on time wasted with the I/O overhead of the SSD202.
+                if(Z80Ctrl->governorSkip)
+                {
+                    Z80Ctrl->governorSkip--;
+                } else
+                {
+                    Z80Ctrl->governorSkip = INSTRUCTION_GOVERNOR_IO_SKIP;
+                }
+            }
+        } else
+        {
+            Z80Ctrl->ioReadAhead = 0;
+            Z80Ctrl->ioWriteAhead = 0;
         }
     }
-
-    // Check if this operation is I/O or known memory I/O so we can look ahead to optimise sending request to CPLD.
-    lookAhead(address, opcode, isVirtualROM((address+1)) ? readVirtualROM((address+1)) : readVirtualRAM((address+1)));
+  #else
+    // Apply delay if required to match emulated CPU to host speed.
+    if(isVirtualROM(address))
+    {
+        opcode = readVirtualROM(address);
+        if(Z80Ctrl->governorSkip)
+            Z80Ctrl->governorSkip--;
+        else
+            for(idx=0; idx < Z80Ctrl->cpuGovernorDelayROM; idx++);
+    } else
+    if(isVirtualRAM(address))
+    {
+        opcode = readVirtualRAM(address);
+        if(Z80Ctrl->governorSkip)
+            Z80Ctrl->governorSkip--;
+        else
+            for(idx=0; idx < Z80Ctrl->cpuGovernorDelayRAM; idx++);
+    }
+  #endif
 
   #if(DEBUG_ENABLED & 1)
     if(Z80Ctrl->debug >= 3)
     {
-        if(address < 0xF036 || address > 0xF197)
-            pr_info("Fetch:%04x,%02x,%d\n", address, opcode, CPLD_Z80_INT());
+       // if(address < 0xF036 || address > 0xF197)
+       if(address >= 0x0000)
+       {
+           pr_info("Fetch:%04x,%02x,%d,%d,%d\n", address, opcode, Z80Ctrl->ioReadAhead, Z80Ctrl->ioWriteAhead, CPLD_Z80_INT());
+           udelay(2000);
+           udelay(1000);
+       }
 
         // If max level, add delay so that the kernel log doesnt overflow.
         if(Z80Ctrl->debug >= 15)
@@ -711,15 +746,6 @@ static zuint8 z80_fetch(void *context, zuint16 address)
         // Given the limitation of the SigmaStar I/O, it isnt possible to fetch all code from ROM real time, it is therefore cached
         // and read from cache.
         data = isPhysicalROM(address) ? readVirtualROM(address) : readVirtualRAM(address);
-
-        // Commence cycle to retrieve the data from Real RAM.
-        //SPI_SEND32((uint32_t)address << 16 | CPLD_CMD_READ_ADDR);
-
-        //while(CPLD_READY() == 0);
-        //data = READ_CPLD_DATA_IN();
-      
-        // Pause until the Last T-State is detected.
-        //while(CPLD_LAST_TSTATE() == 0);
     } else
     if(isVirtualMemory(address))
     {
@@ -739,6 +765,7 @@ static zuint8 z80_fetch(void *context, zuint16 address)
     {
         if(address < 0xF036 || address > 0xF197)
             pr_info("FetchB:%04x,%02x,%d\n", address, data, CPLD_Z80_INT());
+        udelay(2000);
     }
   #endif
     return(data);
@@ -756,15 +783,26 @@ static zuint8 z80_in(void *context, zuint16 port)
     // Physical port go direct to hardware to retrieve value.
     if(isPhysicalIO(port))
     {
+      #if(TARGET_HOST_PCW == 1)
         if(Z80Ctrl->ioReadAhead == 0)
         {
             // Commence cycle to retrieve the value from the I/O port. Port contains the 16bit BC value.
-            SPI_SEND32((uint32_t)port << 16 | CPLD_CMD_READIO_ADDR);
-
-            // Whilst waiting for the CPLD, we now determine if this is a memory management port and update the memory page if required.
-            decodeMemoryMapSetup(port, 0, 1, true);
+            SPI_SEND_32(port, CPLD_CMD_READIO_ADDR);
         }
-        Z80Ctrl->ioReadAhead = 0;
+      
+        // Whilst waiting for the CPLD, we now determine if this is a memory management port and update the memory page if required.
+        decodeMemoryMapSetup(port, 0, 1, true);
+
+        if(Z80Ctrl->ioReadAhead != 2)
+            Z80Ctrl->ioReadAhead = 0;
+      #else
+        // Commence cycle to retrieve the value from the I/O port. Port contains the 16bit BC value.
+        SPI_SEND_32(port, CPLD_CMD_READIO_ADDR);
+        Z80Ctrl->governorSkip = INSTRUCTION_GOVERNOR_IO_SKIP;
+       
+        // Whilst waiting for the CPLD, we now determine if this is a memory management port and update the memory page if required.
+        decodeMemoryMapSetup(port, 0, 1, true);
+      #endif
 
         // Finally ensure the data from the port is ready and retrieve it.
         while(CPLD_READY() == 0);
@@ -778,8 +816,9 @@ static zuint8 z80_in(void *context, zuint16 port)
     }
 
   #if(DEBUG_ENABLED & 1)
-    if(Z80Ctrl->debug >= 3) pr_info("z80_in:0x%x, 0x%x\n", port, value);
+    if(Z80Ctrl->debug >= 2) pr_info("z80_in:0x%x, 0x%x\n", port, value);
   #endif
+  //  pr_info("z80_in:0x%x, 0x%x\n", port, value);
     return(value);
 }
 
@@ -791,24 +830,30 @@ static zuint8 z80_in(void *context, zuint16 port)
 static void z80_out(void *context, zuint16 port, zuint8 value)
 {
     // Locals.
-  #if(TARGET_HOST_MZ2000 == 1)
-    uint32_t        idx;
-  #endif
     Z_UNUSED(context) 
 
     // Physical port go direct to hardware to retrieve value.
     if(isPhysicalIO(port))
     {
+      #if(TARGET_HOST_PCW == 1)
         // If byte has already been written during the fetch phase, skip.
         if(Z80Ctrl->ioWriteAhead == 0)
         {
             // Commence cycle to write the value to the I/O port. Port contains the 16bit BC value.
-            SPI_SEND32((uint32_t)port << 16 | value << 8 | CPLD_CMD_WRITEIO_ADDR);
+            SPI_SEND_32(port, value << 8 | CPLD_CMD_WRITEIO_ADDR);
         }
         Z80Ctrl->ioWriteAhead = 0;
      
         // Decode address to action any host specific memory map changes.
         decodeMemoryMapSetup(port, value, 1, false);
+      #else
+        // Commence cycle to write the value to the I/O port. Port contains the 16bit BC value.
+        SPI_SEND_32(port, value << 8 | CPLD_CMD_WRITEIO_ADDR);
+        Z80Ctrl->governorSkip = INSTRUCTION_GOVERNOR_IO_SKIP;
+       
+        // Decode address to action any host specific memory map changes.
+        decodeMemoryMapSetup(port, value, 1, false);
+      #endif
     } else
     if(isVirtualIO(port))
     { 
@@ -817,8 +862,9 @@ static void z80_out(void *context, zuint16 port, zuint8 value)
     }
 
   #if(DEBUG_ENABLED & 1)
-    if(Z80Ctrl->debug >= 3) pr_info("z80_out:0x%x, 0x%x\n", port, value);
+    if(Z80Ctrl->debug >= 2) pr_info("z80_out:0x%x, 0x%x\n", port, value);
   #endif
+  //  pr_info("z80_out:0x%x, 0x%x\n", port, value);
 }
 
 // NOP - No Operation method. This instruction is used for timing, padding out an application or during
@@ -834,7 +880,7 @@ static zuint8 z80_nop(void *context, zuint16 address)
     {
         // If autorefresh is not enabled, send a single refresh request.
         if(Z80Ctrl->refreshDRAM == 0)
-            SPI_SEND8(CPLD_CMD_REFRESH);
+            SPI_SEND_32(0x0000, CPLD_CMD_REFRESH);
     }
     return 0x00;
 }
@@ -848,7 +894,7 @@ static void z80_halt(void *context, zboolean state)
 
     // Inform CPLD of halt state.
     pr_info("z80_halt\n");
-    SPI_SEND8(CPLD_CMD_HALT);
+    SPI_SEND_32(0x0000, CPLD_CMD_HALT);
     Z80CPU.cycles = Z80_MAXIMUM_CYCLES;
 }
 
@@ -856,36 +902,48 @@ static void z80_halt(void *context, zboolean state)
 static zuint8 z80_context(void *context, zuint16 address)
 {
     Z_UNUSED(context)
-    pr_info("z80_context\n");
+  #if(DEBUG_ENABLED & 1)
+    if(Z80Ctrl->debug >= 2) pr_info("z80_context\n");
+  #endif
     return 0x00;
 }
 static zuint8 z80_nmia(void *context, zuint16 address)
 {
     Z_UNUSED(context)
-    pr_info("z80_nmia\n");
+  #if(DEBUG_ENABLED & 1)
+    if(Z80Ctrl->debug >= 2) pr_info("z80_nmia\n");
+  #endif
     return 0x00;
 }
 static zuint8 z80_inta(void *context, zuint16 address)
 {
     Z_UNUSED(context)
-    //pr_info("z80_inta\n");
+  #if(DEBUG_ENABLED & 1)
+    if(Z80Ctrl->debug >= 2) pr_info("z80_inta\n");
+  #endif
     return 0x00;
 }
 static zuint8 z80_intFetch(void *context, zuint16 address)
 {
     Z_UNUSED(context)
-    pr_info("z80_int_fetch\n");
+  #if(DEBUG_ENABLED & 1)
+    if(Z80Ctrl->debug >= 2) pr_info("z80_int_fetch\n");
+  #endif
     return 0x00;
 }
 static void z80_ldia(void *context)
 {
     Z_UNUSED(context)
-    pr_info("z80_ldia\n");
+  #if(DEBUG_ENABLED & 1)
+    if(Z80Ctrl->debug >= 2) pr_info("z80_ldia\n");
+  #endif
 }
 static void z80_ldra(void *context)
 {
     Z_UNUSED(context)
-    pr_info("z80_ldra\n");
+  #if(DEBUG_ENABLED & 1)
+    if(Z80Ctrl->debug >= 2) pr_info("z80_ldra\n");
+  #endif
 }
 static void z80_reti(void *context)
 {
@@ -907,12 +965,16 @@ static void z80_reti(void *context)
 static void z80_retn(void *context)
 {
     Z_UNUSED(context)
-    pr_info("z80_retn\n");
+  #if(DEBUG_ENABLED & 1)
+    if(Z80Ctrl->debug >= 3) pr_info("z80_retn\n");
+  #endif
 }
 static zuint8 z80_illegal(void *context, zuint8 opcode)
 {
     Z_UNUSED(context)
-    pr_info("z80_illegal\n");
+  #if(DEBUG_ENABLED & 1)
+    if(Z80Ctrl->debug >= 3) pr_info("z80_illegal\n");
+  #endif
     return 0x00;
 }
 
@@ -940,7 +1002,7 @@ int thread_z80(void * thread_nr)
     while(!kthread_should_stop())
     {
         // Run the Z80 emulation if enabled.
-        if(canRun) z80_run(&Z80CPU, 100);
+        if(canRun) z80_run(&Z80CPU, 10);
 
         // Reset pressed?
         if(CPLD_RESET())
@@ -959,14 +1021,24 @@ int thread_z80(void * thread_nr)
             if(Z80RunMode == Z80_RUNNING) canRun=1; else canRun=0;
             mutex_unlock(&Z80RunModeMutex);
 
+          #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
             // Hotkey pressed? Bring up user menu.
             if(Z80Ctrl->keyportTrigger != 0x00 && Z80Ctrl->keyportTriggerLast == 0)
             {
                 z80menu();
+
+                // Send signal to arbiter to change run mode.
                 sendSignal(Z80Ctrl->arbTask, SIGUSR1);
                 Z80Ctrl->keyportShiftCtrl = 0;
+
+                // Suspend processing until arbiter sets up new environment.
+                mutex_lock(&Z80RunModeMutex);
+                Z80RunMode = Z80_STOPPED;
+                canRun = 0;
+                mutex_unlock(&Z80RunModeMutex);
             }
             Z80Ctrl->keyportTriggerLast = Z80Ctrl->keyportTrigger;
+          #endif
         }
     }
 
@@ -1231,7 +1303,7 @@ int memoryDump(uint32_t memaddr, uint32_t memsize, uint32_t dispaddr, uint8_t di
         {
             if(pnt+i < endAddr)
             {
-                SPI_SEND32((uint16_t)(pnt+i) << 16 | CPLD_CMD_READ_ADDR);
+                SPI_SEND_32((uint16_t)(pnt+i), CPLD_CMD_READ_ADDR);
                 while(CPLD_READY() == 0);
                 data = z80io_PRL_Read();
                 pr_info(KERN_CONT "%02X", data);
@@ -1249,7 +1321,7 @@ int memoryDump(uint32_t memaddr, uint32_t memsize, uint32_t dispaddr, uint8_t di
         // print single ascii char
         for (i=0; i < displayWidth; i++)
         {
-            SPI_SEND32((uint16_t)(pnt+i) << 16 | CPLD_CMD_READ_ADDR);
+            SPI_SEND_32((uint16_t)(pnt+i), CPLD_CMD_READ_ADDR);
             while(CPLD_READY() == 0);
             c = (char)z80io_PRL_Read();
             if ((pnt+i < endAddr) && (c >= ' ') && (c <= '~'))
@@ -1280,7 +1352,6 @@ int memoryDump(uint32_t memaddr, uint32_t memsize, uint32_t dispaddr, uint8_t di
 void setupMemory(enum Z80_MEMORY_PROFILE mode)
 {
     // Locals.
-    uint32_t        idx;
 
     // Check to see if the memory mode page has been allocated for current mode.
     if(Z80Ctrl->page[Z80Ctrl->memoryMode] == NULL)
@@ -1294,169 +1365,45 @@ void setupMemory(enum Z80_MEMORY_PROFILE mode)
         }
     }
 
-    // Setup default mode according to run mode, ie. Physical run or Virtual run.
-    //
-    if(mode == USE_PHYSICAL_RAM)
-    {
-      #if(TARGET_HOST_MZ700 == 1)
-      #endif
-      #if(TARGET_HOST_MZ2000 == 1)
-        // Initialise the page pointers and memory to use physical RAM.
-        for(idx=0x0000; idx < MEMORY_PAGE_SIZE; idx+=MEMORY_BLOCK_GRANULARITY)
-        {
-            if(idx >= 0 && idx < 0x8000)
-            {
-                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_ROM, idx);
-            }
-            else //if(idx >= 0x8000 && idx < 0xD000)
-            {
-                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_RAM, idx);
-            }
-           
-            // Video RAM labelled as HW as we dont want to cache it.
-            //else if(idx >= 0xD000 && idx < 0xE000)
-           // {
-           //     setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_VRAM, idx);
-            //} else
-           // {
-           //     setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_RAM, idx);
-           // }
-        }
-      #endif
-      #if(TARGET_HOST_MZ80A == 1)
-        // Initialise the page pointers and memory to use physical RAM.
-        for(idx=0x0000; idx < MEMORY_PAGE_SIZE; idx+=MEMORY_BLOCK_GRANULARITY)
-        {
-            if(idx >= 0 && idx < 0x1000)
-            {
-                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_ROM, idx);
-            }
-            else if(idx >= 0x1000 && idx < 0xD000)
-            {
-                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_RAM, idx);
-            }
-            else if(idx >= 0xD000 && idx < 0xE000)
-            {
-                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_VRAM, idx);
-            }
-            else if(idx >= 0xE000 && idx < 0xE800)
-            {
-                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_HW, idx);
-            }
-            else if(idx >= 0xE800 && idx < 0x10000)
-            {
-                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_ROM, idx);
-            } else
-            {
-                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_RAM, idx);
-            }
-        }
-      #endif
-        for(idx=0x0000; idx < IO_PAGE_SIZE; idx++)
-        {
-            Z80Ctrl->iopage[idx] = idx | IO_TYPE_PHYSICAL_HW;
-        }
-        // Cancel refresh as using physical RAM for program automatically refreshes DRAM.
-        Z80Ctrl->refreshDRAM = 0;
-    }
-    else if(mode == USE_VIRTUAL_RAM)
-    {
-      #if(TARGET_HOST_MZ2000 == 1)
-        // Initialise the page pointers and memory to use virtual RAM.
-        // MZ-2000 comes up in IPL mode where lower 32K is ROM and upper 32K is RAM remapped from 0x0000.
-        for(idx=0x0000; idx < MEMORY_PAGE_SIZE; idx+=MEMORY_BLOCK_GRANULARITY)
-        {
-            if(idx >= 0 && idx < 0x8000)
-            {
-                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_ROM, idx);
-            }
-            else 
-            {
-                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM, (Z80Ctrl->lowMemorySwap ? idx - 0x8000 : idx));
-            }
-        }
-        for(idx=0x0000; idx < IO_PAGE_SIZE; idx++)
-        {
-            Z80Ctrl->iopage[idx] = idx | IO_TYPE_PHYSICAL_HW;
-        }
-        // Enable refresh as using virtual RAM stops refresh of host DRAM.
-        Z80Ctrl->refreshDRAM = 1;
-      #endif
-      #if(TARGET_HOST_MZ80A == 1)
-        // Initialise the page pointers and memory to use virtual RAM.
-        for(idx=0x0000; idx < MEMORY_PAGE_SIZE; idx+=MEMORY_BLOCK_GRANULARITY)
-        {
-            if(idx >= 0 && idx < 0x1000)
-            {
-                setMemoryType((idx/MEMORY_BLOCK_GRANULARITY), MEMORY_TYPE_VIRTUAL_ROM, idx);
-            }
-            else if(idx >= 0x1000 && idx < 0xD000)
-            {
-                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY,   MEMORY_TYPE_VIRTUAL_RAM, idx);
-            }
-            else if(idx >= 0xD000 && idx < 0xE000)
-            {
-                setMemoryType((idx/MEMORY_BLOCK_GRANULARITY), MEMORY_TYPE_PHYSICAL_VRAM, idx);
-            }
-            else if(idx >= 0xE000 && idx < 0xE800)
-            {
-                setMemoryType((idx/MEMORY_BLOCK_GRANULARITY), MEMORY_TYPE_PHYSICAL_HW, idx);
-            }
-            else if(idx >= 0xE800 && idx < 0xF000)
-            {
-                setMemoryType((idx/MEMORY_BLOCK_GRANULARITY), MEMORY_TYPE_VIRTUAL_HW, idx);
-            }
-            else if(idx >= 0xF000 && idx < 0x10000)
-            {
-                setMemoryType((idx/MEMORY_BLOCK_GRANULARITY), MEMORY_TYPE_VIRTUAL_ROM, idx);
-            }
-        }
-        for(idx=0x0000; idx < IO_PAGE_SIZE; idx++)
-        {
-            Z80Ctrl->iopage[idx] = idx | IO_TYPE_PHYSICAL_HW;
-        }
-        // Enable refresh as using virtual RAM stops refresh of host DRAM.
-        Z80Ctrl->refreshDRAM = 0;
-      #endif
-    }
-
     // Call driver specific methods to change default memory map per device requirements.
   #if(TARGET_HOST_MZ80A == 1)
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ80A)
+        mz80aSetupMemory(mode);
+    else
+  #endif
+  #if(TARGET_HOST_MZ700 == 1)
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ700)
+        mz700SetupMemory(mode);
+    else
+  #endif
+  #if(TARGET_HOST_MZ2000 == 1)
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ2000)
+        mz2000SetupMemory(mode);
+    else
+  #endif
+    // RFS board only works in an MZ-80A at present.
+  #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
     if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_RFS)
         rfsSetupMemory(mode);
     else
   #endif
+    // tranZPUter operates in all supported Sharp machines.
+  #if(TARGET_HOST_PCW == 0)
     if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_TZPU)
         tzpuSetupMemory(mode);
     else
+  #endif
+  #if(TARGET_HOST_PCW == 1)
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_PCW)
+        pcwSetupMemory(mode);
+    else
+  #endif
     {
-        // Original mode, ie. no virtual devices active, copy the host BIOS into the Virtual ROM and initialise remainder of ROM memory
-        // such that the host behaves as per original spec.
-        pr_info("Sync Host BIOS to virtual ROM.\n");
-        for(idx=0; idx < Z80_VIRTUAL_ROM_SIZE; idx++)
-        {
-          #if(TARGET_HOST_MZ700 == 1)
-            if(idx >= 0x0000 && idx < 0x1000)
-          #endif
-          #if(TARGET_HOST_MZ80A == 1)
-            if((idx >= 0x0000 && idx < 0x1000) || (idx >= 0xF000 && idx < 0x10000))
-          #endif
-          #if(TARGET_HOST_MZ2000 == 1)
-            if(idx >= 0x0000 && idx < 0x8000)
-          #endif
-            {
-                SPI_SEND32((uint32_t)idx << 16 | CPLD_CMD_READ_ADDR);
-                while(CPLD_READY() == 0);
-                Z80Ctrl->rom[idx] = z80io_PRL_Read8(1);
-            } else
-            {
-                Z80Ctrl->rom[idx] = 0x00;
-            }
-        }
     }
 
-    // Enable autorefresh if refreshDRAM is set.
-    SPI_SEND8(Z80Ctrl->refreshDRAM == 1 ? CPLD_CMD_SET_AUTO_REFRESH : CPLD_CMD_CLEAR_AUTO_REFRESH);
+    // Enable autorefresh if refreshDRAM is set. 0 = disable, 1 = enable, > 1 = ignore and use CPLD default.
+    if(Z80Ctrl->refreshDRAM < 2)
+        SPI_SEND_32(0x0000, Z80Ctrl->refreshDRAM == 1 ? CPLD_CMD_SET_AUTO_REFRESH : CPLD_CMD_CLEAR_AUTO_REFRESH);
 
     // Inhibit mode disabled.
     Z80Ctrl->inhibitMode = 0;
@@ -1507,8 +1454,8 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                     // Command to power on and start the Z80 CPU.
                     case IOCTL_CMD_Z80_START:
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = Z80_RUNNING; mutex_unlock(&Z80RunModeMutex);
-
                         z80_power(&Z80CPU, TRUE);
+
                       #if(DEBUG_ENABLED & 1)
                         if(Z80Ctrl->debug >= 3) pr_info("Z80 started.\n");
                       #endif
@@ -1539,7 +1486,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
                         resetZ80();
 
-                        mutex_lock(&Z80RunModeMutex); Z80RunMode = currentRunMode; mutex_unlock(&Z80RunModeMutex);
+                        mutex_lock(&Z80RunModeMutex); Z80RunMode = Z80_RUNNING; mutex_unlock(&Z80RunModeMutex);
                       #if(DEBUG_ENABLED & 1)
                         if(Z80Ctrl->debug >= 3) pr_info("Z80 Reset.\n");
                       #endif
@@ -1590,7 +1537,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                         // Copy virtual memory to host DRAM.
                         for(idx=0x1000; idx < 0xD000; idx++)
                         {
-                            SPI_SEND32((uint32_t)idx << 16 | Z80Ctrl->ram[idx] << 8 | CPLD_CMD_WRITE_ADDR);
+                            SPI_SEND_32(idx, Z80Ctrl->ram[idx] << 8 | CPLD_CMD_WRITE_ADDR);
                         }
 
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = currentRunMode; mutex_unlock(&Z80RunModeMutex);
@@ -1686,17 +1633,19 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                         {
                             if(Z80Ctrl->virtualDevice[idx] == ioctlCmd.vdev.device)
                             {
-                                //pr_info("Virtual Device already installed.\n");
+                                pr_info("Virtual Device already installed.\n");
                                 break;
                             }
                         }
                         if(idx < Z80Ctrl->virtualDeviceCnt)
                             break;
 
-                      #if(TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ2000 == 1)
+                      #if(TARGET_HOST_MZ80A == 0 && TARGET_HOST_MZ700 == 0)
                         if(ioctlCmd.vdev.device & VIRTUAL_DEVICE_RFS)
-                            pr_info("RFS Board currently supported on MZ-80A Host only.\n");
-                        break;
+                        {
+                            pr_info("RFS Board currently supported on MZ-80A/MZ-700 Hosts only.\n");
+                            break;
+                        }
                       #endif
 
                         // Stop the CPU prior to adding virtual device.
@@ -1709,6 +1658,14 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                         switch(ioctlCmd.vdev.device)
                         {
                           #if(TARGET_HOST_MZ80A == 1)
+                            case VIRTUAL_DEVICE_MZ80A:
+                                Z80Ctrl->virtualDevice[Z80Ctrl->virtualDeviceCnt++] = ioctlCmd.vdev.device;
+                                Z80Ctrl->virtualDeviceBitMap |= ioctlCmd.vdev.device;
+                                mz80aInit(0);
+                                break;
+                          #endif
+
+                          #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
                             case VIRTUAL_DEVICE_RFS40:
                             case VIRTUAL_DEVICE_RFS80:
                                 Z80Ctrl->virtualDevice[Z80Ctrl->virtualDeviceCnt++] = ioctlCmd.vdev.device;
@@ -1717,23 +1674,51 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                                 break;
                           #endif
 
+                          #if(TARGET_HOST_MZ700 == 1)
+                            case VIRTUAL_DEVICE_MZ700:
+                                Z80Ctrl->virtualDevice[Z80Ctrl->virtualDeviceCnt++] = ioctlCmd.vdev.device;
+                                Z80Ctrl->virtualDeviceBitMap |= ioctlCmd.vdev.device;
+                                mz700Init(0);
+                                break;
+                          #endif
+
+                          #if(TARGET_HOST_MZ2000 == 1)
+                            case VIRTUAL_DEVICE_MZ2000:
+                                Z80Ctrl->virtualDevice[Z80Ctrl->virtualDeviceCnt++] = ioctlCmd.vdev.device;
+                                Z80Ctrl->virtualDeviceBitMap |= ioctlCmd.vdev.device;
+                                mz2000Init(0);
+                                break;
+                          #endif
+
+                          #if(TARGET_HOST_PCW == 0)
                             case VIRTUAL_DEVICE_TZPU:
                                 Z80Ctrl->virtualDevice[Z80Ctrl->virtualDeviceCnt++] = VIRTUAL_DEVICE_TZPU;
                                 Z80Ctrl->virtualDeviceBitMap |= VIRTUAL_DEVICE_TZPU;
                                 tzpuInit();
                                 break;
+                          #endif
+
+                          #if(TARGET_HOST_PCW == 1)
+                            case VIRTUAL_DEVICE_PCW:
+                                Z80Ctrl->virtualDevice[Z80Ctrl->virtualDeviceCnt++] = VIRTUAL_DEVICE_PCW;
+                                Z80Ctrl->virtualDeviceBitMap |= VIRTUAL_DEVICE_PCW;
+
+                              #ifdef TARGET_HOST_PCW8XXX
+                                pcwInit(0);
+                              #else
+                                pcwInit(1);
+                              #endif
+                                break;
+                          #endif
 
                             case VIRTUAL_DEVICE_NONE:
                             default:
                                 break;
                         }
 
-                        // Re-initialise the memory map to reflect device removal.
-                        setupMemory(Z80Ctrl->defaultPageMode);
-
                         // Z80 can continue.
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = currentRunMode; mutex_unlock(&Z80RunModeMutex);
-                        //pr_info("Virtual device added.\n");
+                        pr_info("Virtual device added.\n");
                         break;
 
                     // Command to remove a device from the Z80 configuration.
@@ -1765,6 +1750,13 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                         switch(ioctlCmd.vdev.device)
                         {
                           #if(TARGET_HOST_MZ80A == 1)
+                            case VIRTUAL_DEVICE_MZ80A:
+                                Z80Ctrl->virtualDeviceBitMap &= ~ioctlCmd.vdev.device;
+                                mz80aRemove();
+                                break;
+                          #endif
+
+                          #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
                             case VIRTUAL_DEVICE_RFS40:
                             case VIRTUAL_DEVICE_RFS80:
                                 Z80Ctrl->virtualDeviceBitMap &= ~ioctlCmd.vdev.device;
@@ -1772,19 +1764,39 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                                 break;
                           #endif
 
+                          #if(TARGET_HOST_MZ700 == 1)
+                            case VIRTUAL_DEVICE_MZ700:
+                                Z80Ctrl->virtualDeviceBitMap &= ~ioctlCmd.vdev.device;
+                                mz700Remove();
+                                break;
+                          #endif
+
+                          #if(TARGET_HOST_MZ2000 == 1)
+                            case VIRTUAL_DEVICE_MZ2000:
+                                Z80Ctrl->virtualDeviceBitMap &= ~ioctlCmd.vdev.device;
+                                mz2000Remove();
+                                break;
+                          #endif
+
+                          #if(TARGET_HOST_PCW == 0)
                             case VIRTUAL_DEVICE_TZPU:
                                 Z80Ctrl->virtualDeviceBitMap &= ~VIRTUAL_DEVICE_TZPU;
                                 tzpuRemove();
                                 break;
+                          #endif
+
+                          #if(TARGET_HOST_PCW == 1)
+                            case VIRTUAL_DEVICE_PCW:
+                                Z80Ctrl->virtualDeviceBitMap &= ~VIRTUAL_DEVICE_PCW;
+                                pcwRemove();
+                                break;
+                          #endif
 
                             case VIRTUAL_DEVICE_NONE:
                             default:
                                 break;
                         }
                        
-                        // Re-initialise the memory map to reflect device removal.
-                        setupMemory(Z80Ctrl->defaultPageMode);
-
                         // Z80 can continue.
                         mutex_lock(&Z80RunModeMutex); Z80RunMode = currentRunMode; mutex_unlock(&Z80RunModeMutex);
                         //pr_info("Device removed\n");
@@ -1983,78 +1995,7 @@ static int __init ModuleInit(void)
 
     // Initialise the hardware to host interface.
     z80io_init();
-
-    // Initialise the virtual RAM from the HOST DRAM. This is to maintain compatibility as some applications (in my experience) have 
-    // bugs, which Im putting down to not initialising variables. The host DRAM is in a pattern of 0x00..0x00, 0xFF..0xFF repeating
-    // when first powered on.
-    pr_info("Sync Host RAM to virtual RAM.\n");
-    for(idx=0; idx < Z80_VIRTUAL_RAM_SIZE; idx++)
-    {
-      #if(TARGET_HOST_MZ700 == 1)
-        if(idx >= 0x1000 && idx < 0xD000)
-        {
-            SPI_SEND32((uint32_t)idx << 16 | CPLD_CMD_READ_ADDR);
-            while(CPLD_READY() == 0);
-            Z80Ctrl->ram[idx] = z80io_PRL_Read8(1);
-        } else
-        {
-            Z80Ctrl->ram[idx] = 0x00;
-        }
-      #endif
-      #if(TARGET_HOST_MZ2000 == 1)
-        if(idx >= 0x8000 && idx < 0x10000)
-        {
-            SPI_SEND32((uint32_t)idx << 16 | CPLD_CMD_READ_ADDR);
-            while(CPLD_READY() == 0);
-            Z80Ctrl->ram[idx-0x8000] = z80io_PRL_Read8(1);
-        } else
-        {
-            if(idx >= 0x0000 && idx < 0x8000)
-                Z80Ctrl->ram[idx+0x8000] = 0x00;
-            else
-                Z80Ctrl->ram[idx] = 0x00;
-        }
-      #endif
-      #if(TARGET_HOST_MZ80A == 1)
-        if(idx >= 0x1000 && idx < 0xD000)
-        {
-            SPI_SEND32((uint32_t)idx << 16 | CPLD_CMD_READ_ADDR);
-            while(CPLD_READY() == 0);
-            Z80Ctrl->ram[idx] = z80io_PRL_Read8(1);
-        } else
-        {
-            Z80Ctrl->ram[idx] = 0x00;
-        }
-      #endif
-    }
-
-    // Add in a test program to guage execution speed.
-    #if(TARGET_HOST_MZ700 == 1)
-      Z80Ctrl->ram[0x1200] = 0x01;
-      Z80Ctrl->ram[0x1201] = 0x86;
-      Z80Ctrl->ram[0x1202] = 0xf2;
-      Z80Ctrl->ram[0x1203] = 0x3e;
-      Z80Ctrl->ram[0x1204] = 0x15;
-      Z80Ctrl->ram[0x1205] = 0x3d;
-      Z80Ctrl->ram[0x1206] = 0x20;
-      Z80Ctrl->ram[0x1207] = 0xfd;
-      Z80Ctrl->ram[0x1208] = 0x0b;
-      Z80Ctrl->ram[0x1209] = 0x78;
-      Z80Ctrl->ram[0x120a] = 0xb1;
-      Z80Ctrl->ram[0x120b] = 0x20;
-      Z80Ctrl->ram[0x120c] = 0xf6;
-      Z80Ctrl->ram[0x120d] = 0xc3;
-      Z80Ctrl->ram[0x120e] = 0x00;
-      Z80Ctrl->ram[0x120f] = 0x00;
-    #endif
-
-  #if(TARGET_HOST_MZ2000 == 1)
-    Z80Ctrl->lowMemorySwap    = 1;
-  #endif
-
-  #if(TARGET_HOST_MZ80A == 1)
-    Z80Ctrl->memSwitch        = 0;
-  #endif
+    SPI_SET_FRAME_SIZE();
 
     // Initialise the virtual device array.
     for(idx=0; idx < MAX_VIRTUAL_DEVICES; idx++)
@@ -2071,6 +2012,7 @@ static int __init ModuleInit(void)
     // Setup the governor delay, it is the delay per opcode fetch to restrict the Z80 CPU to a given speed.
     Z80Ctrl->cpuGovernorDelayROM = ROM_DELAY_NORMAL;
     Z80Ctrl->cpuGovernorDelayRAM = RAM_DELAY_NORMAL;
+    Z80Ctrl->governorSkip        = 0;
 
     // Setup the default Page Mode. This is needed if an event such as a reset occurs which needs to return the page and iotable back to default.
     Z80Ctrl->defaultPageMode = USE_VIRTUAL_RAM;
@@ -2090,16 +2032,18 @@ static int __init ModuleInit(void)
     Z80Ctrl->ioReadAhead = 0;
     Z80Ctrl->ioWriteAhead = 0;
 
+  #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
     // Initialse hotkey detection variables.
     Z80Ctrl->keyportStrobe      = 0x00;
     Z80Ctrl->keyportShiftCtrl   = 0x00;
     Z80Ctrl->keyportHotKey      = 0x00;
     Z80Ctrl->keyportTrigger     = 0x00;
     Z80Ctrl->keyportTriggerLast = 0x00;
+  #endif
 
-    // PC to start and power on the CPU
+    // PC to start.
     Z80_PC(Z80CPU) = 0;
-    z80_power(&Z80CPU, TRUE);
+    //z80_power(&Z80CPU, TRUE);
 
     // Initialise Debug logic if compile time enabled.
   #if(DEBUG_ENABLED != 0)

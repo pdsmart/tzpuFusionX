@@ -593,6 +593,23 @@ int ctrlCmd(int fdZ80, enum CTRL_COMMANDS cmd, long param1, long param2, long pa
             {
                 ioctlCmd.vdev.device = VIRTUAL_DEVICE_TZPU;
             }
+            else if(strcasecmp((char *)param1, "MZ80A") == 0)
+            {
+                ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ80A;
+            }
+            else if(strcasecmp((char *)param1, "MZ700") == 0)
+            {
+                ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ700;
+            }
+            else if(strcasecmp((char *)param1, "MZ2000") == 0)
+            {
+                ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ2000;
+            }
+            else if(strcasecmp((char *)param1, "PCW") == 0)
+            {
+            printf("Add device:%s\n", (char *)param1);
+                ioctlCmd.vdev.device = VIRTUAL_DEVICE_PCW;
+            }
             if(ioctlCmd.vdev.device != VIRTUAL_DEVICE_NONE)
             {
                 ioctlCmd.cmd = IOCTL_CMD_ADD_DEVICE;
@@ -612,6 +629,22 @@ int ctrlCmd(int fdZ80, enum CTRL_COMMANDS cmd, long param1, long param2, long pa
             else if(strcasecmp((char *)param1, "TZPU") == 0)
             {
                 ioctlCmd.vdev.device = VIRTUAL_DEVICE_TZPU;
+            }
+            else if(strcasecmp((char *)param1, "MZ80A") == 0)
+            {
+                ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ80A;
+            }
+            else if(strcasecmp((char *)param1, "MZ700") == 0)
+            {
+                ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ700;
+            }
+            else if(strcasecmp((char *)param1, "MZ2000") == 0)
+            {
+                ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ2000;
+            }
+            else if(strcasecmp((char *)param1, "PCW") == 0)
+            {
+                ioctlCmd.vdev.device = VIRTUAL_DEVICE_PCW;
             }
             if(ioctlCmd.vdev.device != VIRTUAL_DEVICE_NONE)
             {
@@ -749,7 +782,7 @@ void showArgs(char *progName, struct optparse *options)
     printf("                                                                                   # Load contents of binary file into memory at address. default = 0x000000.\n");
     printf("                          = LOADMEM --file <binary filename> --addr <24 bit addr> --type <0 - Host RAM, 1 = Virtual RAM, 2 = Virtual ROM> [--offset <offset> --len <length>]\n");
     printf("                          = SAVE    --file <filename>  --addr <24bit addr> --end <24bit addr> [--size <24bit>] --type <0 - Host RAM, 1 = Virtual RAM, 2 = Virtual ROM, 3 = PageTable, 4 = IOPageTable>\n");
-    printf("                          = DUMP    --addr <24bit addr> --end <24bit addr> [--size <24bit>] --type <0 - Host RAM, 1 = Virtual RAM, 2 = Virtual ROM, 3 = MemoryPageTable, 4 = IOPageTable> [--memorypage <0..31>]\n");
+    printf("                          = DUMP    --addr <24bit addr> --end <24bit addr> [--size <24bit>] --type <0 - Host RAM, 1 = Virtual RAM, 2 = Virtual ROM, 3 = MemoryPageTable, 4 = IOPageTable> [--memorypage <0..41>]\n");
     printf("                          = CPLDCMD --data <32bit command>                         # Send adhoc 32bit command to CPLD.\n");
   #if(DEBUG_ENABLED != 0)
     printf("                          = DEBUG   --level <level>                                # 0 = off, 1..15 debug level, 15 is very verbose.\n");

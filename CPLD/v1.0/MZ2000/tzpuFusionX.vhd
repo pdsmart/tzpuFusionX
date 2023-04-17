@@ -2,16 +2,17 @@
 --
 -- Name:            tzpuFusionX.vhd
 -- Version:         MZ-2000
--- Created:         June 2020
+-- Created:         Jan 2023
 -- Author(s):       Philip Smart
 -- Description:     tzpuFusionX CPLD logic definition file.
 --                  This module contains the definition of the tzpuFusionX project plus enhancements
 --                  for the MZ-2000.
 --
 -- Credits:         
--- Copyright:       (c) 2018-22 Philip Smart <philip.smart@net2net.org>
+-- Copyright:       (c) 2018-23 Philip Smart <philip.smart@net2net.org>
 --
--- History:         Oct 2022 - Initial write for the MZ-2000.
+-- History:         Jan 2023 v1.0 - Initial write for the MZ-2000.
+--                  Apr 2023 v1.1 - Updates from the PCW8256 development.
 --
 ---------------------------------------------------------------------------------------------------------
 -- This source file is free software: you can redistribute it and-or modify
@@ -128,7 +129,7 @@ end entity;
 
 architecture rtl of cpld512 is
 
-    -- Finite State Machine states.
+    -- Z80 Finite State Machine states.
     type SOMFSMState is
     (
         IdleCycle,
@@ -174,6 +175,14 @@ architecture rtl of cpld512 is
         BusReqCycle
     );
 
+    -- Controller FSM states.
+    type CTRLFSMState is
+    (
+        CTRLCMD_Idle,
+        CTRLCMD_ReadIOWrite,
+        CTRLCMD_ReadIOWrite_1
+    );
+
     -- CPU Interface internal signals.
     signal Z80_BUSRQni            :       std_logic;
     signal Z80_INTni              :       std_logic;
@@ -185,7 +194,6 @@ architecture rtl of cpld512 is
     signal Z80_HALTni             :       std_logic;
     signal Z80_M1ni               :       std_logic;
     signal Z80_RFSHni             :       std_logic;
-    signal Z80_DATAi              :       std_logic_vector(7 downto 0);
     signal Z80_BUSRQ_ACKni        :       std_logic;
 
     -- Internal CPU state control.
@@ -203,9 +211,10 @@ architecture rtl of cpld512 is
 
     -- Refresh control.
     signal FSM_STATE              :       SOMFSMState := IdleCycle;
-    signal NEW_SPI_CMD            :       std_logic := '0';
+    signal CTRL_STATE             :       CTRLFSMState := CTRLCMD_Idle;
+    signal NEW_SPI_DATA           :       std_logic := '0';
     signal VCPU_CS_EDGE           :       std_logic_vector(1 downto 0)  := "11";
-    signal AUTOREFRESH_CNT        :       integer range 0 to 7;
+    signal AUTOREFRESH_CNT        :       integer range 0 to 63;
     signal FSM_STATUS             :       std_logic := '0';
     signal FSM_CHECK_WAIT         :       std_logic := '0';
     signal FSM_WAIT_ACTIVE        :       std_logic := '0';
@@ -229,11 +238,12 @@ architecture rtl of cpld512 is
     signal SPI_RX_SREG            :       std_logic_vector(7 downto 0);        -- RX Shift Register
     signal SPI_TX_DATA            :       std_logic_vector(31 downto 0);       -- Data to transmit.
     signal SPI_RX_DATA            :       std_logic_vector(31 downto 0);       -- Data received.
-    signal SPI_BIT_CNT            :       integer range 0 to 16;               -- Count of bits tx/rx'd.
+    signal SPI_BIT_CNT            :       integer range 0 to 7;                -- Count of bits tx/rx'd.
     signal SPI_FRAME_CNT          :       integer range 0 to 4;                -- Number of frames received (8bit chunks).
 
     -- SPI Command interface.
     signal SOM_CMD                :       std_logic_vector(7 downto 0)  := (others => '0');
+    signal SOM_PARAM_CNT          :       integer range 0 to 3;
     signal SPI_NEW_DATA           :       std_logic;
     signal SPI_PROCESSING         :       std_logic;
     signal SPI_CPU_ADDR           :       std_logic_vector(15 downto 0) := (others => '0');
@@ -275,7 +285,7 @@ begin
     -- On the second edge, if occurring within 1 second of the first, the PM_RESET signal to the SOM is triggered, held low for 1 second,
     -- forcing the SOM to reboot.
     SYSRESET: process( Z80_CLKi, Z80_RESETn )
-        variable timer1        : integer range 0 to 354000 := 0;
+        variable timer1        : integer range 0 to 400000 := 0;
         variable timer100      : integer range 0 to 10     := 0;
         variable timerPMReset  : integer range 0 to 10     := 0;
         variable resetCount    : integer range 0 to 3      := 0;
@@ -311,7 +321,7 @@ begin
             end if;
 
             -- 100ms interval.
-            if(timer1 = 354000) then
+            if(timer1 = 400000) then
                 timer100         := timer100 + 1;
 
                 if(timer100 >= 10) then
@@ -340,8 +350,11 @@ begin
     -- SPI Slave input. Receive command and data from the SOM.
     SPI_INPUT : process(VSOM_SPI_CLK)
     begin
+        -- Chip Select inactive, disable process and reset control flags.
+        if(VSOM_SPI_CSn = '1') then
+
         -- SPI_CLK_POLARITY='0' => falling edge; SPI_CLK_POLARITY='1' => rising edge
-        if(VSOM_SPI_CLK'event and VSOM_SPI_CLK = SPI_CLK_POLARITY) then
+        elsif(VSOM_SPI_CLK'event and VSOM_SPI_CLK = SPI_CLK_POLARITY) then
             if(VSOM_SPI_CSn = '0') then
                 SPI_RX_SREG      <= SPI_RX_SREG(6 downto 0) & VSOM_SPI_MOSI;
 
@@ -356,7 +369,7 @@ begin
                 elsif(SPI_SHIFT_EN = '1' and SPI_FRAME_CNT = 3 and SPI_BIT_CNT = 0) then
                     SPI_RX_DATA(23 downto 16) <= SPI_RX_SREG(6 downto 0) & VSOM_SPI_MOSI;
 
-                elsif(SPI_SHIFT_EN = '1' and SPI_FRAME_CNT = 4 and SPI_BIT_CNT = 0) then
+                elsif(SPI_FRAME_CNT = 4 and SPI_BIT_CNT = 0) then
                     SPI_RX_DATA(31 downto 24) <= SPI_RX_SREG(6 downto 0) & VSOM_SPI_MOSI;  
                 end if;
             end if;
@@ -366,18 +379,22 @@ begin
     -- SPI Slave output. Return the current data set as selected by the input signals XACT.
     SPI_OUTPUT : process(VSOM_SPI_CLK,VSOM_SPI_CSn,SPI_TX_DATA)
     begin
+        -- Chip Select inactive, disable process and reset control flags.
         if(VSOM_SPI_CSn = '1') then
             SPI_SHIFT_EN         <= '0';
-            SPI_BIT_CNT          <= 15;
+            SPI_BIT_CNT          <= 7;
 
         -- SPI_CLK_POLARITY='0' => falling edge; SPI_CLK_POLARITY='1' => risinge edge
         elsif(VSOM_SPI_CLK'event and VSOM_SPI_CLK = not SPI_CLK_POLARITY) then
+            -- Each clock reset the shift enable and done flag in preparation for the next cycle.
             SPI_SHIFT_EN         <= '1';
 
+            -- Bit count decrements to detect when last bit of byte is sent.
             if(SPI_BIT_CNT > 0) then
                 SPI_BIT_CNT      <= SPI_BIT_CNT - 1;
             end if;
 
+            -- Shift out the next bit.
             VSOM_SPI_MISO        <= SPI_TX_SREG(6);
             SPI_TX_SREG          <= SPI_TX_SREG(5 downto 0) & '0';
 
@@ -392,6 +409,7 @@ begin
                     SPI_FRAME_CNT<= 1;
                     VSOM_SPI_MISO<= SPI_TX_DATA(7);
                     SPI_TX_SREG  <= SPI_TX_DATA(6 downto 0);
+                -- Increment frame count for each word received. We handle 8bit (1 frame), 16bit (2 frames) or 32bit (4 frames) reception.
                 elsif(SPI_FRAME_CNT = 1) then
                     SPI_FRAME_CNT<= 2;
                     VSOM_SPI_MISO<= SPI_TX_DATA(15);
@@ -400,13 +418,14 @@ begin
                     SPI_FRAME_CNT<= 3;
                     VSOM_SPI_MISO<= SPI_TX_DATA(23);
                     SPI_TX_SREG  <= SPI_TX_DATA(22 downto 16);
-                else
+                elsif(SPI_FRAME_CNT = 3) then
                     -- Increment frame count for each word received. We handle 8bit (1 frame), 16bit (2 frames) or 32bit (4 frames) reception.
                     SPI_FRAME_CNT<= 4;
                     VSOM_SPI_MISO<= SPI_TX_DATA(31);
                     SPI_TX_SREG  <= SPI_TX_DATA(30 downto 24);
+                else
+                    SPI_FRAME_CNT<= 0;
                 end if;
-
                 SPI_BIT_CNT  <= 7;
             end if;
         end if;
@@ -424,6 +443,7 @@ begin
             AUTOREFRESH          <= '0';
             SPI_LOOPBACK_TEST    <= '0';
             SOM_CMD              <= (others => '0');
+            SOM_PARAM_CNT        <= 0;
             SPI_CPU_ADDR         <= (others => '0');
             SPI_NEW_DATA         <= '0';
 
@@ -432,6 +452,7 @@ begin
         -- for 8bit, 16bit and 32bit transmissions.
         -- The packet is formatted as follows:
         --
+        -- < SPI_CPU_ADDR                                > < SPI_CPU_DATA      >< SOM_CMD>
         -- < SPI_FRAME_CNT=4     >< SPI_FRAME=3          > < SPI_FRAME_CNT=2   >< SPI_FRAME_CNT=1>
         -- < 16bit Z80 Address                           > < Z80 Data          ><Command=00..80>
         -- 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 0
@@ -441,66 +462,110 @@ begin
         --
         elsif(VSOM_SPI_CSn'event and VSOM_SPI_CSn = '1') then
 
-            -- Command is always located in the upper byte of frame 1.
-            SOM_CMD                  <= SPI_RX_DATA(7 downto 0);
+            -- If active, decrement parameter count. Parameters sent after a command are not considered as commands.
+            if(SOM_PARAM_CNT > 0) then
+                SOM_PARAM_CNT        <= SOM_PARAM_CNT - 1;
+            end if;
 
-            -- Toggle flag to indicate new data arrived.
-            SPI_NEW_DATA             <= not SPI_NEW_DATA;
+            -- Process if command, store parameters.
+            if(SOM_PARAM_CNT = 0) then
+                -- Command is always located in the upper byte of frame 1.
+                SOM_CMD                  <= SPI_RX_DATA(7 downto 0);
 
-            -- Process the command. Some commands require the FSM, others can be serviced immediately.
-            case SPI_RX_DATA(7 downto 0) is
+                -- Toggle flag to indicate new data arrived.
+                SPI_NEW_DATA             <= not SPI_NEW_DATA;
 
-                -- Z80XACT(0..15): Setup data and address as provided then execute FSM.
-                when X"10" | X"11" | X"12" | X"13" | X"14" | X"15" | X"16" | X"17" |    -- Fetch
-                     X"18" | X"19" | X"1A" | X"1B" | X"1C" | X"1D" | X"1E" | X"1F" |    -- Write
-                     X"20" | X"21" | X"22" | X"23" | X"24" | X"25" | X"26" | X"27" |    -- Read
-                     X"28" | X"29" | X"2A" | X"2B" | X"2C" | X"2D" | X"2E" | X"2F" |    -- WriteIO
-                     X"30" | X"31" | X"32" | X"33" | X"34" | X"35" | X"36" | X"37" |    -- ReadIO
-                     X"38" | X"39" | X"3A" | X"3B" | X"3C" | X"3D" | X"3E" | X"3F" |    -- 
-                     X"40" | X"41" | X"42" | X"43" | X"44" | X"45" | X"46" | X"47" |    -- 
-                     X"48" | X"49" | X"4A" | X"4B" | X"4C" | X"4D" | X"4E" | X"4F" =>
+                -- Process the command. Some commands require the FSM, others can be serviced immediately.
+                case SPI_RX_DATA(7 downto 0) is
 
-                    -- Direct address set.
-                    if(SPI_FRAME_CNT = 4) then
-                        SPI_CPU_ADDR <= SPI_RX_DATA(31 downto 16);
-                    else
-                    --    if(SPI_CPU_ADDR >= X"D010" and SPI_CPU_ADDR < X"D020") then
-                    --      SPI_CPU_ADDR <= std_logic_vector(X"D020" + unsigned(SPI_RX_DATA(2 downto 0)));
-                    --    else
-                          SPI_CPU_ADDR <= std_logic_vector(unsigned(SPI_CPU_ADDR) + unsigned(SPI_RX_DATA(2 downto 0)));
-                    --  end if;
-                    end if;
+                    -- Z80XACT(0..15): Setup data and address as provided then execute FSM.
+                    when X"10" | X"11" | X"12" | X"13" | X"14" | X"15" | X"16" | X"17" |    -- Fetch
+                         X"18" | X"19" | X"1A" | X"1B" | X"1C" | X"1D" | X"1E" | X"1F" |    -- Write
+                         X"20" | X"21" | X"22" | X"23" | X"24" | X"25" | X"26" | X"27" |    -- Read
+                         X"48" | X"49" | X"4A" | X"4B" | X"4C" | X"4D" | X"4E" | X"4F" =>
 
-                    if(SPI_FRAME_CNT > 1) then
-                        SPI_CPU_DATA <= SPI_RX_DATA(15 downto 8);
-                    end if;
+                        -- Direct address set.
+                        if(SPI_FRAME_CNT = 4) then
+                            SPI_CPU_ADDR <= SPI_RX_DATA(31 downto 16);
+                        else
+                            SPI_CPU_ADDR <= std_logic_vector(unsigned(SPI_CPU_ADDR) + unsigned(SPI_RX_DATA(2 downto 0)));
+                        end if;
 
-                -- SETSIGSET1: Set control lines directly.
-                when X"F0" =>
-                    VIDEO_SRCi       <= SPI_RX_DATA(8);
-                    MONO_VIDEO_SRCi  <= SPI_RX_DATA(9);
-                    AUDIO_SRC_Li     <= SPI_RX_DATA(10);
-                    AUDIO_SRC_Ri     <= SPI_RX_DATA(11);
-                    VBUS_ENi         <= SPI_RX_DATA(12);
-                    VGA_BLANKn       <= not SPI_RX_DATA(13);
+                        if(SPI_FRAME_CNT > 1) then
+                            SPI_CPU_DATA <= SPI_RX_DATA(15 downto 8);
+                        end if;
 
-                -- Enable auto refresh DRAM cycle.
-                when X"F1" =>
-                    AUTOREFRESH      <= '1';
+                    when X"28" | X"29" | X"2A" | X"2B" | X"2C" | X"2D" | X"2E" | X"2F" =>   -- WriteIO
 
-                -- Disable auto refresh DRAM cycle.
-                when X"F2" =>
-                    AUTOREFRESH      <= '0';
+                        -- Direct address set.
+                        if(SPI_FRAME_CNT = 4) then
+                            SPI_CPU_ADDR <= SPI_RX_DATA(31 downto 16);
+                        else
+                            SPI_CPU_ADDR <= X"000" & '0' & std_logic_vector(unsigned(SPI_RX_DATA(2 downto 0)));
+                        end if;
 
-                -- SETLOOPBACK: Enable loopback test mode.
-                when X"FE" =>
-                    SPI_LOOPBACK_TEST<= '1';
+                        if(SPI_FRAME_CNT > 1) then
+                            SPI_CPU_DATA <= SPI_RX_DATA(15 downto 8);
+                        end if;
 
-                -- No action, called to retrieve status.
-                when X"00"  | X"FF" => 
+                    when X"30" | X"31" | X"32" | X"33" | X"34" | X"35" | X"36" | X"37" |    -- ReadIO
+                         X"38" | X"39" | X"3A" | X"3B" | X"3C" | X"3D" | X"3E" | X"3F" =>   -- ReadIO-Write
 
-                when others =>
-            end case;
+                        -- Direct address set.
+                        if(SPI_FRAME_CNT = 4) then
+                            SPI_CPU_ADDR <= SPI_RX_DATA(31 downto 16);
+                        elsif(SPI_FRAME_CNT = 2) then
+                            SPI_CPU_ADDR <= X"00" & SPI_RX_DATA(15 downto 8);
+                        else
+                            SPI_CPU_ADDR <= X"000" & '0' & std_logic_vector(unsigned(SPI_RX_DATA(2 downto 0)));
+                        end if;
+
+                        if(SPI_FRAME_CNT > 1) then
+                            SPI_CPU_DATA <= SPI_RX_DATA(15 downto 8);
+                        end if;
+
+                        -- ReadIO-Write, Read-WriteIO commands require target address, so indicate parameter needed.
+                        if(SPI_RX_DATA(7 downto 0) >= X"38" and SPI_RX_DATA(7 downto 0) < X"40") then
+                            SOM_PARAM_CNT <= 1;
+                        end if;
+
+                    -- SETSIGSET1: Set control lines directly.
+                    when X"F0" =>
+                        VIDEO_SRCi       <= SPI_RX_DATA(8);
+                        MONO_VIDEO_SRCi  <= SPI_RX_DATA(9);
+                        AUDIO_SRC_Li     <= SPI_RX_DATA(10);
+                        AUDIO_SRC_Ri     <= SPI_RX_DATA(11);
+                        VBUS_ENi         <= SPI_RX_DATA(12);
+                        VGA_BLANKn       <= not SPI_RX_DATA(13);
+
+                    -- Enable auto refresh DRAM cycle.
+                    when X"F1" =>
+                        AUTOREFRESH      <= '1';
+
+                    -- Disable auto refresh DRAM cycle.
+                    when X"F2" =>
+                        AUTOREFRESH      <= '0';
+
+                    -- SETLOOPBACK: Enable loopback test mode.
+                    when X"FE" =>
+                        SPI_LOOPBACK_TEST<= '1';
+
+                    -- No action, called to retrieve status.
+                    when X"00"  | X"FF" => 
+
+                    when others =>
+                end case;
+            else
+                -- Store parameter depending on number of frames, either ADDR+DATA, ADDR or DATA.
+                if(SPI_FRAME_CNT = 4) then
+                    SPI_CPU_ADDR <= SPI_RX_DATA(31 downto 16);
+                    SPI_CPU_DATA <= SPI_RX_DATA(15 downto 8);
+                elsif(SPI_FRAME_CNT = 2) then
+                    SPI_CPU_ADDR <= SPI_RX_DATA(15 downto 0);
+                else
+                    SPI_CPU_DATA <= SPI_RX_DATA(7 downto 0);
+                end if;
+            end if;
         end if;
     end process;
 
@@ -561,9 +626,9 @@ begin
             CPU_DATA_EN           <= '0';
             CPU_DATA_IN           <= (others => '0');
             REFRESH_ADDR          <= (others => '0');
-            AUTOREFRESH_CNT       <= 7;
+            AUTOREFRESH_CNT       <= 63;
             IPAR                  <= (others => '0');
-            NEW_SPI_CMD           <= '0';
+            NEW_SPI_DATA          <= '0';
             VCPU_CS_EDGE          <= "11";
             SPI_PROCESSING        <= '0';
 
@@ -580,98 +645,12 @@ begin
 
             -- New command, set flag as the signal is only 1 clock wide.
             if(SPI_LOOPBACK_TEST = '0' and VSOM_SPI_CSn = '1' and VCPU_CS_EDGE = "01") then
-                NEW_SPI_CMD       <= '1';
+                NEW_SPI_DATA      <= '1';
             end if;
 
-            -- Whenever we return to Idle or just prior to Refresh from a Fetch cycle set all control signals to default.
-            if(FSM_STATE = IdleCycle or FSM_STATE = RefreshCycle) then
-                CPU_DATA_EN       <= '0';
-                Z80_MREQni        <= '1';
-                Z80_IORQni        <= '1';
-                Z80_RDni          <= '1';
-                Z80_WRni          <= '1';
-                Z80_M1ni          <= '1';
-                FSM_STATUS        <= '0';
-                Z80_RFSHni        <= '1';
-
-                -- Auto DRAM refresh cycles. When enabled, every 7 host clock cycles, a 2 cycle refresh period commences.
-                -- This will be overriden if the SPI receives a new command.
-                -- 
-                if AUTOREFRESH = '1' and FSM_STATE = IdleCycle then
-                    AUTOREFRESH_CNT <= AUTOREFRESH_CNT - 1;
-                    if(AUTOREFRESH_CNT = 0) then
-                        FSM_STATE <= RefreshCycle_3;
-                    end if;
-                end if;
-            end if;
-
-            -- If new command has been given and the FSM enters idle state, load up new command for processing.
-            if(NEW_SPI_CMD = '1' and FSM_STATE = IdleCycle and Z80_CLK_RE = '1') then
-                NEW_SPI_CMD       <= '0';
-
-                -- Store new address and data for this command.
-                CPU_ADDR          <= SPI_CPU_ADDR;
-                if(SPI_CPU_DATA /= CPU_DATA_OUT) then
-                    CPU_DATA_OUT  <= SPI_CPU_DATA;
-                end if;
-
-                -- Process the SOM command. The SPI_REGISTER executes non FSM commands and stores FSM
-                -- data prior to this execution block, which fires 1 cycle later on the same control clock.
-                -- If the command is not for the FSM then the READY mechanism is held for one
-                -- further cycle before going inactive.
-                case SOM_CMD is
-                    when X"10" | X"11" | X"12" | X"13" | X"14" | X"15" | X"16" | X"17" =>
-                        -- Initiate a Fetch Cycle.
-                        FSM_STATE      <= FetchCycle;
-
-                    when X"18" | X"19" | X"1A" | X"1B" | X"1C" | X"1D" | X"1E" | X"1F" =>
-
-                        -- Set the Z80 data bus value and initiate a Write Cycle.
-                        FSM_STATE      <= WriteCycle;
-
-                    when X"20" | X"21" | X"22" | X"23" | X"24" | X"25" | X"26" | X"27" =>
-                        -- Initiate a Read Cycle.
-                        FSM_STATE      <= ReadCycle;
-
-                    when X"28" | X"29" | X"2A" | X"2B" | X"2C" | X"2D" | X"2E" | X"2F" =>
-                        -- Set the Z80 data bus value and initiate an IO Write Cycle.
-                        -- The SOM should set 15:8 to the B register value.
-                        FSM_STATE      <= WriteIOCycle;
-
-                    when X"30" | X"31" | X"32" | X"33" | X"34" | X"35" | X"36" | X"37" =>
-                        -- Initiate a Read IO Cycle.
-                        FSM_STATE      <= ReadIOCycle;
-
-                    when X"50" =>
-                        -- Register a Halt state.
-                        FSM_STATE      <= HaltCycle;
-
-                    when X"51" =>
-                        -- Initiate a refresh cycle.
-                        FSM_STATE      <= RefreshCycle_3;
-
-                    when X"E0" =>
-                        -- Initiate a Halt Cycle.
-                        FSM_STATE      <= HaltCycle;
-
-                    -- Set the Refresh Address register.
-                    when X"E1" =>
-                        REFRESH_ADDR   <= CPU_DATA_OUT;
-
-                    -- Set the Interrupt Page Address Register.
-                    when X"E2" =>
-                        IPAR           <= CPU_DATA_OUT;
-
-                    when others =>
-                end case;
-
-                -- Toggle the processing flag to negate the new data flag. Used to indicate device is busy.
-                if(SPI_NEW_DATA /= SPI_PROCESSING) then
-                    SPI_PROCESSING     <= not SPI_PROCESSING;
-                end if;
-
-               -- FSM Status bit. When processing a command it is set, cleared when idle. Used by SOM to determine command completion.
-               FSM_STATUS         <= '1';
+            -- Decrement refresh counter on each Z80 cycle, thus when idle and time expired, a refresh can be performed within parameters (256 cycles in 4ms).
+            if(AUTOREFRESH = '1' and AUTOREFRESH_CNT /= 0 and Z80_CLK_RE = '1') then
+                AUTOREFRESH_CNT   <= AUTOREFRESH_CNT - 1;
             end if;
 
             -- Refresh status bit. Indicates a Refresh cycle is under way.
@@ -686,7 +665,143 @@ begin
                 FSM_WAIT_ACTIVE   <= '1';
             end if;
 
-            -- On each Z80 edge we advance the FSM to recreate the Z80 external signal transactions.
+            -- Whenever we return to Idle or just prior to Refresh from a Fetch cycle set all control signals to default.
+            if((FSM_STATE = IdleCycle or FSM_STATE = RefreshCycle) and Z80_CLK_RE = '1') then
+                CPU_DATA_EN       <= '0';
+                Z80_MREQni        <= '1';
+                Z80_IORQni        <= '1';
+                Z80_RDni          <= '1';
+                Z80_WRni          <= '1';
+                Z80_M1ni          <= '1';
+                FSM_STATUS        <= '0';
+                Z80_RFSHni        <= '1';
+
+                -- Auto DRAM refresh cycles. When enabled, every 15.6us a refresh period commences.
+                -- This period may be extended if the SPI receives a new command.
+                -- 
+                if AUTOREFRESH = '1' and FSM_STATE = IdleCycle then
+                    if(AUTOREFRESH_CNT = 0) then
+                        FSM_STATE <= RefreshCycle_3;
+                        FSM_STATUS<= '1';
+                        -- 4164 DRAM = 256 cycles in 4ms.
+                        AUTOREFRESH_CNT <= 63;
+                    end if;
+                end if;
+            end if;
+
+            --------------------------------------------------------------------------------------------
+            -- CPLD Macro Command Finite State Machine.
+            --------------------------------------------------------------------------------------------
+
+            -- Controller state machine. 
+            -- When idle, accept and process SPI commands which can lead to a controller macro command.
+            case CTRL_STATE is
+
+                when CTRLCMD_Idle =>
+                    -- If new command has been given and the FSM enters idle state, load up new command for processing.
+                    if(NEW_SPI_DATA = '1' and FSM_STATE = IdleCycle and Z80_CLK_RE = '1') then
+
+                        -- Store new address and data for this command.
+                        if(NEW_SPI_DATA = '1') then
+                            CPU_ADDR      <= SPI_CPU_ADDR;
+                            CPU_DATA_OUT  <= SPI_CPU_DATA;
+                        end if;
+
+                        -- Process the SOM command. The SPI_REGISTER executes non FSM commands and stores FSM
+                        -- data prior to this execution block, which fires 1 cycle later on the same control clock.
+                        -- If the command is not for the FSM then the READY mechanism is held for one
+                        -- further cycle before going inactive.
+                        case SOM_CMD is
+                            when X"10" | X"11" | X"12" | X"13" | X"14" | X"15" | X"16" | X"17" =>
+                                -- Initiate a Fetch Cycle.
+                                FSM_STATE      <= FetchCycle;
+
+                            when X"18" | X"19" | X"1A" | X"1B" | X"1C" | X"1D" | X"1E" | X"1F" =>
+
+                                -- Set the Z80 data bus value and initiate a Write Cycle.
+                                FSM_STATE      <= WriteCycle;
+
+                            when X"20" | X"21" | X"22" | X"23" | X"24" | X"25" | X"26" | X"27" =>
+                                -- Initiate a Read Cycle.
+                                FSM_STATE      <= ReadCycle;
+
+                            when X"28" | X"29" | X"2A" | X"2B" | X"2C" | X"2D" | X"2E" | X"2F" =>
+                                -- Set the Z80 data bus value and initiate an IO Write Cycle.
+                                -- The SOM should set 15:8 to the B register value.
+                                FSM_STATE      <= WriteIOCycle;
+
+                            when X"30" | X"31" | X"32" | X"33" | X"34" | X"35" | X"36" | X"37" =>
+                                -- Initiate a Read IO Cycle.
+                                FSM_STATE      <= ReadIOCycle;
+
+                            when X"38" | X"39" | X"3A" | X"3B" | X"3C" | X"3D" | X"3E" | X"3F" =>
+                                -- Initiate a read IO write memory cycle via the controller FSM.
+                                CTRL_STATE     <= CTRLCMD_ReadIOWrite;
+                                FSM_STATE      <= ReadIOCycle;
+
+                            when X"50" =>
+                                -- Register a Halt state.
+                                FSM_STATE      <= HaltCycle;
+
+                            when X"51" =>
+                                -- Initiate a refresh cycle.
+                                FSM_STATE      <= RefreshCycle_3;
+
+                            when X"E0" =>
+                                -- Initiate a Halt Cycle.
+                                FSM_STATE      <= HaltCycle;
+
+                            -- Set the Refresh Address register.
+                            when X"E1" =>
+                                REFRESH_ADDR   <= CPU_DATA_OUT;
+
+                            -- Set the Interrupt Page Address Register.
+                            when X"E2" =>
+                                IPAR           <= CPU_DATA_OUT;
+
+                            when others =>
+                        end case;
+
+                        -- Toggle the processing flag to negate the new data flag. Used to indicate device is busy.
+                        if(SPI_NEW_DATA /= SPI_PROCESSING) then
+                            SPI_PROCESSING<= not SPI_PROCESSING;
+                        end if;
+
+                        -- Clear new data flag ready for next cmd/param transfer.
+                        NEW_SPI_DATA      <= '0';
+
+                       -- FSM Status bit. When processing a command it is set, cleared when idle. Used by SOM to determine command completion.
+                       FSM_STATUS         <= '1';
+                    end if;
+
+                when CTRLCMD_ReadIOWrite =>
+                    if(NEW_SPI_DATA = '1' and FSM_STATE = IdleCycle and Z80_CLK_RE = '1') then
+                        NEW_SPI_DATA      <= '0';
+                        CPU_DATA_EN       <= '0';
+                        Z80_IORQni        <= '1';
+                        Z80_RDni          <= '1';
+                        Z80_RFSHni        <= '1';
+                        CPU_ADDR          <= SPI_CPU_ADDR;
+                        CPU_DATA_OUT      <= CPU_DATA_IN;
+                        FSM_STATE         <= WriteCycle;
+                        CTRL_STATE        <= CTRLCMD_ReadIOWrite_1;
+                    end if;
+
+                when CTRLCMD_ReadIOWrite_1 =>
+                    if(FSM_STATE = WriteCycle_31) then
+                        CTRL_STATE        <= CTRLCMD_Idle;
+                    end if;
+
+                when others =>
+                    CTRL_STATE            <= CTRLCMD_Idle;
+
+            end case;
+
+            --------------------------------------------------------------------------------------------
+            -- Z80 Finite State Machine.
+            --------------------------------------------------------------------------------------------
+
+            -- On each Z80 edge we advance the Z80 FSM to recreate the Z80 external signal transactions.
             if(Z80_CLK_TGL = '1') then
 
                 -- The FSM advances to the next stage on each Z80 edge unless in Idle state.
@@ -704,7 +819,7 @@ begin
 
                     when IdleCycle =>
                         CPU_LAST_T_STATE   <= '1';
-                    --    FSM_STATE          <= IdleCycle;
+                        FSM_STATUS         <= '0';
 
                     -----------------------------
                     -- Z80 Fetch Cycle.
@@ -727,7 +842,7 @@ begin
 
                     when FetchCycle_30 =>
                         -- To meet the timing diagrams, just after Rising edge on T3 clear signals. Data wont be available until
-                        -- a short period before the falling edge of T3 (could be an MZ-2000 design restriction or the Z80 timing diagrams are a bit out).
+                        -- a short period before the falling edge of T3.
                         FSM_STATE          <= RefreshCycle;
 
                     -----------------------------
@@ -736,18 +851,18 @@ begin
                     when RefreshCycle =>
                         -- Latch data from mainboard.
                         CPU_DATA_IN        <= Z80_DATA;
-                        FSM_STATUS         <= '0';
                         Z80_RFSHni         <= '0';
 
                     when RefreshCycle_11 =>
                         -- Falling edge of T3 activates the MREQ line.
                         Z80_MREQni         <= '0';
+                        FSM_STATUS         <= '0';
 
                     when RefreshCycle_20 =>
 
                     when RefreshCycle_21 =>
                         Z80_MREQni         <= '1';
-                        REFRESH_ADDR(6 downto 0) <= REFRESH_ADDR(6 downto 0) + 1;
+                        REFRESH_ADDR       <= REFRESH_ADDR + 1;
                         FSM_STATE          <= IdleCycle;
 
                     when RefreshCycle_3 =>
@@ -769,7 +884,7 @@ begin
                     when WriteCycle_21 =>
                         Z80_WRni           <= '0';
                         if(Z80_WAITn = '0' or FSM_WAIT_ACTIVE = '1') then
-                            FSM_STATE      <=  WriteCycle_20;
+                            FSM_STATE      <= WriteCycle_20;
                         end if;
 
                     when WriteCycle_30 =>
@@ -794,7 +909,7 @@ begin
                        
                     when ReadCycle_21 =>
                         if(Z80_WAITn = '0' or FSM_WAIT_ACTIVE = '1') then
-                            FSM_STATE      <=  ReadCycle_20;
+                            FSM_STATE      <= ReadCycle_20;
                         end if;
 
                     when ReadCycle_30 =>
@@ -804,7 +919,6 @@ begin
                         CPU_DATA_IN        <= Z80_DATA;
                         FSM_STATUS         <= '0';
                         FSM_STATE          <= IdleCycle;
-
 
                     -----------------------------
                     -- Z80 IO Write Cycle.
@@ -825,7 +939,7 @@ begin
 
                     when WriteIOCycle_31 =>
                         if(Z80_WAITn = '0' or FSM_WAIT_ACTIVE = '1') then
-                            FSM_STATE      <=  WriteIOCycle_20;
+                            FSM_STATE      <= WriteIOCycle_30;
                         end if;
 
                     when WriteIOCycle_40 =>
@@ -854,7 +968,7 @@ begin
 
                     when ReadIOCycle_31 =>
                         if(Z80_WAITn = '0' or FSM_WAIT_ACTIVE = '1') then
-                            FSM_STATE      <=  ReadIOCycle_20;
+                            FSM_STATE      <= ReadIOCycle_30;
                         end if;
                         
                     when ReadIOCycle_40 =>
@@ -902,8 +1016,6 @@ begin
     Z80_DATA                     <= CPU_DATA_OUT                           when Z80_BUSRQ_ACKni = '1' and CPU_DATA_EN = '1'
                                     else
                                     (others => 'Z');
-  --  Z80_DATAi                    <= Z80_DATA                               when Z80_RDn = '0'
-   --                                 else (others => '1');
     Z80_RDn                      <= Z80_RDni                               when Z80_BUSRQ_ACKni = '1'
                                     else 'Z';
     Z80_WRn                      <= Z80_WRni                               when Z80_BUSRQ_ACKni = '1'
@@ -944,7 +1056,7 @@ begin
 
     -- Signal mirrors.
     VSOM_READY                   <= '0'                                    when FSM_STATUS='1' or SPI_NEW_DATA /= SPI_PROCESSING
-                                     else '1';                                                                       -- FSM Ready (1), Busy (0)
+                                    else '1';                                                                        -- FSM Ready (1), Busy (0)
     VSOM_LTSTATE                 <= '1'                                    when CPU_LAST_T_STATE = '1'               -- Last T-State in current cycle.
                                     else '0';
     VSOM_BUSRQ                   <= not Z80_BUSRQn;                                                                  -- Host device requesting Z80 Bus.
@@ -981,5 +1093,9 @@ begin
     -- DAC clocks.
     --VGA_PXL_CLK           <= CLK_50M;
     MONO_PXL_CLK                 <= VGA_PXL_CLK;
+
+    -- Currently unassigned.
+    VGA_COLR                     <= '0';
+    MONO_RSV                     <= '0';
                       
 end architecture;

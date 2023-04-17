@@ -17,6 +17,7 @@
 // Copyright:       (c) 2019-2023 Philip Smart <philip.smart@net2net.org>
 //
 // History:         Feb 2023 v1.0 - Initial write based on the tranZPUter SW hardware.
+//                  Apr 2023 v1.1 - Updates & bug fixes.
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -72,6 +73,9 @@ typedef struct {
 // TZPU Board control.
 static t_TZPUCtrl TZPUCtrl;
 
+// Forward prototypes.
+static inline void tzpuWrite(zuint16 address, zuint8 data, uint8_t ioFlag);
+
 //-------------------------------------------------------------------------------------------------------------------------------
 //
 //
@@ -115,15 +119,145 @@ static t_TZPUCtrl TZPUCtrl;
 //                  30 - All memory and IO are on the tranZPUter board, 64K block 6 selected.
 //                  31 - All memory and IO are on the tranZPUter board, 64K block 7 selected.
 
+// Method to setup the memory page config to reflect installation of a tranZPUter SW Board. This sets up the default
+// as the memory map changes according to selection and handled in-situ.
+void tzpuSetupMemory(enum Z80_MEMORY_PROFILE mode)
+{
+    // Locals.
+    uint32_t      idx;
+
+    // The tranZPUter SW uses a CPLD to set a 4K Z80 memory range window into a 512K-1MB linear RAM block. The actual map required
+    // at any one time is governed by the Memory Config register at I/O port 0x60.
+    // This method sets the initial state, which is a normal Sharp operating mode, all memory and IO (except tranZPUter
+    // control IO block) are on the mainboard.
+
+    // Setup defaults.
+    TZPUCtrl.clkSrc         = 0x00;   // Clock defaults to host.
+    TZPUCtrl.regCmd         = 0x00;   // Default for the CPLD Command.
+    TZPUCtrl.regCmdStatus   = 0x00;   // Default for the CPLD Command Status.
+    TZPUCtrl.regCpuCfg      = 0x00;   // Not used, as no FPGA available, but need to store/return value if addressed.
+    TZPUCtrl.regCpuInfo     = 0x00;   // Not used, as no FPGA available, but need to store/return value if addressed.
+    // Setup the CPLD status value, this is used by the host for configuration of tzfs.
+  #if(TARGET_HOST_MZ80A == 1)
+    TZPUCtrl.regCpldInfo    = (CPLD_VERSION << 4) | (CPLD_HAS_FPGA_VIDEO << 3) | HWMODE_MZ80A;
+  #endif
+  #if(TARGET_HOST_MZ700 == 1)
+    TZPUCtrl.regCpldInfo    = (CPLD_VERSION << 4) | (CPLD_HAS_FPGA_VIDEO << 3) | HWMODE_MZ700;
+  #endif
+  #if(TARGET_HOST_MZ2000 == 1)
+    TZPUCtrl.regCpldInfo    = (CPLD_VERSION << 4) | (CPLD_HAS_FPGA_VIDEO << 3) | HWMODE_MZ2000;
+  #endif
+    TZPUCtrl.regCpldCfg     = 0x00;   // Not used, as no CPLD available, but need to store/return value if addressed.
+
+    // Default memory mode, TZFS.
+    Z80Ctrl->memoryMode = TZMM_ORIG;
+
+    // Reset IO mapping.
+    for(idx=0x0000; idx < IO_PAGE_SIZE; idx++)
+    {
+        Z80Ctrl->iopage[idx] = idx | IO_TYPE_PHYSICAL_HW;
+    }
+
+    // I/O Ports on the tranZPUter SW board. All hosts have the same ports for the tzpu board.
+    for(idx=0x0000; idx < IO_PAGE_SIZE; idx+=0x0100)
+    {
+        Z80Ctrl->iopage[idx+IO_TZ_CTRLLATCH]  = IO_TZ_CTRLLATCH  | IO_TYPE_VIRTUAL_HW;
+        Z80Ctrl->iopage[idx+IO_TZ_SETXMHZ]    = IO_TZ_SETXMHZ    | IO_TYPE_VIRTUAL_HW;
+        Z80Ctrl->iopage[idx+IO_TZ_SET2MHZ]    = IO_TZ_SET2MHZ    | IO_TYPE_VIRTUAL_HW;
+        Z80Ctrl->iopage[idx+IO_TZ_CLKSELRD]   = IO_TZ_CLKSELRD   | IO_TYPE_VIRTUAL_HW;
+        Z80Ctrl->iopage[idx+IO_TZ_SVCREQ]     = IO_TZ_SVCREQ     | IO_TYPE_VIRTUAL_HW;
+        Z80Ctrl->iopage[idx+IO_TZ_SYSREQ]     = IO_TZ_SYSREQ     | IO_TYPE_VIRTUAL_HW;
+        Z80Ctrl->iopage[idx+IO_TZ_CPLDCMD]    = IO_TZ_CPLDCMD    | IO_TYPE_VIRTUAL_HW;
+        Z80Ctrl->iopage[idx+IO_TZ_CPLDSTATUS] = IO_TZ_CPLDSTATUS | IO_TYPE_VIRTUAL_HW;
+        Z80Ctrl->iopage[idx+IO_TZ_CPUCFG]     = IO_TZ_CPUCFG     | IO_TYPE_VIRTUAL_HW;
+        Z80Ctrl->iopage[idx+IO_TZ_CPUSTATUS]  = IO_TZ_CPUSTATUS  | IO_TYPE_VIRTUAL_HW;
+        Z80Ctrl->iopage[idx+IO_TZ_CPUINFO]    = IO_TZ_CPUINFO    | IO_TYPE_VIRTUAL_HW;
+        Z80Ctrl->iopage[idx+IO_TZ_CPLDCFG]    = IO_TZ_CPLDCFG    | IO_TYPE_VIRTUAL_HW;
+        Z80Ctrl->iopage[idx+IO_TZ_CPLDINFO]   = IO_TZ_CPLDINFO   | IO_TYPE_VIRTUAL_HW;
+    }
+
+  #if (TARGET_HOST_MZ700 == 1)
+    // Reset memory paging to default.
+    SPI_SEND_32(0x00e4, 0x00 << 8 | CPLD_CMD_WRITEIO_ADDR);
+  #endif
+
+    pr_info("TZPU Memory Setup complete.\n");
+}
+
+// Method to load a ROM image into the ROM memory.
+//
+uint8_t tzpuLoadROM(const char* romFileName, uint32_t loadAddr, uint32_t loadSize)
+{
+    // Locals.
+    uint8_t     result = 0;
+    long        noBytes;
+    struct file *fp;
+
+    fp = filp_open(romFileName, O_RDONLY, 0);
+    if(IS_ERR(fp))
+    {
+        pr_info("Error opening ROM Image:%s\n:", romFileName);
+        result = 1;
+    } else
+    {
+        vfs_llseek(fp, 0, SEEK_SET);
+        noBytes = kernel_read(fp, fp->f_pos, &Z80Ctrl->rom[loadAddr], loadSize);
+        if(noBytes < loadSize)
+        {
+            // pr_info("Short load, ROM Image:%s, bytes loaded:%08x\n:", romFileName, loadSize);
+        }
+        filp_close(fp,NULL);
+    }
+
+    return(result);
+}
+
 // Perform any setup operations, such as variable initialisation, to enable use of this module.
 void tzpuInit(void)
 {
+    // Setup all initial TZFS memory modes
+    tzpuWrite(IO_TZ_CTRLLATCH, TZMM_ORIG,  1);
+    tzpuWrite(IO_TZ_CTRLLATCH, TZMM_TZFS,  1);
+    tzpuWrite(IO_TZ_CTRLLATCH, TZMM_TZFS2, 1);
+    tzpuWrite(IO_TZ_CTRLLATCH, TZMM_TZFS3, 1);
+    tzpuWrite(IO_TZ_CTRLLATCH, TZMM_TZFS4, 1);
+
+    // Ensure memory configuration is correct before requesting K64F to load Bios.
+    tzpuSetupMemory(USE_VIRTUAL_RAM);
+
+    // Default memory mode, TZFS.
+    Z80Ctrl->memoryMode = TZMM_TZFS;
+
+  #if (TARGET_HOST_MZ700 == 1)
+    // Reset memory paging to default.
+    SPI_SEND_32(0x00e4, 0x00 << 8 | CPLD_CMD_WRITEIO_ADDR);
+  #endif
+
+    // New memory maps setup, perform a reset so that the K64F CPU loads the required ROMS.
+    sendSignal(Z80Ctrl->ioTask, SIGUSR1); 
+
     pr_info("Enabling TZPU driver.\n");
 }
 
 // Perform any de-initialisation when the driver is removed.
 void tzpuRemove(void)
 {
+    // Locals.
+    uint32_t      idx;
+
+    // Go through and clear all memory maps, leave the original page in slot 0.
+    for(idx=1; idx < MEMORY_MODES; idx++)
+    {
+        if(Z80Ctrl->page[idx] != NULL)
+        {
+            kfree(Z80Ctrl->page[idx]);
+            Z80Ctrl->page[idx] = NULL;
+        }
+    }
+
+    // Default memory mode, ORIG.
+    Z80Ctrl->memoryMode = TZMM_ORIG;
+
     pr_info("Removing TZPU driver.\n");
     return;
 }
@@ -133,27 +267,154 @@ void tzpuRemove(void)
 static inline void tzpuDecodeMemoryMapSetup(zuint16 address, zuint8 data, uint8_t ioFlag, uint8_t readFlag)
 {
     // Locals.
+    uint32_t    idx;
 
     // I/O or Memory?
     if(ioFlag == 0)
     {
-        // Memory map switch.
-        if(readFlag == 0)
+   //   #if(DEBUG_ENABLED & 1)
+   //     if(Z80Ctrl->debug >= 2)
+   //     {
+   //         pr_info("MEM:%04x,%02x,%d,%d\n", address, data, ioFlag, readFlag);
+   //     }
+   //   #endif
+        // Certain machines have memory mapped I/O, these need to be handled in-situ as some reads may change the memory map.
+        // These updates are made whilst waiting for the CPLD to retrieve the requested byte.
+        //
+        // 0000 - 0FFF : MZ80K/A/700   = Monitor ROM or RAM (MZ80A rom swap)
+        // 1000 - CFFF : MZ80K/A/700   = RAM
+        // C000 - CFFF : MZ80A         = Monitor ROM (MZ80A rom swap)
+        // D000 - D7FF : MZ80K/A/700   = VRAM
+        // D800 - DFFF : MZ700         = Colour VRAM (MZ700)
+        // E000 - E003 : MZ80K/A/700   = 8255       
+        // E004 - E007 : MZ80K/A/700   = 8254
+        // E008 - E00B : MZ80K/A/700   = LS367
+        // E00C - E00F : MZ80A         = Memory Swap (MZ80A)
+        // E010 - E013 : MZ80A         = Reset Memory Swap (MZ80A)
+        // E014        : MZ80A/700     = Normat CRT display
+        // E015        : MZ80A/700     = Reverse CRT display
+        // E200 - E2FF : MZ80A/700     = VRAM roll up/roll down.
+        // E800 - EFFF : MZ80K/A/700   = User ROM socket or DD Eprom (MZ700)
+        // F000 - F7FF : MZ80K/A/700   = Floppy Disk interface.
+        // F800 - FFFF : MZ80K/A/700   = Floppy Disk interface.
+        switch(address)
         {
-
-        } else
-        {
-
+            default:
+                break;
         }
     } else
     // I/O Decoding.
     {
-        // Only lower 8 bits recognised in the tzpu.
-        switch(address & 0xFF)
+   //   #if(DEBUG_ENABLED & 1)
+   //     if(Z80Ctrl->debug >= 2)
+   //     {
+   //         pr_info("IO:%04x,%02x,%d,%d\n", address, data, ioFlag, readFlag);
+   //     }
+   //   #endif
+
+        // Determine if this is a memory management port and update the memory page if required.
+        switch(address & 0x00FF)
         {
-            default:
+            //  MZ700 memory mode switch.
+            // 
+            //              MZ-700                                                     
+            //             |0000:0FFF|1000:CFFF|D000:FFFF          
+            //             ------------------------------          
+            //  OUT 0xE0 = |DRAM     |         |                   
+            //  OUT 0xE1 = |         |         |DRAM               
+            //  OUT 0xE2 = |MONITOR  |         |                   
+            //  OUT 0xE3 = |         |         |Memory Mapped I/O  
+            //  OUT 0xE4 = |MONITOR  |DRAM     |Memory Mapped I/O  
+            //  OUT 0xE5 = |         |         |Inhibit            
+            //  OUT 0xE6 = |         |         |<return>           
+            // 
+            //  <return> = Return to the state prior to the complimentary command being invoked.
+            // Enable lower 4K block as DRAM
+            case IO_ADDR_E0:
+                for(idx=0x0000; idx < 0x1000; idx+=MEMORY_BLOCK_GRANULARITY)
+                {
+                    setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM, idx);
+                }
                 break;
 
+            // Enable upper 12K block, including Video/Memory Mapped peripherals area, as DRAM.
+            case IO_ADDR_E1:
+                if(!Z80Ctrl->inhibitMode)
+                {
+                    for(idx=0xD000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
+                    {
+                        // MZ-700 mode we only work in first 64K block.
+                        setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM, idx);
+                    }
+                }
+                break;
+              
+            // Enable MOnitor ROM in lower 4K block
+            case IO_ADDR_E2:
+                for(idx=0x0000; idx < 0x1000; idx+=MEMORY_BLOCK_GRANULARITY)
+                {
+                    setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_ROM, idx);
+                }
+                break;
+               
+            // Enable Video RAM and Memory mapped peripherals in upper 12K block.
+            case IO_ADDR_E3:
+                if(!Z80Ctrl->inhibitMode)
+                {
+                    for(idx=0xD000; idx < 0xE000; idx+=MEMORY_BLOCK_GRANULARITY)
+                    {
+                        setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_VRAM, idx);
+                    }
+                    for(idx=0xE000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
+                    {
+                        setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_HW, idx);
+                    }
+                }
+                break;
+
+            // Reset to power on condition memory map.
+            case IO_ADDR_E4:
+                // Lower 4K set to Monitor ROM.
+                for(idx=0x0000; idx < 0x1000; idx+=MEMORY_BLOCK_GRANULARITY)
+                {
+                    setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_ROM, idx);
+                }
+                if(!Z80Ctrl->inhibitMode)
+                {
+                    // Upper 12K to hardware.
+                    for(idx=0xD000; idx < 0xE000; idx+=MEMORY_BLOCK_GRANULARITY)
+                    {
+                        setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_VRAM, idx);
+                    }
+                    for(idx=0xE000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
+                    {
+                        setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_HW, idx);
+                    }
+                }
+                break;
+
+            // Inhibit. Backup current page data in region 0xD000-0xFFFF and inhibit it.
+            case IO_ADDR_E5:
+                for(idx=0xD000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
+                {
+                    backupMemoryType(idx/MEMORY_BLOCK_GRANULARITY);
+                    setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_INHIBIT, idx);
+                }
+                Z80Ctrl->inhibitMode = 1;
+                break;
+
+            // Restore D000-FFFF to its original state.
+            case IO_ADDR_E6:
+                for(idx=0xD000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
+                {
+                    restoreMemoryType(idx/MEMORY_BLOCK_GRANULARITY);
+                }
+                Z80Ctrl->inhibitMode = 0;
+                break;
+
+            // Port is not a memory management port.
+            default:
+                break;
         }
     }
 }
@@ -252,7 +513,9 @@ static inline void tzpuWrite(zuint16 address, zuint8 data, uint8_t ioFlag)
         switch(address & 0x00FF)
         {
             case IO_TZ_CTRLLATCH:
-                //pr_info("CTRLLATCH:%02x\n", data);
+              #if(DEBUG_ENABLED & 0x01)
+                if(Z80Ctrl->debug >=3) pr_info("CTRLLATCH:%02x\n", data);
+              #endif
               
                 // Check to see if the memory mode page has been allocated for requested mode, if it hasnt, we need to allocate and then define.
                 Z80Ctrl->memoryMode = (data & (MEMORY_MODES - 1));
@@ -264,13 +527,13 @@ static inline void tzpuWrite(zuint16 address, zuint8 data, uint8_t ioFlag)
                     (Z80Ctrl->page[Z80Ctrl->memoryMode]) = (uint32_t *)kmalloc((MEMORY_BLOCK_SLOTS*sizeof(uint32_t)), GFP_KERNEL);
                     if ((Z80Ctrl->page[Z80Ctrl->memoryMode]) == NULL) 
                     {
-                        pr_info("z80drv: failed to allocate  memory mapping page:%d memory!", Z80Ctrl->memoryMode);
+                        pr_info("z80drv: failed to allocate memory mapping page:%d memory!", Z80Ctrl->memoryMode);
                         Z80Ctrl->page[Z80Ctrl->memoryMode] = Z80Ctrl->page[0];
                     }
 
                     // A lot of the memory maps below are identical, minor changes such as RAM bank. This is a direct conversion of the VHDL code from the CPLD.
                     //
-                    for(idx=0x0000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
+                    for(idx=0x0000; idx < MEMORY_PAGE_SIZE; idx+=MEMORY_BLOCK_GRANULARITY)
                     {
                         switch(Z80Ctrl->memoryMode)
                         {
@@ -744,71 +1007,3 @@ static inline void tzpuWrite(zuint16 address, zuint8 data, uint8_t ioFlag)
     return;
 }
 
-// Method to setup the memory page config to reflect installation of a tranZPUter SW Board. This sets up the default
-// as the memory map changes according to selection and handled in-situ.
-void tzpuSetupMemory(enum Z80_MEMORY_PROFILE mode)
-{
-    // Locals.
-    uint32_t      idx;
-
-    // The tranZPUter SW uses a CPLD to set a 4K Z80 memory range window into a 512K-1MB linear RAM block. The actual map required
-    // at any one time is governed by the Memory Config register at I/O port 0x60.
-    // This method sets the initial state, which is a normal Sharp operating mode, all memory and IO (except tranZPUter
-    // control IO block) are on the mainboard.
-
-    // Setup defaults.
-    TZPUCtrl.clkSrc         = 0x00;   // Clock defaults to host.
-    TZPUCtrl.regCmd         = 0x00;   // Default for the CPLD Command.
-    TZPUCtrl.regCmdStatus   = 0x00;   // Default for the CPLD Command Status.
-    TZPUCtrl.regCpuCfg      = 0x00;   // Not used, as no FPGA available, but need to store/return value if addressed.
-    TZPUCtrl.regCpuInfo     = 0x00;   // Not used, as no FPGA available, but need to store/return value if addressed.
-    // Setup the CPLD status value, this is used by the host for configuration of tzfs.
-  #if(TARGET_HOST_MZ80A == 1)
-    TZPUCtrl.regCpldInfo    = (CPLD_VERSION << 4) | (CPLD_HAS_FPGA_VIDEO << 3) | HWMODE_MZ80A;
-  #endif
-  #if(TARGET_HOST_MZ700 == 1)
-    TZPUCtrl.regCpldInfo    = (CPLD_VERSION << 4) | (CPLD_HAS_FPGA_VIDEO << 3) | HWMODE_MZ700;
-  #endif
-  #if(TARGET_HOST_MZ2000 == 1)
-    TZPUCtrl.regCpldInfo    = (CPLD_VERSION << 4) | (CPLD_HAS_FPGA_VIDEO << 3) | HWMODE_MZ2000;
-  #endif
-    TZPUCtrl.regCpldCfg     = 0x00;   // Not used, as no CPLD available, but need to store/return value if addressed.
-
-    // Go through and clear all memory maps, valid for startup and reset.
-    for(idx=0; idx < MEMORY_MODES; idx++)
-    {
-        if(Z80Ctrl->page[idx] != NULL)
-        {
-            kfree(Z80Ctrl->page[idx]);
-            Z80Ctrl->page[idx] = NULL;
-        }
-    }
-
-    // Setup all initial TZFS memory modes
-    tzpuWrite(IO_TZ_CTRLLATCH, TZMM_ORIG,  1);
-    tzpuWrite(IO_TZ_CTRLLATCH, TZMM_TZFS,  1);
-    tzpuWrite(IO_TZ_CTRLLATCH, TZMM_TZFS2, 1);
-    tzpuWrite(IO_TZ_CTRLLATCH, TZMM_TZFS3, 1);
-    tzpuWrite(IO_TZ_CTRLLATCH, TZMM_TZFS4, 1);
-    Z80Ctrl->memoryMode     = 0x02;   // Default memory mode, MZ-80A.
-
-    // I/O Ports on the tranZPUter SW board. All hosts have the same ports for the tzpu board.
-    for(idx=0x0000; idx < 0x10000; idx+=0x0100)
-    {
-        Z80Ctrl->iopage[idx+IO_TZ_CTRLLATCH]  = IO_TZ_CTRLLATCH  | IO_TYPE_VIRTUAL_HW;
-        Z80Ctrl->iopage[idx+IO_TZ_SETXMHZ]    = IO_TZ_SETXMHZ    | IO_TYPE_VIRTUAL_HW;
-        Z80Ctrl->iopage[idx+IO_TZ_SET2MHZ]    = IO_TZ_SET2MHZ    | IO_TYPE_VIRTUAL_HW;
-        Z80Ctrl->iopage[idx+IO_TZ_CLKSELRD]   = IO_TZ_CLKSELRD   | IO_TYPE_VIRTUAL_HW;
-        Z80Ctrl->iopage[idx+IO_TZ_SVCREQ]     = IO_TZ_SVCREQ     | IO_TYPE_VIRTUAL_HW;
-        Z80Ctrl->iopage[idx+IO_TZ_SYSREQ]     = IO_TZ_SYSREQ     | IO_TYPE_VIRTUAL_HW;
-        Z80Ctrl->iopage[idx+IO_TZ_CPLDCMD]    = IO_TZ_CPLDCMD    | IO_TYPE_VIRTUAL_HW;
-        Z80Ctrl->iopage[idx+IO_TZ_CPLDSTATUS] = IO_TZ_CPLDSTATUS | IO_TYPE_VIRTUAL_HW;
-        Z80Ctrl->iopage[idx+IO_TZ_CPUCFG]     = IO_TZ_CPUCFG     | IO_TYPE_VIRTUAL_HW;
-        Z80Ctrl->iopage[idx+IO_TZ_CPUSTATUS]  = IO_TZ_CPUSTATUS  | IO_TYPE_VIRTUAL_HW;
-        Z80Ctrl->iopage[idx+IO_TZ_CPUINFO]    = IO_TZ_CPUINFO    | IO_TYPE_VIRTUAL_HW;
-        Z80Ctrl->iopage[idx+IO_TZ_CPLDCFG]    = IO_TZ_CPLDCFG    | IO_TYPE_VIRTUAL_HW;
-        Z80Ctrl->iopage[idx+IO_TZ_CPLDINFO]   = IO_TZ_CPLDINFO   | IO_TYPE_VIRTUAL_HW;
-    }
-
-    pr_info("TZPU Memory Setup complete.\n");
-}

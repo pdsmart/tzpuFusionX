@@ -35,16 +35,41 @@
 #ifndef Z80DRIVER_H
 #define Z80DRIVER_H
 
+// Build time target. Overrides if compile time definition given.
+#if defined(TARGET_HOST_MZ700)
+  #define TARGET_HOST_MZ700                   1
+  #define TARGET_HOST_MZ2000                  0
+  #define TARGET_HOST_MZ80A                   0
+  #define TARGET_HOST_PCW                     0
+#elif defined(TARGET_HOST_MZ2000)
+  #define TARGET_HOST_MZ2000                  1
+  #define TARGET_HOST_MZ700                   0
+  #define TARGET_HOST_MZ80A                   0
+  #define TARGET_HOST_PCW                     0
+#elif defined(TARGET_HOST_MZ80A)
+  #define TARGET_HOST_MZ80A                   1
+  #define TARGET_HOST_MZ2000                  0
+  #define TARGET_HOST_MZ700                   0
+  #define TARGET_HOST_PCW                     0
+#elif defined(TARGET_HOST_PCW8XXX) || defined(TARGET_HOST_PCW9XXX)
+  #define TARGET_HOST_PCW                     1
+  #define TARGET_HOST_MZ2000                  0
+  #define TARGET_HOST_MZ700                   0
+  #define TARGET_HOST_MZ80A                   0
+#else
+  #define TARGET_HOST_MZ700                   0                  // Target compilation for an MZ700
+  #define TARGET_HOST_MZ2000                  0                  //                           MZ2000
+  #define TARGET_HOST_MZ80A                   0                  //                           MZ80A
+  #define TARGET_HOST_PCW                     0                  //                           Amstrad PCW8XXX/9XXX
+#endif
+
 // Constants.
 #define DRIVER_LICENSE                        "GPL"
 #define DRIVER_AUTHOR                         "Philip D Smart"
 #define DRIVER_DESCRIPTION                    "Z80 CPU Emulator and Hardware Interface Driver"
-#define DRIVER_VERSION                        "v1.3"
-#define DRIVER_VERSION_DATE                   "Feb 2023"
+#define DRIVER_VERSION                        "v1.4"
+#define DRIVER_VERSION_DATE                   "Apr 2023"
 #define DRIVER_COPYRIGHT                      "(C) 2018-2023"
-#define TARGET_HOST_MZ700                     0                  // Target compilation for an MZ700
-#define TARGET_HOST_MZ2000                    0                  //                           MZ2000
-#define TARGET_HOST_MZ80A                     1                  //                           MZ80A
 #define Z80_VIRTUAL_ROM_SIZE                  (65536 * 32)       // Sized to maximum Kernel contiguous allocation size, 2M which is 4x512K ROMS.
 #define Z80_VIRTUAL_RAM_SIZE                  (65536 * 32)       // Sized to maximum Kernel contiguous allocation size, 2M.
 #define Z80_MEMORY_PAGE_SIZE                  16
@@ -69,13 +94,14 @@
 #define MEMORY_TYPE_VIRTUAL_ROM               0x04000000
 #define MEMORY_TYPE_VIRTUAL_RAM_RO            0x02000000
 #define MEMORY_TYPE_VIRTUAL_HW                0x01000000
+#define MEMORY_TYPE_PHYSICAL_RAM_WT           MEMORY_TYPE_PHYSICAL_RAM | MEMORY_TYPE_VIRTUAL_RAM
 #define IO_TYPE_PHYSICAL_HW                   0x80000000
 #define IO_TYPE_VIRTUAL_HW                    0x40000000
 
 // Hotkeys handled. 
 #define HOTKEY_ORIGINAL                       0xE8
-#define HOTKEY_RFS80                          0xE9
-#define HOTKEY_RFS40                          0xEA
+#define HOTKEY_RFS40                          0xE9
+#define HOTKEY_RFS80                          0xEA
 #define HOTKEY_TZFS                           0xEB
 #define HOTKEY_LINUX                          0xEC
 
@@ -100,22 +126,42 @@
 // Approximate governor delays to regulate emulated CPU speed.
 // MZ-700
 #if(TARGET_HOST_MZ700 == 1)
-#define INSTRUCTION_DELAY_ROM_3_54MHZ         253
-#define INSTRUCTION_DELAY_ROM_7MHZ            126
-#define INSTRUCTION_DELAY_ROM_14MHZ           63
-#define INSTRUCTION_DELAY_ROM_28MHZ           32
-#define INSTRUCTION_DELAY_ROM_56MHZ           16
-#define INSTRUCTION_DELAY_ROM_112MHZ          8
-#define INSTRUCTION_DELAY_ROM_224MHZ          4
-#define INSTRUCTION_DELAY_ROM_448MHZ          1
-#define INSTRUCTION_DELAY_RAM_3_54MHZ         253
-#define INSTRUCTION_DELAY_RAM_7MHZ            126
-#define INSTRUCTION_DELAY_RAM_14MHZ           63
-#define INSTRUCTION_DELAY_RAM_28MHZ           32
-#define INSTRUCTION_DELAY_RAM_56MHZ           16
-#define INSTRUCTION_DELAY_RAM_112MHZ          8
-#define INSTRUCTION_DELAY_RAM_224MHZ          4
-#define INSTRUCTION_DELAY_RAM_448MHZ          1
+#if(DEBUG_ENABLED > 0)
+  #define INSTRUCTION_DELAY_ROM_3_54MHZ       253
+  #define INSTRUCTION_DELAY_ROM_7MHZ          126
+  #define INSTRUCTION_DELAY_ROM_14MHZ         63
+  #define INSTRUCTION_DELAY_ROM_28MHZ         32
+  #define INSTRUCTION_DELAY_ROM_56MHZ         16
+  #define INSTRUCTION_DELAY_ROM_112MHZ        8
+  #define INSTRUCTION_DELAY_ROM_224MHZ        4
+  #define INSTRUCTION_DELAY_ROM_448MHZ        1
+  #define INSTRUCTION_DELAY_RAM_3_54MHZ       253
+  #define INSTRUCTION_DELAY_RAM_7MHZ          126
+  #define INSTRUCTION_DELAY_RAM_14MHZ         63
+  #define INSTRUCTION_DELAY_RAM_28MHZ         32
+  #define INSTRUCTION_DELAY_RAM_56MHZ         16
+  #define INSTRUCTION_DELAY_RAM_112MHZ        8
+  #define INSTRUCTION_DELAY_RAM_224MHZ        4
+  #define INSTRUCTION_DELAY_RAM_448MHZ        1
+#endif
+#if(DEBUG_ENABLED == 0)
+  #define INSTRUCTION_DELAY_ROM_3_54MHZ       253
+  #define INSTRUCTION_DELAY_ROM_7MHZ          126
+  #define INSTRUCTION_DELAY_ROM_14MHZ         63
+  #define INSTRUCTION_DELAY_ROM_28MHZ         32
+  #define INSTRUCTION_DELAY_ROM_56MHZ         16
+  #define INSTRUCTION_DELAY_ROM_112MHZ        8
+  #define INSTRUCTION_DELAY_ROM_224MHZ        4
+  #define INSTRUCTION_DELAY_ROM_448MHZ        1
+  #define INSTRUCTION_DELAY_RAM_3_54MHZ       253
+  #define INSTRUCTION_DELAY_RAM_7MHZ          126
+  #define INSTRUCTION_DELAY_RAM_14MHZ         63
+  #define INSTRUCTION_DELAY_RAM_28MHZ         32
+  #define INSTRUCTION_DELAY_RAM_56MHZ         16
+  #define INSTRUCTION_DELAY_RAM_112MHZ        8
+  #define INSTRUCTION_DELAY_RAM_224MHZ        4
+  #define INSTRUCTION_DELAY_RAM_448MHZ        1
+#endif
 #define INSTRUCTION_EQUIV_FREQ_3_54MHZ        3540000
 #define INSTRUCTION_EQUIV_FREQ_7MHZ           7000000
 #define INSTRUCTION_EQUIV_FREQ_14MHZ          14000000
@@ -124,6 +170,7 @@
 #define INSTRUCTION_EQUIV_FREQ_112MHZ         112000000
 #define INSTRUCTION_EQUIV_FREQ_224MHZ         224000000
 #define INSTRUCTION_EQUIV_FREQ_448MHZ         448000000
+#define INSTRUCTION_GOVERNOR_IO_SKIP          10
 
 enum Z80_INSTRUCTION_DELAY {
     ROM_DELAY_NORMAL                          = INSTRUCTION_DELAY_ROM_3_54MHZ,
@@ -141,7 +188,7 @@ enum Z80_INSTRUCTION_DELAY {
     RAM_DELAY_X16                             = INSTRUCTION_DELAY_RAM_56MHZ,
     RAM_DELAY_X32                             = INSTRUCTION_DELAY_RAM_112MHZ,
     RAM_DELAY_X64                             = INSTRUCTION_DELAY_RAM_224MHZ,
-    RAM_DELAY_X128                            = INSTRUCTION_DELAY_RAM_448MHZ 
+    RAM_DELAY_X128                            = INSTRUCTION_DELAY_RAM_448MHZ,
     CPU_FREQUENCY_NORMAL                      = INSTRUCTION_EQUIV_FREQ_3_54MHZ,
     CPU_FREQUENCY_X2                          = INSTRUCTION_EQUIV_FREQ_7MHZ,
     CPU_FREQUENCY_X4                          = INSTRUCTION_EQUIV_FREQ_14MHZ,
@@ -155,22 +202,43 @@ enum Z80_INSTRUCTION_DELAY {
 
 // MZ-2000
 #if(TARGET_HOST_MZ2000 == 1)
-#define INSTRUCTION_DELAY_ROM_4MHZ            243
-#define INSTRUCTION_DELAY_ROM_8MHZ            122
-#define INSTRUCTION_DELAY_ROM_16MHZ           61
-#define INSTRUCTION_DELAY_ROM_32MHZ           30
-#define INSTRUCTION_DELAY_ROM_64MHZ           15
-#define INSTRUCTION_DELAY_ROM_128MHZ          7
-#define INSTRUCTION_DELAY_ROM_256MHZ          3
-#define INSTRUCTION_DELAY_ROM_512MHZ          1
-#define INSTRUCTION_DELAY_RAM_4MHZ            218
-#define INSTRUCTION_DELAY_RAM_8MHZ            112
-#define INSTRUCTION_DELAY_RAM_16MHZ           56
-#define INSTRUCTION_DELAY_RAM_32MHZ           28
-#define INSTRUCTION_DELAY_RAM_64MHZ           14
-#define INSTRUCTION_DELAY_RAM_128MHZ          7
-#define INSTRUCTION_DELAY_RAM_256MHZ          3
-#define INSTRUCTION_DELAY_RAM_512MHZ          1
+
+#if(DEBUG_ENABLED > 0)
+  #define INSTRUCTION_DELAY_ROM_4MHZ          213
+  #define INSTRUCTION_DELAY_ROM_8MHZ          109
+  #define INSTRUCTION_DELAY_ROM_16MHZ         54
+  #define INSTRUCTION_DELAY_ROM_32MHZ         27
+  #define INSTRUCTION_DELAY_ROM_64MHZ         14
+  #define INSTRUCTION_DELAY_ROM_128MHZ        7
+  #define INSTRUCTION_DELAY_ROM_256MHZ        3
+  #define INSTRUCTION_DELAY_ROM_512MHZ        1
+  #define INSTRUCTION_DELAY_RAM_4MHZ          212
+  #define INSTRUCTION_DELAY_RAM_8MHZ          106
+  #define INSTRUCTION_DELAY_RAM_16MHZ         53
+  #define INSTRUCTION_DELAY_RAM_32MHZ         26
+  #define INSTRUCTION_DELAY_RAM_64MHZ         13
+  #define INSTRUCTION_DELAY_RAM_128MHZ        7
+  #define INSTRUCTION_DELAY_RAM_256MHZ        3
+  #define INSTRUCTION_DELAY_RAM_512MHZ        1
+#endif
+#if(DEBUG_ENABLED == 0)
+  #define INSTRUCTION_DELAY_ROM_4MHZ          295
+  #define INSTRUCTION_DELAY_ROM_8MHZ          148
+  #define INSTRUCTION_DELAY_ROM_16MHZ         74
+  #define INSTRUCTION_DELAY_ROM_32MHZ         37
+  #define INSTRUCTION_DELAY_ROM_64MHZ         19
+  #define INSTRUCTION_DELAY_ROM_128MHZ        10
+  #define INSTRUCTION_DELAY_ROM_256MHZ        5
+  #define INSTRUCTION_DELAY_ROM_512MHZ        3
+  #define INSTRUCTION_DELAY_RAM_4MHZ          240                    // These values are smaller than the ROM as Rom has 1 wait state added per cycle.
+  #define INSTRUCTION_DELAY_RAM_8MHZ          148
+  #define INSTRUCTION_DELAY_RAM_16MHZ         74
+  #define INSTRUCTION_DELAY_RAM_32MHZ         37
+  #define INSTRUCTION_DELAY_RAM_64MHZ         19
+  #define INSTRUCTION_DELAY_RAM_128MHZ        10
+  #define INSTRUCTION_DELAY_RAM_256MHZ        5
+  #define INSTRUCTION_DELAY_RAM_512MHZ        3
+#endif
 #define INSTRUCTION_EQUIV_FREQ_4MHZ           4000000
 #define INSTRUCTION_EQUIV_FREQ_8MHZ           8000000
 #define INSTRUCTION_EQUIV_FREQ_16MHZ          16000000
@@ -179,6 +247,7 @@ enum Z80_INSTRUCTION_DELAY {
 #define INSTRUCTION_EQUIV_FREQ_128MHZ         128000000
 #define INSTRUCTION_EQUIV_FREQ_256MHZ         256000000
 #define INSTRUCTION_EQUIV_FREQ_512MHZ         512000000
+#define INSTRUCTION_GOVERNOR_IO_SKIP          4
 
 enum Z80_INSTRUCTION_DELAY {
     ROM_DELAY_NORMAL                          = INSTRUCTION_DELAY_ROM_4MHZ,
@@ -258,6 +327,7 @@ enum Z80_INSTRUCTION_DELAY {
 #define INSTRUCTION_EQUIV_FREQ_64MHZ          64000000
 #define INSTRUCTION_EQUIV_FREQ_128MHZ         128000000
 #define INSTRUCTION_EQUIV_FREQ_256MHZ         256000000
+#define INSTRUCTION_GOVERNOR_IO_SKIP          2
 
 // Table of governor delays to be used to control run frequency,
 enum Z80_INSTRUCTION_DELAY {
@@ -285,6 +355,82 @@ enum Z80_INSTRUCTION_DELAY {
     CPU_FREQUENCY_X32                         = INSTRUCTION_EQUIV_FREQ_64MHZ,
     CPU_FREQUENCY_X64                         = INSTRUCTION_EQUIV_FREQ_128MHZ,
     CPU_FREQUENCY_X128                        = INSTRUCTION_EQUIV_FREQ_256MHZ,
+};
+#endif
+
+// Amstrad PCW-8256
+#if(TARGET_HOST_PCW == 1)
+#if(DEBUG_ENABLED > 0)
+  #define INSTRUCTION_DELAY_ROM_4MHZ          295
+  #define INSTRUCTION_DELAY_ROM_8MHZ          148
+  #define INSTRUCTION_DELAY_ROM_16MHZ         74
+  #define INSTRUCTION_DELAY_ROM_32MHZ         37
+  #define INSTRUCTION_DELAY_ROM_64MHZ         19
+  #define INSTRUCTION_DELAY_ROM_128MHZ        10
+  #define INSTRUCTION_DELAY_ROM_256MHZ        5
+  #define INSTRUCTION_DELAY_ROM_512MHZ        3
+  #define INSTRUCTION_DELAY_RAM_4MHZ          240 
+  #define INSTRUCTION_DELAY_RAM_8MHZ          148
+  #define INSTRUCTION_DELAY_RAM_16MHZ         74
+  #define INSTRUCTION_DELAY_RAM_32MHZ         37
+  #define INSTRUCTION_DELAY_RAM_64MHZ         19
+  #define INSTRUCTION_DELAY_RAM_128MHZ        10
+  #define INSTRUCTION_DELAY_RAM_256MHZ        5
+  #define INSTRUCTION_DELAY_RAM_512MHZ        3
+#endif
+#if(DEBUG_ENABLED == 0)
+  #define INSTRUCTION_DELAY_ROM_4MHZ          295
+  #define INSTRUCTION_DELAY_ROM_8MHZ          148
+  #define INSTRUCTION_DELAY_ROM_16MHZ         74
+  #define INSTRUCTION_DELAY_ROM_32MHZ         37
+  #define INSTRUCTION_DELAY_ROM_64MHZ         19
+  #define INSTRUCTION_DELAY_ROM_128MHZ        10
+  #define INSTRUCTION_DELAY_ROM_256MHZ        5
+  #define INSTRUCTION_DELAY_ROM_512MHZ        3
+  #define INSTRUCTION_DELAY_RAM_4MHZ          240 
+  #define INSTRUCTION_DELAY_RAM_8MHZ          148
+  #define INSTRUCTION_DELAY_RAM_16MHZ         74
+  #define INSTRUCTION_DELAY_RAM_32MHZ         37
+  #define INSTRUCTION_DELAY_RAM_64MHZ         19
+  #define INSTRUCTION_DELAY_RAM_128MHZ        10
+  #define INSTRUCTION_DELAY_RAM_256MHZ        5
+  #define INSTRUCTION_DELAY_RAM_512MHZ        3
+#endif
+#define INSTRUCTION_EQUIV_FREQ_4MHZ           4000000
+#define INSTRUCTION_EQUIV_FREQ_8MHZ           8000000
+#define INSTRUCTION_EQUIV_FREQ_16MHZ          16000000
+#define INSTRUCTION_EQUIV_FREQ_32MHZ          32000000
+#define INSTRUCTION_EQUIV_FREQ_64MHZ          64000000
+#define INSTRUCTION_EQUIV_FREQ_128MHZ         128000000
+#define INSTRUCTION_EQUIV_FREQ_256MHZ         256000000
+#define INSTRUCTION_EQUIV_FREQ_512MHZ         512000000
+#define INSTRUCTION_GOVERNOR_IO_SKIP          5
+
+enum Z80_INSTRUCTION_DELAY {
+    ROM_DELAY_NORMAL                          = INSTRUCTION_DELAY_ROM_4MHZ,
+    ROM_DELAY_X2                              = INSTRUCTION_DELAY_ROM_8MHZ,
+    ROM_DELAY_X4                              = INSTRUCTION_DELAY_ROM_16MHZ,
+    ROM_DELAY_X8                              = INSTRUCTION_DELAY_ROM_32MHZ,
+    ROM_DELAY_X16                             = INSTRUCTION_DELAY_ROM_64MHZ,
+    ROM_DELAY_X32                             = INSTRUCTION_DELAY_ROM_128MHZ,
+    ROM_DELAY_X64                             = INSTRUCTION_DELAY_ROM_256MHZ,
+    ROM_DELAY_X128                            = INSTRUCTION_DELAY_ROM_512MHZ,
+    RAM_DELAY_NORMAL                          = INSTRUCTION_DELAY_RAM_4MHZ,
+    RAM_DELAY_X2                              = INSTRUCTION_DELAY_RAM_8MHZ,
+    RAM_DELAY_X4                              = INSTRUCTION_DELAY_RAM_16MHZ,
+    RAM_DELAY_X8                              = INSTRUCTION_DELAY_RAM_32MHZ,
+    RAM_DELAY_X16                             = INSTRUCTION_DELAY_RAM_64MHZ,
+    RAM_DELAY_X32                             = INSTRUCTION_DELAY_RAM_128MHZ,
+    RAM_DELAY_X64                             = INSTRUCTION_DELAY_RAM_256MHZ,
+    RAM_DELAY_X128                            = INSTRUCTION_DELAY_RAM_512MHZ,
+    CPU_FREQUENCY_NORMAL                      = INSTRUCTION_EQUIV_FREQ_4MHZ,
+    CPU_FREQUENCY_X2                          = INSTRUCTION_EQUIV_FREQ_8MHZ,
+    CPU_FREQUENCY_X4                          = INSTRUCTION_EQUIV_FREQ_16MHZ,
+    CPU_FREQUENCY_X8                          = INSTRUCTION_EQUIV_FREQ_32MHZ,
+    CPU_FREQUENCY_X16                         = INSTRUCTION_EQUIV_FREQ_64MHZ,
+    CPU_FREQUENCY_X32                         = INSTRUCTION_EQUIV_FREQ_128MHZ,
+    CPU_FREQUENCY_X64                         = INSTRUCTION_EQUIV_FREQ_256MHZ,
+    CPU_FREQUENCY_X128                        = INSTRUCTION_EQUIV_FREQ_512MHZ,
 };
 #endif
 
@@ -426,9 +572,12 @@ enum Z80_INSTRUCTION_DELAY {
                                                 }\
                                               }
 #define resetZ80()                            {\
-                                                  if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_TZPU)\
-                                                      sendSignal(Z80Ctrl->ioTask, SIGUSR1); \
                                                   setupMemory(Z80Ctrl->defaultPageMode);\
+                                                  if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_TZPU)\
+                                                  {\
+                                                      sendSignal(Z80Ctrl->ioTask, SIGUSR1); \
+                                                      udelay(2000);\
+                                                  }\
                                                   z80_instant_reset(&Z80CPU);\
                                               }
 
@@ -460,10 +609,14 @@ enum Z80_MEMORY_PROFILE {
 };
 enum VIRTUAL_DEVICE {
     VIRTUAL_DEVICE_NONE                     = 0x00000000,
+    VIRTUAL_DEVICE_MZ80A                    = 0x00000001,
+    VIRTUAL_DEVICE_MZ700                    = 0x00000002,
+    VIRTUAL_DEVICE_MZ2000                   = 0x00000004,
+    VIRTUAL_DEVICE_PCW                      = 0x00000008,
     VIRTUAL_DEVICE_RFS40                    = 0x01000000,
     VIRTUAL_DEVICE_RFS80                    = 0x02000000,
     VIRTUAL_DEVICE_RFS                      = 0x03000000,
-    VIRTUAL_DEVICE_TZPU                     = 0x04000000
+    VIRTUAL_DEVICE_TZPU                     = 0x04000000,
 };
 
 typedef struct {
@@ -524,14 +677,6 @@ typedef struct {
     uint8_t                                   ioReadAhead;
     uint8_t                                   ioWriteAhead;
 
-  #if(TARGET_HOST_MZ2000 == 1)
-    uint8_t                                   lowMemorySwap;
-  #endif
-  #if(TARGET_HOST_MZ80A == 1)
-    // MZ-80A can relocate the lower 4K ROM by swapping RAM at 0xC000.
-    uint8_t                                   memSwitch;
-  #endif
-
     // Keyboard strobe and data. Required to detect hotkey press.
     uint8_t                                   keyportStrobe;
     uint8_t                                   keyportShiftCtrl;
@@ -546,6 +691,7 @@ typedef struct {
     // is quicker than RAM (both are in the same kernel memory) as a pointer calculation needs to be made.
     uint32_t                                  cpuGovernorDelayROM;
     uint32_t                                  cpuGovernorDelayRAM;
+    uint8_t                                   governorSkip;
 
     // An I/O processor, running as a User Space daemon, can register to receive signals and events.
     struct task_struct                        *ioTask;

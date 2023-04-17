@@ -67,6 +67,10 @@
 #define BNKSELUSER                            0xEFFE                                    // Select RFS Bank2 (User ROM)
 #define BNKCTRL                               0xEFFF                                    // Bank Control register (read/write).
 
+// 40/80 Video Module control registers.
+//
+#define DSPCTL                                0xDFFF                                    // Display 40/80 select register (bit 7)
+
 //
 // RFS v2 Control Register constants.
 //
@@ -87,7 +91,13 @@
 #define BNKCTRLDEF                            BBMOSI+SDCS+BBCLK                         // Default on startup for the Bank Control register.
 
 // RFS Board ROM rom filename definitions. 
-#define ROM_DIR                               "/apps/FusionX/host/MZ-80A/RFS/"
+#if(TARGET_HOST_MZ80A == 1)
+  #define ROM_DIR                             "/apps/FusionX/host/MZ-80A/RFS/"
+#elif(TARGET_HOST_MZ700 == 1)
+  #define ROM_DIR                             "/apps/FusionX/host/MZ-700/RFS/"
+#else
+  #error "Unknown host configured."
+#endif
 #define ROM_MROM_40C_FILENAME                 ROM_DIR "MROM_256_40c.bin"
 #define ROM_USER_I_40C_FILENAME               ROM_DIR "USER_ROM_256_40c.bin"
 #define ROM_USER_II_40C_FILENAME              ROM_DIR "USER_ROM_II_256_40c.bin"
@@ -167,6 +177,7 @@ typedef struct {
     uint8_t                                   upCntr;                                   // Register enable up counter.
     uint32_t                                  mromAddr;                                 // Actual address in MROM of active bank.
     uint32_t                                  uromAddr;                                 // Actual address in UROM of active bank.
+    uint8_t                                   memSwitch;                                // MZ-80A can relocate the lower 4K ROM by swapping RAM at 0xC000.
     t_SDCtrl                                  sd;                                       // SD Control.
 } t_RFSCtrl;
 
@@ -194,7 +205,7 @@ void rfsSetupMemory(enum Z80_MEMORY_PROFILE mode)
     RFSCtrl.regCtrl         = 0x00;
     RFSCtrl.mromAddr        = MROM_ADDR;
     RFSCtrl.uromAddr        = USER_ROM_I_ADDR;
-    Z80Ctrl->memSwitch      = 0;
+    RFSCtrl.memSwitch       = 0;
     RFSCtrl.sd.trainingCnt  = 0;
     RFSCtrl.sd.initialised  = 0;
     RFSCtrl.sd.dataOutFlag  = 0;
@@ -214,7 +225,19 @@ void rfsSetupMemory(enum Z80_MEMORY_PROFILE mode)
         {
             setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_ROM, (RFSCtrl.mromAddr+idx));
         }
-        if(idx >= 0xE800 && idx < 0xF000)
+        else if(idx >= 0x1000 && idx < 0xD000)
+        {
+            setMemoryType(idx/MEMORY_BLOCK_GRANULARITY,   MEMORY_TYPE_VIRTUAL_RAM, idx);
+        }
+        else if(idx >= 0xD000 && idx < 0xE000)
+        {
+            setMemoryType((idx/MEMORY_BLOCK_GRANULARITY), MEMORY_TYPE_PHYSICAL_VRAM, idx);
+        }
+        else if(idx >= 0xE000 && idx < 0xE800)
+        {
+            setMemoryType((idx/MEMORY_BLOCK_GRANULARITY), MEMORY_TYPE_PHYSICAL_HW, idx);
+        }
+        else if(idx >= 0xE800 && idx < 0xF000)
         {
             // Memory is both ROM and hardware, the registers share the same address space.
             setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_ROM | MEMORY_TYPE_VIRTUAL_HW, (RFSCtrl.uromAddr+(idx-0xE800)));
@@ -224,6 +247,18 @@ void rfsSetupMemory(enum Z80_MEMORY_PROFILE mode)
             setMemoryType((idx/MEMORY_BLOCK_GRANULARITY), MEMORY_TYPE_VIRTUAL_ROM, (idx+(Z80_VIRTUAL_ROM_SIZE - 0x10000)));
         }
     }
+    for(idx=0x0000; idx < IO_PAGE_SIZE; idx++)
+    {
+        Z80Ctrl->iopage[idx] = idx | IO_TYPE_PHYSICAL_HW;
+    }
+
+    // Enable refresh as using virtual RAM stops refresh of host DRAM.
+    Z80Ctrl->refreshDRAM = 2;
+  
+  #if (TARGET_HOST_MZ700 == 1)
+    // Reset memory paging to default.
+    SPI_SEND_32(0x00e4, 0x00 << 8 | CPLD_CMD_WRITEIO_ADDR);
+  #endif
   
     // No I/O Ports on the RFS board.
     pr_info("RFS Memory Setup complete.\n");
@@ -231,7 +266,7 @@ void rfsSetupMemory(enum Z80_MEMORY_PROFILE mode)
 
 // Method to load a ROM image into the ROM memory.
 //
-uint8_t loadROM(const char* romFileName, uint32_t loadAddr, uint32_t loadSize)
+uint8_t rfsLoadROM(const char* romFileName, uint32_t loadAddr, uint32_t loadSize)
 {
     // Locals.
     uint8_t     result = 0;
@@ -264,10 +299,10 @@ void rfsInit(uint8_t mode80c)
     uint32_t    idx;
     
     // Load ROMS according to the display configuration, 40 char = standard, 80 char = 40/80 board installed.
-    loadROM(mode80c == 0 ? ROM_MROM_40C_FILENAME     : ROM_MROM_80C_FILENAME,    ROM_MROM_LOAD_ADDR,     ROM_MROM_SIZE);
-    loadROM(mode80c == 0 ? ROM_USER_I_40C_FILENAME   : ROM_USER_I_80C_FILENAME,  ROM_USER_I_LOAD_ADDR,   ROM_MROM_SIZE);
-    loadROM(mode80c == 0 ? ROM_USER_II_40C_FILENAME  : ROM_USER_II_80C_FILENAME, ROM_USER_II_LOAD_ADDR,  ROM_MROM_SIZE);
-    loadROM(mode80c == 0 ? ROM_USER_III_40C_FILENAME : ROM_USER_II_80C_FILENAME, ROM_USER_III_LOAD_ADDR, ROM_MROM_SIZE);
+    rfsLoadROM(mode80c == 0 ? ROM_MROM_40C_FILENAME     : ROM_MROM_80C_FILENAME,    ROM_MROM_LOAD_ADDR,     ROM_MROM_SIZE);
+    rfsLoadROM(mode80c == 0 ? ROM_USER_I_40C_FILENAME   : ROM_USER_I_80C_FILENAME,  ROM_USER_I_LOAD_ADDR,   ROM_MROM_SIZE);
+    rfsLoadROM(mode80c == 0 ? ROM_USER_II_40C_FILENAME  : ROM_USER_II_80C_FILENAME, ROM_USER_II_LOAD_ADDR,  ROM_MROM_SIZE);
+    rfsLoadROM(mode80c == 0 ? ROM_USER_III_40C_FILENAME : ROM_USER_II_80C_FILENAME, ROM_USER_III_LOAD_ADDR, ROM_MROM_SIZE);
 
     // Copy the Floppy ROM to the top portion of ROM. USER III isnt normally used and if it is, 4K will be free.
     for(idx=0xF000; idx < 0x10000; idx++)
@@ -276,7 +311,13 @@ void rfsInit(uint8_t mode80c)
         while(CPLD_READY() == 0);
         Z80Ctrl->rom[idx+(Z80_VIRTUAL_ROM_SIZE-0x10000)] = z80io_PRL_Read8(1);
     }
-    pr_info("Enabling RFS driver.\n");
+
+  #if (TARGET_HOST_MZ700 == 1)
+    // Reset memory paging to default.
+    SPI_SEND_32(0x00e4, 0x00 << 8 | CPLD_CMD_WRITEIO_ADDR);
+  #endif
+  
+    pr_info("Enabling RFS(%d) driver.\n", mode80c == 1 ? 80 : 40);
     return;
 }
 
@@ -304,7 +345,7 @@ static inline void rfsDecodeMemoryMapSetup(zuint16 address, zuint8 data, uint8_t
                 setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM, (0xC000+idx));
                 setMemoryType((idx+0xC000)/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_ROM, (RFSCtrl.mromAddr+idx));
             }
-            Z80Ctrl->memSwitch = 0x01;
+            RFSCtrl.memSwitch = 0x01;
         }
                     
         // Reset memory map switch.
@@ -318,7 +359,7 @@ static inline void rfsDecodeMemoryMapSetup(zuint16 address, zuint8 data, uint8_t
                     setMemoryType((idx+0xC000)/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM, (0xC000+idx));
                 }
             }
-            Z80Ctrl->memSwitch = 0x00;
+            RFSCtrl.memSwitch = 0x00;
         }
     }
 }
@@ -755,7 +796,7 @@ static inline void rfsWrite(zuint16 address, zuint8 data, uint8_t ioFlag)
                 // Update memory map to reflect register change.
                 for(idx=0x0000; idx < 0x1000; idx+=MEMORY_BLOCK_GRANULARITY)
                 {
-                    if(Z80Ctrl->memSwitch)
+                    if(RFSCtrl.memSwitch)
                     {
                         // Monitor ROM is located at 0xC000.
                         setMemoryType((0xC000+idx)/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_ROM, (RFSCtrl.mromAddr+idx));

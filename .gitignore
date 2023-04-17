@@ -1719,4 +1719,27 @@ software/FusionX/src/z80drv/z80drv.ko
 software/FusionX/src/z80drv/z80drv.mod.c
 software/FusionX/host/
 software/FusionX/src/z80drv/sharpbiter
+CPLD/v1.0/MZ2000/tzpuFusionX.vhd.bak
+CPLD/v1.0/MZ2000/tzpuFusionX.vhd.new
+CPLD/v1.0/MZ700/tzpuFusionX.vhd.old
+CPLD/v1.0/MZ80A/tzpuFusionX.vhd.bak
+software/FusionX/src/ttymz/Makefile.kmod
+software/FusionX/src/ttymz/z80io.h.old
+software/FusionX/src/z80drv/1
+software/FusionX/src/z80drv/2
+software/FusionX/src/z80drv/Makefile.mod
+software/FusionX/src/z80drv/Makefile.x
+software/FusionX/src/z80drv/Z80.c.old3
+software/FusionX/src/z80drv/Zeta.old3/
+software/FusionX/src/z80drv/integral.h
+software/FusionX/src/z80drv/src.mz2000/
+software/FusionX/src/z80drv/src.mz80a/
+software/FusionX/src/z80drv/src.pcw/
+software/FusionX/src/z80drv/src/PCW8256_boot.hex
+software/FusionX/src/z80drv/src/PCW8256_boot.rom
+software/FusionX/src/z80drv/src/ccc
+software/FusionX/src/z80drv/src/k64fcpu.c.hld
+software/FusionX/src/z80drv/src/z80driver.c.bad
+software/FusionX/src/z80drv/src/z80vhw_rfs.c.bad
+CPLD/v1.0/MZ2000.old/
 

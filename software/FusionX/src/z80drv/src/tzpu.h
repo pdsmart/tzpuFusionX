@@ -46,7 +46,13 @@
 #define REFRESH_BYTE_COUNT           8                                   // This constant controls the number of bytes read/written to the z80 bus before a refresh cycle is needed.
 #define RFSH_BYTE_CNT                256                                 // Number of bytes we can write before needing a full refresh for the DRAM.
 #define HOST_MON_TEST_VECTOR         0x4                                 // Address in the host monitor to test to identify host type.
-#define OS_BASE_DIR                  "/apps/FusionX/host/MZ-80A/"        // Linux base directory where all the files are stored. On a real tranZPUter this would be the SD card root dir.
+#if (TARGET_HOST_MZ80A == 1)
+  #define OS_BASE_DIR                "/apps/FusionX/host/MZ-80A/"        // Linux base directory where all the files are stored. On a real tranZPUter this would be the SD card root dir.
+#elif (TARGET_HOST_MZ700 == 1)
+  #define OS_BASE_DIR                "/apps/FusionX/host/MZ-700/"
+#elif (TARGET_HOST_MZ2000 == 1)
+  #define OS_BASE_DIR                "/apps/FusionX/host/MZ-2000/"
+#endif
 #define TZFS_AUTOBOOT_FLAG           OS_BASE_DIR "/TZFSBOOT.FLG"         // Filename used as a flag, if this file exists in the base directory then TZFS is booted automatically.
 #define TZ_MAX_Z80_MEM               0x100000                            // Maximum Z80 memory available on the tranZPUter board.
 

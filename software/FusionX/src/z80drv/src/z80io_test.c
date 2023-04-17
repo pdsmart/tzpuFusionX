@@ -54,7 +54,7 @@ uint8_t z80io_Z80_TestMemory(void)
     spinlock_t     spinLock;
     unsigned long  flags;
 
-    SPI_SEND8(CPLD_CMD_CLEAR_AUTO_REFRESH);
+    SPI_SEND_8(CPLD_CMD_CLEAR_AUTO_REFRESH);
 
     SPI_SEND32(0x00E30000 | (0x07 << 8) | CPLD_CMD_WRITEIO_ADDR);
     udelay(100);
@@ -71,16 +71,16 @@ uint8_t z80io_Z80_TestMemory(void)
     SPI_SEND32(0x00EB0000 | (0xFF << 8) | CPLD_CMD_WRITEIO_ADDR);
     udelay(100);
     pr_info("Z80 Host Test - IO.\n");
-    for(idx=0; idx < 1000000; idx++)
-    {
-        SPI_SEND32(0x00E80000 | (0xD3 << 8) | CPLD_CMD_WRITEIO_ADDR);
-        SPI_SEND32(0xD0000000 | (0x41 << 8) | CPLD_CMD_WRITE_ADDR);
-        SPI_SEND32(0xD0100000 | (0x41 << 8) | CPLD_CMD_WRITE_ADDR);
-        SPI_SEND32(0xD0200000 | (0x41 << 8) | CPLD_CMD_WRITE_ADDR);
-        SPI_SEND32(0xD0300000 | (0x41 << 8) | CPLD_CMD_WRITE_ADDR);
-        SPI_SEND32(0xD0400000 | (0x41 << 8) | CPLD_CMD_WRITE_ADDR);
-        SPI_SEND32(0xD0500000 | (0x41 << 8) | CPLD_CMD_WRITE_ADDR);
-    }
+//    for(idx=0; idx < 1000000; idx++)
+//    {
+//        SPI_SEND32(0x00E80000 | (0xD3 << 8) | CPLD_CMD_WRITEIO_ADDR);
+//        SPI_SEND32(0xD0000000 | (0x41 << 8) | CPLD_CMD_WRITE_ADDR);
+//        SPI_SEND32(0xD0100000 | (0x41 << 8) | CPLD_CMD_WRITE_ADDR);
+//        SPI_SEND32(0xD0200000 | (0x41 << 8) | CPLD_CMD_WRITE_ADDR);
+//        SPI_SEND32(0xD0300000 | (0x41 << 8) | CPLD_CMD_WRITE_ADDR);
+//        SPI_SEND32(0xD0400000 | (0x41 << 8) | CPLD_CMD_WRITE_ADDR);
+//        SPI_SEND32(0xD0500000 | (0x41 << 8) | CPLD_CMD_WRITE_ADDR);
+//    }
 
     spin_lock_init(&spinLock);
     pr_info("Z80 Host Test - Testing IO Write performance.\n");
@@ -185,7 +185,7 @@ uint8_t z80io_Z80_TestMemory(void)
 
             // Read back the same byte.
             cmd = 0x10;
-            SPI_SEND8(cmd);
+            SPI_SEND_8(cmd);
             while(CPLD_READY() == 0);
 
             result = READ_CPLD_DATA_IN();
@@ -223,7 +223,7 @@ uint8_t z80io_Z80_TestMemory(void)
 
             // Read back the same byte.
             cmd = 0x20;
-            SPI_SEND8(cmd);
+            SPI_SEND_8(cmd);
             while(CPLD_READY() == 0);
 
             result = READ_CPLD_DATA_IN();
@@ -254,7 +254,7 @@ uint8_t z80io_Z80_TestMemory(void)
             } else
             {
                 cmd = 0x11;
-                SPI_SEND8(cmd);
+                SPI_SEND_8(cmd);
             }
             while(CPLD_READY() == 0);
             result = READ_CPLD_DATA_IN();
@@ -280,7 +280,7 @@ uint8_t z80io_Z80_TestMemory(void)
             } else
             {
                 cmd = 0x21;
-                SPI_SEND8(cmd);
+                SPI_SEND_8(cmd);
             }
             while(CPLD_READY() == 0);
             result = READ_CPLD_DATA_IN();
@@ -306,7 +306,7 @@ uint8_t z80io_Z80_TestMemory(void)
         } else
         {
             cmd = 0x19;
-            SPI_SEND8(cmd);
+            SPI_SEND_8(cmd);
         }
     }
     for(idx=0; idx < iterations; idx++)
@@ -322,7 +322,7 @@ uint8_t z80io_Z80_TestMemory(void)
             } else
             {
                 cmd = 0x19;
-                SPI_SEND8(cmd);
+                SPI_SEND_8(cmd);
             }
         }
     }

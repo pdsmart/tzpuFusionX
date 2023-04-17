@@ -183,16 +183,10 @@ int getch(uint8_t wait)
     return 0;
 }
 
-void delay(int number_of_seconds)
+// Millisecond delay routine.
+void delay(int ms_delay)
 {
-    // Converting time into milli_seconds
-    int milli_seconds = 1000 * number_of_seconds;
- 
-    // Storing start time
-    clock_t start_time = clock();
- 
-    // looping till required time is not achieved
-    while (clock() < start_time + milli_seconds);
+    usleep(1000 * ms_delay);
 }
 
 // Function to dump out a given section of memory via the UART.
@@ -2799,6 +2793,7 @@ void z80ResetRequest(int signalNo)
     svcCacheDir(TZSVC_DEFAULT_MZF_DIR, MZF, 1);
   
     // Start the Z80 after initialisation of the memory.
+    delay(500);
     startZ80(TZMM_BOOT);
     return;
 }
@@ -2925,6 +2920,18 @@ int main(int argc, char *argv[])
         printf("Failed to open the Z80 Driver, exiting...\n");
         exit(1);
     }
+
+    // Setup host type, at the moment this is static but as the FusionX progresses and it can be hosted in multiple hosts without firmware change, then we can pull the
+    // host type from the detected hardware.
+  #if (TARGET_HOST_MZ80A == 1)
+    z80Control.hostType = HW_MZ80A;
+  #elif (TARGET_HOST_MZ700 == 1)
+    z80Control.hostType = HW_MZ700;
+  #elif (TARGET_HOST_MZ2000 == 1)
+    z80Control.hostType = HW_MZ2000;
+  #else
+    #error "Unknown host, update code to accommodate."
+  #endif
   
     // Register the service request handler.
     signal(SIGIO, z80ServiceRequest);

@@ -1,12 +1,12 @@
 -------------------------------------------------------------------------------------------------------
 --
 -- Name:            tzpuFusionX.vhd
--- Version:         MZ-80A
--- Created:         Nov 2022
+-- Version:         Amstrad PCW-8256
+-- Created:         Mar 2023
 -- Author(s):       Philip Smart
 -- Description:     tzpuFusionX CPLD logic definition file.
 --                  This module contains the definition of the tzpuFusionX project plus enhancements
---                  for the MZ-80A.
+--                  for the Amstrad PCW-8256.
 --
 -- Credits:         
 -- Copyright:       (c) 2018-23 Philip Smart <philip.smart@net2net.org>
@@ -15,7 +15,11 @@
 --                  Feb 2023 v1.1 - Updates, after numerous tests to try and speed up the Z80 transaction
 --                                  from SSD202 issuing a command to data being returned. Source now
 --                                  different to the MZ-700/MZ-2000 so will need back porting.
---                  Apr 2023 v1.2 - Updated from the PCW8256 development.
+--                  Mar 2023 v1.0 - Snapshot taken from MZ-80A source for the Amstrad PCW-8256 version.
+--                                  Version reset to v1.0 for the Amstrad.
+--                  Apr 2023 v1.1 - Significant changes to attempt to increase throughput as the Amstrad
+--                                  has been designed to operate items such as the FDC within a flyback 
+--                                  window which is very difficult to meet given the boot code.
 --
 ---------------------------------------------------------------------------------------------------------
 -- This source file is free software: you can redistribute it and-or modify
@@ -217,12 +221,10 @@ architecture rtl of cpld512 is
     signal CTRL_STATE             :       CTRLFSMState := CTRLCMD_Idle;
     signal NEW_SPI_DATA           :       std_logic := '0';
     signal VCPU_CS_EDGE           :       std_logic_vector(1 downto 0)  := "11";
-    signal AUTOREFRESH_CNT        :       integer range 0 to 31;
+    signal AUTOREFRESH_CNT        :       integer range 0 to 63;
     signal FSM_STATUS             :       std_logic := '0';
-    signal FSM_CHECK_WAIT         :       std_logic := '0';
-    signal FSM_WAIT_ACTIVE        :       std_logic := '0';
     signal RFSH_STATUS            :       std_logic := '0';
-    signal REFRESH_ADDR           :       std_logic_vector(6 downto 0);
+    signal REFRESH_ADDR           :       std_logic_vector(7 downto 0);
     signal IPAR                   :       std_logic_vector(7 downto 0);
     signal AUTOREFRESH            :       std_logic;
 
@@ -276,16 +278,11 @@ begin
 
     -- System RESET.
     --
-    -- Multiple reset sources, Z80_RESETn, MB_IPLn, MB_RESETn. On the MZ-80A, MB_RESETn is a full reset to the power on state.
-    -- Like the MZ-700, we trigger on Z80_RESETn after having sampled the MB_RESETn state to decide on any extra actions needed within
-    -- the CPLD and the signals are forwarded onto the SOM so it too can take the correct reset path.
+    -- The FusionX has multiple reset sources, Z80_RESETn, MB_IPLn, MB_RESETn. On the PCW-8256 there is no external reset, so we implement the standard
+    -- reset logic but it will never be triggered externally.
     --
-    -- If the external reset switch is pressed, a Z80_RESETn is invoked sending the signal low for approx 30ms. 
-    -- On the first edge the VSOM_RESETn signal is set which allows the SOM to see it and the Z80 application to enter a reset state.
-    -- On the second edge, if occurring within 1 second of the first, the PM_RESET signal to the SOM is triggered, held low for 1 second,
-    -- forcing the SOM to reboot.
     SYSRESET: process( Z80_CLKi, Z80_RESETn )
-        variable timer1        : integer range 0 to 200000 := 0;
+        variable timer1        : integer range 0 to 400000 := 0;
         variable timer100      : integer range 0 to 10     := 0;
         variable timerPMReset  : integer range 0 to 10     := 0;
         variable resetCount    : integer range 0 to 3      := 0;
@@ -321,7 +318,7 @@ begin
             end if;
 
             -- 100ms interval.
-            if(timer1 = 200000) then
+            if(timer1 = 400000) then
                 timer100         := timer100 + 1;
 
                 if(timer100 >= 10) then
@@ -440,7 +437,7 @@ begin
             MONO_VIDEO_SRCi      <= '1';
             AUDIO_SRC_Li         <= '0';
             AUDIO_SRC_Ri         <= '0';
-            AUTOREFRESH          <= '0';
+            AUTOREFRESH          <= '1';
             SPI_LOOPBACK_TEST    <= '0';
             SOM_CMD              <= (others => '0');
             SOM_PARAM_CNT        <= 0;
@@ -618,15 +615,13 @@ begin
             Z80_M1ni              <= '1';
             Z80_RFSHni            <= '1';
             Z80_BUSRQ_ACKni       <= '1';
-            FSM_CHECK_WAIT        <= '0';
-            FSM_WAIT_ACTIVE       <= '0';
             FSM_STATUS            <= '0';
             FSM_STATE             <= IdleCycle;
             RFSH_STATUS           <= '0';
             CPU_DATA_EN           <= '0';
             CPU_DATA_IN           <= (others => '0');
             REFRESH_ADDR          <= (others => '0');
-            AUTOREFRESH_CNT       <= 31;
+            AUTOREFRESH_CNT       <= 63;
             IPAR                  <= (others => '0');
             NEW_SPI_DATA          <= '0';
             VCPU_CS_EDGE          <= "11";
@@ -660,11 +655,6 @@ begin
                 RFSH_STATUS       <= '0';
             end if;
 
-            -- If we are in a WAIT sampling 1/2 cycle and wait goes active, set the state so we repeat the full clock cycle by winding back 2 places.
-            if(FSM_CHECK_WAIT = '1' and Z80_WAITn = '0' and Z80_CLK_TGL = '0') then
-                FSM_WAIT_ACTIVE   <= '1';
-            end if;
-
             -- Whenever we return to Idle or just prior to Refresh from a Fetch cycle set all control signals to default.
             if((FSM_STATE = IdleCycle or FSM_STATE = RefreshCycle) and Z80_CLK_RE = '1') then
                 CPU_DATA_EN       <= '0';
@@ -675,6 +665,7 @@ begin
                 Z80_M1ni          <= '1';
                 FSM_STATUS        <= '0';
                 Z80_RFSHni        <= '1';
+                FSM_STATUS        <= '0';
 
                 -- Auto DRAM refresh cycles. When enabled, every 15.6us a refresh period commences.
                 -- This period may be extended if the SPI receives a new command.
@@ -683,8 +674,8 @@ begin
                     if(AUTOREFRESH_CNT = 0) then
                         FSM_STATE <= RefreshCycle_3;
                         FSM_STATUS<= '1';
-                        -- 4116 DRAM = 128 cycles in 2ms.
-                        AUTOREFRESH_CNT <= 31;
+                        -- 41257 DRAM = 256 cycles in 4ms.
+                        AUTOREFRESH_CNT <= 63;
                     end if;
                 end if;
             end if;
@@ -753,7 +744,7 @@ begin
 
                             -- Set the Refresh Address register.
                             when X"E1" =>
-                                REFRESH_ADDR   <= CPU_DATA_OUT(6 downto 0);
+                                REFRESH_ADDR   <= CPU_DATA_OUT;
 
                             -- Set the Interrupt Page Address Register.
                             when X"E2" =>
@@ -809,10 +800,6 @@ begin
                     FSM_STATE              <= SOMFSMState'val(SOMFSMState'POS(FSM_STATE)+1);
                 end if;
 
-                -- Half cycle expired so we dont check the Z80 wait again.
-                FSM_CHECK_WAIT             <= '0';
-                FSM_WAIT_ACTIVE            <= '0';
-
                 -- FSM to implement all the required Z80 cycles.
                 --
                 case FSM_STATE is
@@ -833,10 +820,9 @@ begin
                         Z80_RDni           <= '0';
 
                     when FetchCycle_20 =>
-                        FSM_CHECK_WAIT     <= '1';
 
                     when FetchCycle_21 =>
-                        if(Z80_WAITn = '0' or FSM_WAIT_ACTIVE = '1') then
+                        if(Z80_WAITn = '0') then
                             FSM_STATE      <=  FetchCycle_20;
                         end if;
 
@@ -879,11 +865,10 @@ begin
                         CPU_DATA_EN        <= '1';
 
                     when WriteCycle_20 =>
-                        FSM_CHECK_WAIT     <= '1';
 
                     when WriteCycle_21 =>
                         Z80_WRni           <= '0';
-                        if(Z80_WAITn = '0' or FSM_WAIT_ACTIVE = '1') then
+                        if(Z80_WAITn = '0') then
                             FSM_STATE      <= WriteCycle_20;
                         end if;
 
@@ -905,10 +890,9 @@ begin
                         Z80_RDni           <= '0';
 
                     when ReadCycle_20 =>
-                        FSM_CHECK_WAIT     <= '1';
                        
                     when ReadCycle_21 =>
-                        if(Z80_WAITn = '0' or FSM_WAIT_ACTIVE = '1') then
+                        if(Z80_WAITn = '0') then
                             FSM_STATE      <= ReadCycle_20;
                         end if;
 
@@ -935,10 +919,9 @@ begin
                     when WriteIOCycle_21 =>
 
                     when WriteIOCycle_30 =>
-                        FSM_CHECK_WAIT     <= '1';
 
                     when WriteIOCycle_31 =>
-                        if(Z80_WAITn = '0' or FSM_WAIT_ACTIVE = '1') then
+                        if(Z80_WAITn = '0') then
                             FSM_STATE      <= WriteIOCycle_30;
                         end if;
 
@@ -964,10 +947,9 @@ begin
                     when ReadIOCycle_21 =>
                         
                     when ReadIOCycle_30 =>
-                        FSM_CHECK_WAIT     <= '1';
 
                     when ReadIOCycle_31 =>
-                        if(Z80_WAITn = '0' or FSM_WAIT_ACTIVE = '1') then
+                        if(Z80_WAITn = '0') then
                             FSM_STATE      <= ReadIOCycle_30;
                         end if;
                         
@@ -1008,7 +990,7 @@ begin
     Z80_CLKi                     <= not Z80_CLK;
 
     -- CPU Interface tri-state control based on acknowledged bus request.
-    Z80_ADDR                     <= IPAR & '0' & REFRESH_ADDR              when Z80_RFSHni = '0'
+    Z80_ADDR                     <= IPAR & REFRESH_ADDR                    when Z80_RFSHni = '0'
                                     else
                                     CPU_ADDR                               when Z80_BUSRQ_ACKni = '1'
                                     else

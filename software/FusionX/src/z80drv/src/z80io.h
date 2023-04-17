@@ -82,6 +82,14 @@
 #define CPLD_CMD_READIO_ADDR_P5               0x35
 #define CPLD_CMD_READIO_ADDR_P6               0x36
 #define CPLD_CMD_READIO_ADDR_P7               0x37
+#define CPLD_CMD_READIO_WRITE_ADDR            0x38
+#define CPLD_CMD_READIO_WRITE_ADDR_P1         0x39
+#define CPLD_CMD_READIO_WRITE_ADDR_P2         0x3A
+#define CPLD_CMD_READIO_WRITE_ADDR_P3         0x3B
+#define CPLD_CMD_READIO_WRITE_ADDR_P4         0x3C
+#define CPLD_CMD_READIO_WRITE_ADDR_P5         0x3D
+#define CPLD_CMD_READIO_WRITE_ADDR_P6         0x3E
+#define CPLD_CMD_READIO_WRITE_ADDR_P7         0x3F
 #define CPLD_CMD_HALT                         0x50
 #define CPLD_CMD_REFRESH                      0x51
 #define CPLD_CMD_SET_SIGROUP1                 0xF0
@@ -130,7 +138,7 @@
 #define PAD_SPIO_2_ADDR                      0x103C14
 #define PAD_SPIO_3_ADDR                      0x103C16
 #define PAD_Z80IO_HIGH_BYTE_ADDR             0x1425 
-#define PAD_Z80IO_READY_ADDR                 0x103C18
+#define PAD_Z80IO_READY_ADDR                 0x103C18      // GPIO12
 #define PAD_Z80IO_LTSTATE_ADDR               0x103C30      // GPIO47
 #define PAD_Z80IO_BUSRQ_ADDR                 0x103C1A
 #define PAD_Z80IO_BUSACK_ADDR                0x103C1C
@@ -386,8 +394,8 @@
 #define CPLD_LAST_TSTATE()                   (MHal_RIU_REG(PAD_Z80IO_LTSTATE_ADDR) & 0x4)
 #define CPLD_Z80_INT()                       (MHal_RIU_REG(PAD_Z80IO_INT_ADDR) & 0x4)
 #define CPLD_Z80_NMI()                       (MHal_RIU_REG(PAD_Z80IO_NMI_ADDR) & 0x4)
-#define SPI_SEND8(_d_)                       { uint32_t timeout = MAX_CHECK_CNT; \
-                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET, (uint16_t)(_d_)); \
+#define SPI_SEND_8(_d_)                      { uint32_t timeout = MAX_CHECK_CNT; \
+                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET, (uint16_t)_d_); \
                                                MSPI_WRITE(MSPI_WBF_SIZE_OFFSET, 1); \
                                                while((MHal_RIU_REG(PAD_Z80IO_READY_ADDR) & 0x1) == 0);\
                                                MSPI_WRITE(MSPI_CHIP_SELECT_OFFSET, MSPI_CS8_DISABLE | MSPI_CS7_DISABLE | MSPI_CS6_DISABLE | MSPI_CS5_DISABLE | MSPI_CS4_DISABLE | MSPI_CS3_DISABLE | MSPI_CS2_DISABLE | MSPI_CS1_ENABLE); \
@@ -396,9 +404,18 @@
                                                MSPI_WRITE(MSPI_CHIP_SELECT_OFFSET, MSPI_CS8_DISABLE | MSPI_CS7_DISABLE | MSPI_CS6_DISABLE | MSPI_CS5_DISABLE | MSPI_CS4_DISABLE | MSPI_CS3_DISABLE | MSPI_CS2_DISABLE | MSPI_CS1_DISABLE); \
                                                MSPI_WRITE(MSPI_DONE_CLEAR_OFFSET, MSPI_CLEAR_DONE);\
                                              }
+#define SPI_SEND_I_8(_d_)                    { uint32_t timeout = MAX_CHECK_CNT; \
+                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET, (uint16_t)_d_); \
+                                               MSPI_WRITE(MSPI_WBF_SIZE_OFFSET, 1); \
+                                               MSPI_WRITE(MSPI_CHIP_SELECT_OFFSET, MSPI_CS8_DISABLE | MSPI_CS7_DISABLE | MSPI_CS6_DISABLE | MSPI_CS5_DISABLE | MSPI_CS4_DISABLE | MSPI_CS3_DISABLE | MSPI_CS2_DISABLE | MSPI_CS1_ENABLE); \
+                                               MSPI_WRITE(MSPI_TRIGGER_OFFSET, MSPI_TRIGGER); \
+                                               while((MSPI_READ(MSPI_DONE_OFFSET) & MSPI_DONE_FLAG) == 0) { if(--timeout == 0) break; } \
+                                               MSPI_WRITE(MSPI_CHIP_SELECT_OFFSET, MSPI_CS8_DISABLE | MSPI_CS7_DISABLE | MSPI_CS6_DISABLE | MSPI_CS5_DISABLE | MSPI_CS4_DISABLE | MSPI_CS3_DISABLE | MSPI_CS2_DISABLE | MSPI_CS1_DISABLE); \
+                                               MSPI_WRITE(MSPI_DONE_CLEAR_OFFSET, MSPI_CLEAR_DONE);\
+                                             }
 #define SPI_SEND16(_d_)                      { uint32_t timeout = MAX_CHECK_CNT; \
-                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET, (uint16_t)(_d_)); \
                                                MSPI_WRITE(MSPI_WBF_SIZE_OFFSET, 2); \
+                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET, (uint16_t)(_d_)); \
                                                while((MHal_RIU_REG(PAD_Z80IO_READY_ADDR) & 0x1) == 0);\
                                                MSPI_WRITE(MSPI_CHIP_SELECT_OFFSET, MSPI_CS8_DISABLE | MSPI_CS7_DISABLE | MSPI_CS6_DISABLE | MSPI_CS5_DISABLE | MSPI_CS4_DISABLE | MSPI_CS3_DISABLE | MSPI_CS2_DISABLE | MSPI_CS1_ENABLE); \
                                                MSPI_WRITE(MSPI_TRIGGER_OFFSET, MSPI_TRIGGER); \
@@ -406,10 +423,9 @@
                                                MSPI_WRITE(MSPI_CHIP_SELECT_OFFSET, MSPI_CS8_DISABLE | MSPI_CS7_DISABLE | MSPI_CS6_DISABLE | MSPI_CS5_DISABLE | MSPI_CS4_DISABLE | MSPI_CS3_DISABLE | MSPI_CS2_DISABLE | MSPI_CS1_DISABLE); \
                                                MSPI_WRITE(MSPI_DONE_CLEAR_OFFSET, MSPI_CLEAR_DONE); \
                                              }
-#define SPI_SEND32(_d_)                      { uint32_t timeout = MAX_CHECK_CNT; \
-                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET,   (uint16_t)(_d_)); \
-                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET+1, (uint16_t)((_d_) >> 16)); \
-                                               MSPI_WRITE(MSPI_WBF_SIZE_OFFSET, 4); \
+#define SPI_SEND_16(_d1_)                    { uint32_t timeout = MAX_CHECK_CNT; \
+                                               MSPI_WRITE(MSPI_WBF_SIZE_OFFSET, 2); \
+                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET, (uint16_t)_d1_); \
                                                while((MHal_RIU_REG(PAD_Z80IO_READY_ADDR) & 0x1) == 0);\
                                                MSPI_WRITE(MSPI_CHIP_SELECT_OFFSET, MSPI_CS8_DISABLE | MSPI_CS7_DISABLE | MSPI_CS6_DISABLE | MSPI_CS5_DISABLE | MSPI_CS4_DISABLE | MSPI_CS3_DISABLE | MSPI_CS2_DISABLE | MSPI_CS1_ENABLE); \
                                                MSPI_WRITE(MSPI_TRIGGER_OFFSET, MSPI_TRIGGER); \
@@ -417,24 +433,63 @@
                                                MSPI_WRITE(MSPI_CHIP_SELECT_OFFSET, MSPI_CS8_DISABLE | MSPI_CS7_DISABLE | MSPI_CS6_DISABLE | MSPI_CS5_DISABLE | MSPI_CS4_DISABLE | MSPI_CS3_DISABLE | MSPI_CS2_DISABLE | MSPI_CS1_DISABLE); \
                                                MSPI_WRITE(MSPI_DONE_CLEAR_OFFSET, MSPI_CLEAR_DONE); \
                                              }
-#define SPI_SEND32i(_d_)                      { uint32_t timeout = MAX_CHECK_CNT; \
-                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET,   (uint16_t)(_d_)); \
-                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET+1, (uint16_t)((_d_) >> 16)); \
-                                               MSPI_WRITE(MSPI_WBF_SIZE_OFFSET, 4); \
-    pr_info("Stage 0");\
-                                               while((MHal_RIU_REG(PAD_Z80IO_READY_ADDR) & 0x1) == 0);\
-    pr_info("Stage 1");\
+#define SPI_SEND_P_16(_d1_)                  { uint32_t timeout = MAX_CHECK_CNT; \
+                                               MSPI_WRITE(MSPI_WBF_SIZE_OFFSET, 2); \
+                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET, (uint16_t)_d1_); \
+                                               while((MHal_RIU_REG(PAD_Z80IO_READY_ADDR) & 0x1) != 0);\
                                                MSPI_WRITE(MSPI_CHIP_SELECT_OFFSET, MSPI_CS8_DISABLE | MSPI_CS7_DISABLE | MSPI_CS6_DISABLE | MSPI_CS5_DISABLE | MSPI_CS4_DISABLE | MSPI_CS3_DISABLE | MSPI_CS2_DISABLE | MSPI_CS1_ENABLE); \
                                                MSPI_WRITE(MSPI_TRIGGER_OFFSET, MSPI_TRIGGER); \
-    pr_info("Stage 2");\
-                                               timeout = MAX_CHECK_CNT; \
-                                               while((MSPI_READ(MSPI_DONE_OFFSET) & MSPI_DONE_FLAG) == 0) { if(--timeout == 0) break; }; \
-    pr_info("Stage 3");\
+                                               while((MSPI_READ(MSPI_DONE_OFFSET) & MSPI_DONE_FLAG) == 0) { if(--timeout == 0) break; } \
+                                               MSPI_WRITE(MSPI_CHIP_SELECT_OFFSET, MSPI_CS8_DISABLE | MSPI_CS7_DISABLE | MSPI_CS6_DISABLE | MSPI_CS5_DISABLE | MSPI_CS4_DISABLE | MSPI_CS3_DISABLE | MSPI_CS2_DISABLE | MSPI_CS1_DISABLE); \
+                                               MSPI_WRITE(MSPI_DONE_CLEAR_OFFSET, MSPI_CLEAR_DONE); \
+                                             }
+#define SPI_SET_FRAME_SIZE()                 { MSPI_WRITE(MSPI_WBF_SIZE_OFFSET, 4); \
+                                             }
+#define SPI_SEND32(_d_)                      { uint32_t timeout = MAX_CHECK_CNT*2; \
+                                               MSPI_WRITE(MSPI_WBF_SIZE_OFFSET, 4); \
+                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET,   (uint16_t)(_d_)); \
+                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET+1, (uint16_t)((_d_) >> 16)); \
+                                               MSPI_WRITE(MSPI_DONE_CLEAR_OFFSET, MSPI_CLEAR_DONE); \
+                                               MSPI_WRITE(MSPI_CHIP_SELECT_OFFSET, MSPI_CS8_DISABLE | MSPI_CS7_DISABLE | MSPI_CS6_DISABLE | MSPI_CS5_DISABLE | MSPI_CS4_DISABLE | MSPI_CS3_DISABLE | MSPI_CS2_DISABLE | MSPI_CS1_ENABLE); \
+                                               while((MHal_RIU_REG(PAD_Z80IO_READY_ADDR) & 0x1) == 0) { if(--timeout == 0) break; };\
+                                               MSPI_WRITE(MSPI_TRIGGER_OFFSET, MSPI_TRIGGER); \
+                                               while((MSPI_READ(MSPI_DONE_OFFSET) & MSPI_DONE_FLAG) == 0) { if(--timeout == 0) break; } \
+                                               MSPI_WRITE(MSPI_CHIP_SELECT_OFFSET, MSPI_CS8_DISABLE | MSPI_CS7_DISABLE | MSPI_CS6_DISABLE | MSPI_CS5_DISABLE | MSPI_CS4_DISABLE | MSPI_CS3_DISABLE | MSPI_CS2_DISABLE | MSPI_CS1_DISABLE); \
+                                             }
+#define SPI_SEND_32(_d1_, _d2_)              { uint32_t timeout = MAX_CHECK_CNT*2; \
+                                               MSPI_WRITE(MSPI_WBF_SIZE_OFFSET, 4); \
+                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET,   (uint16_t)_d2_); \
+                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET+1, (uint16_t)_d1_); \
+                                               MSPI_WRITE(MSPI_DONE_CLEAR_OFFSET, MSPI_CLEAR_DONE); \
+                                               while((MHal_RIU_REG(PAD_Z80IO_READY_ADDR) & 0x1) == 0) { if(--timeout == 0) break; };\
+                                               MSPI_WRITE(MSPI_CHIP_SELECT_OFFSET, MSPI_CS8_DISABLE | MSPI_CS7_DISABLE | MSPI_CS6_DISABLE | MSPI_CS5_DISABLE | MSPI_CS4_DISABLE | MSPI_CS3_DISABLE | MSPI_CS2_DISABLE | MSPI_CS1_ENABLE); \
+                                               MSPI_WRITE(MSPI_TRIGGER_OFFSET, MSPI_TRIGGER); \
+                                               while((MSPI_READ(MSPI_DONE_OFFSET) & MSPI_DONE_FLAG) == 0) { if(--timeout == 0) break; } \
+                                               MSPI_WRITE(MSPI_CHIP_SELECT_OFFSET, MSPI_CS8_DISABLE | MSPI_CS7_DISABLE | MSPI_CS6_DISABLE | MSPI_CS5_DISABLE | MSPI_CS4_DISABLE | MSPI_CS3_DISABLE | MSPI_CS2_DISABLE | MSPI_CS1_DISABLE); \
+                                             }
+#define SPI_SEND_I_32(_d1_, _d2_)            { uint32_t timeout = MAX_CHECK_CNT*2; \
+                                               MSPI_WRITE(MSPI_WBF_SIZE_OFFSET, 4); \
+                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET,   (uint16_t)_d2_); \
+                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET+1, (uint16_t)_d1_); \
+                                               MSPI_WRITE(MSPI_CHIP_SELECT_OFFSET, MSPI_CS8_DISABLE | MSPI_CS7_DISABLE | MSPI_CS6_DISABLE | MSPI_CS5_DISABLE | MSPI_CS4_DISABLE | MSPI_CS3_DISABLE | MSPI_CS2_DISABLE | MSPI_CS1_ENABLE); \
+                                               MSPI_WRITE(MSPI_TRIGGER_OFFSET, MSPI_TRIGGER); \
+                                               while((MSPI_READ(MSPI_DONE_OFFSET) & MSPI_DONE_FLAG) == 0) { if(--timeout == 0) break; } \
+                                               MSPI_WRITE(MSPI_CHIP_SELECT_OFFSET, MSPI_CS8_DISABLE | MSPI_CS7_DISABLE | MSPI_CS6_DISABLE | MSPI_CS5_DISABLE | MSPI_CS4_DISABLE | MSPI_CS3_DISABLE | MSPI_CS2_DISABLE | MSPI_CS1_DISABLE); \
+                                               MSPI_WRITE(MSPI_DONE_CLEAR_OFFSET, MSPI_CLEAR_DONE); \
+                                             }
+#define SPI_SEND_48(_d1_, _d2_, _d3_)        { uint32_t timeout = MAX_CHECK_CNT*2; \
+                                               MSPI_WRITE(MSPI_WBF_SIZE_OFFSET, 6); \
+                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET,   (uint16_t)_d3_); \
+                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET+1, (uint16_t)_d2_); \
+                                               MSPI_WRITE(MSPI_WRITE_BUF_OFFSET+2, (uint16_t)_d1_); \
+                                               MSPI_WRITE(MSPI_CHIP_SELECT_OFFSET, MSPI_CS8_DISABLE | MSPI_CS7_DISABLE | MSPI_CS6_DISABLE | MSPI_CS5_DISABLE | MSPI_CS4_DISABLE | MSPI_CS3_DISABLE | MSPI_CS2_DISABLE | MSPI_CS1_ENABLE); \
+                                               while((MHal_RIU_REG(PAD_Z80IO_READY_ADDR) & 0x1) == 0) { if(--timeout == 0) break; };\
+                                               MSPI_WRITE(MSPI_TRIGGER_OFFSET, MSPI_TRIGGER); \
+                                               while((MSPI_READ(MSPI_DONE_OFFSET) & MSPI_DONE_FLAG) == 0) { if(--timeout == 0) break; } \
                                                MSPI_WRITE(MSPI_CHIP_SELECT_OFFSET, MSPI_CS8_DISABLE | MSPI_CS7_DISABLE | MSPI_CS6_DISABLE | MSPI_CS5_DISABLE | MSPI_CS4_DISABLE | MSPI_CS3_DISABLE | MSPI_CS2_DISABLE | MSPI_CS1_DISABLE); \
                                                MSPI_WRITE(MSPI_DONE_CLEAR_OFFSET, MSPI_CLEAR_DONE); \
                                              }
 
-                                              // while((MHal_RIU_REG(PAD_Z80IO_READY_ADDR) & 0x1) == 0) { if(--timeout == 0) break; };
 // read 2 byte
 #define MSPI_READ(_reg_)                     READ_WORD(gMspBaseAddr + ((_reg_)<<2))
 // write 2 byte

@@ -36,182 +36,210 @@
     extern "C" {
 #endif
 
-#define TARGET_HOST_MZ700            0                                   // Target compilation for an MZ700
-#define TARGET_HOST_MZ2000           0                                   //                           MZ2000
-#define TARGET_HOST_MZ80A            1                                   //                           MZ80A
+// Build time target. Overrides if compile time definition given.
+#if defined(TARGET_HOST_MZ700)
+  #define TARGET_HOST_MZ700                   1
+  #define TARGET_HOST_MZ2000                  0
+  #define TARGET_HOST_MZ80A                   0
+  #define TARGET_HOST_PCW                     0
+#elif defined(TARGET_HOST_MZ2000)
+  #define TARGET_HOST_MZ2000                  1
+  #define TARGET_HOST_MZ700                   0
+  #define TARGET_HOST_MZ80A                   0
+  #define TARGET_HOST_PCW                     0
+#elif defined(TARGET_HOST_MZ80A)
+  #define TARGET_HOST_MZ80A                   1
+  #define TARGET_HOST_MZ2000                  0
+  #define TARGET_HOST_MZ700                   0
+  #define TARGET_HOST_PCW                     0
+#elif defined(TARGET_HOST_PCW8XXX) || defined(TARGET_HOST_PCW9XXX)
+  #define TARGET_HOST_PCW                     1
+  #define TARGET_HOST_MZ2000                  0
+  #define TARGET_HOST_MZ700                   0
+  #define TARGET_HOST_MZ80A                   0
+#else
+  #define TARGET_HOST_MZ700                   0                                   // Target compilation for an MZ700
+  #define TARGET_HOST_MZ2000                  0                                   //                           MZ2000
+  #define TARGET_HOST_MZ80A                   0                                   //                           MZ80A
+  #define TARGET_HOST_PCW                     0                                   //                           Amstrad PCW8XXX/9XXX
+#endif
 
 // Video display constants.
-#define VC_MAX_ROWS                  25                                  // Maximum number of rows on display.
-#define VC_MAX_COLUMNS               80                                  // Maximum number of columns on display.
-#define VC_MAX_BUFFER_ROWS           50                                  // Maximum number of backing store rows for scrollback feature.
-#define VC_DISPLAY_BUFFER_SIZE       VC_MAX_COLUMNS * VC_MAX_BUFFER_ROWS // Size of the display buffer for scrollback.
+#define VC_MAX_ROWS                           25                                  // Maximum number of rows on display.
+#if defined(TARGET_HOST_MZ700)
+  #define VC_MAX_COLUMNS                      40                                  // Maximum number of columns on display.
+#else
+  #define VC_MAX_COLUMNS                      80                                  // Maximum number of columns on display.
+#endif
+#define VC_MAX_BUFFER_ROWS                    50                                  // Maximum number of backing store rows for scrollback feature.
+#define VC_DISPLAY_BUFFER_SIZE                VC_MAX_COLUMNS * VC_MAX_BUFFER_ROWS // Size of the display buffer for scrollback.
 
 // Keyboard constants.
-#define KEYB_AUTOREPEAT_INITIAL_TIME 800                                 // Time in milliseconds before starting autorepeat.
-#define KEYB_AUTOREPEAT_TIME         100                                 // Time in milliseconds between auto repeating characters.
-#define KEYB_FLASH_TIME              350                                 // Time in milliseconds for the cursor flash change.
-#define CURSOR_THICK_BLOCK           0x43                                // Thick block cursor for lower case CAPS OFF
-#define CURSOR_BLOCK                 0xEF                                // Block cursor for SHIFT Lock.
-#define CURSOR_UNDERLINE             0x3E                                // Thick underscore for CAPS Lock.
-#define MAX_KEYB_BUFFER_SIZE         32                                  // Maximum size of the keyboard buffer.
+#define KEYB_AUTOREPEAT_INITIAL_TIME          800                                 // Time in milliseconds before starting autorepeat.
+#define KEYB_AUTOREPEAT_TIME                  100                                 // Time in milliseconds between auto repeating characters.
+#define KEYB_FLASH_TIME                       350                                 // Time in milliseconds for the cursor flash change.
+#define CURSOR_THICK_BLOCK                    0x43                                // Thick block cursor for lower case CAPS OFF
+#define CURSOR_BLOCK                          0xEF                                // Block cursor for SHIFT Lock.
+#define CURSOR_UNDERLINE                      0x3E                                // Thick underscore for CAPS Lock.
+#define MAX_KEYB_BUFFER_SIZE                  32                                  // Maximum size of the keyboard buffer.
 
 // Audio constants.
-#define TIMER_8253_MZ80A_FREQ        2000000                             // Base input frequency of Timer 0 for square wave generation.
-#define TIMER_8253_MZ700             768000                              // Base input frequency of Timer 0 for square wave generation.
+#define TIMER_8253_MZ80A_FREQ                 2000000                             // Base input frequency of Timer 0 for square wave generation.
+#define TIMER_8253_MZ700_FREQ                 768000                              // Base input frequency of Timer 0 for square wave generation.
 
 // Base addresses and sizes within the Video Controller.
-#define VIDEO_BASE_ADDR              0x000000                            // Base address of the Video Controller.
-#define VIDEO_VRAM_BASE_ADDR         VIDEO_BASE_ADDR + 0x00D000          // Base address of the character video RAM using direct addressing.
-#define VIDEO_VRAM_SIZE              0x800                               // Size of the video RAM.
-#define VIDEO_ARAM_BASE_ADDR         VIDEO_BASE_ADDR + 0x00D800          // Base address of the character attribute RAM using direct addressing.
-#define VIDEO_ARAM_SIZE              0x800                               // Size of the attribute RAM.
+#define VIDEO_BASE_ADDR                       0x000000                            // Base address of the Video Controller.
+#define VIDEO_VRAM_BASE_ADDR                  VIDEO_BASE_ADDR + 0x00D000          // Base address of the character video RAM using direct addressing.
+#define VIDEO_VRAM_SIZE                       0x800                               // Size of the video RAM.
+#define VIDEO_ARAM_BASE_ADDR                  VIDEO_BASE_ADDR + 0x00D800          // Base address of the character attribute RAM using direct addressing.
+#define VIDEO_ARAM_SIZE                       0x800                               // Size of the attribute RAM.
 
 // Video Module control bits.
-#define VMMODE_MASK                  0xF8                                // Mask to mask out video mode.
-#define VMMODE_MZ80K                 0x00                                // Video mode = MZ80K
-#define VMMODE_MZ80C                 0x01                                // Video mode = MZ80C
-#define VMMODE_MZ1200                0x02                                // Video mode = MZ1200
-#define VMMODE_MZ80A                 0x03                                // Video mode = MZ80A
-#define VMMODE_MZ700                 0x04                                // Video mode = MZ700
-#define VMMODE_MZ800                 0x05                                // Video mode = MZ800
-#define VMMODE_MZ1500                0x06                                // Video mode = MZ1500
-#define VMMODE_MZ80B                 0x07                                // Video mode = MZ80B
-#define VMMODE_MZ2000                0x08                                // Video mode = MZ2000
-#define VMMODE_MZ2200                0x09                                // Video mode = MZ2200
-#define VMMODE_MZ2500                0x0A                                // Video mode = MZ2500
-#define VMMODE_80CHAR                0x80                                // Enable 80 character display.
-#define VMMODE_80CHAR_MASK           0x7F                                // Mask to filter out display width control bit.
-#define VMMODE_COLOUR                0x20                                // Enable colour display.
-#define VMMODE_COLOUR_MASK           0xDF                                // Mask to filter out colour control bit.
+#define VMMODE_MASK                           0xF8                                // Mask to mask out video mode.
+#define VMMODE_MZ80K                          0x00                                // Video mode = MZ80K
+#define VMMODE_MZ80C                          0x01                                // Video mode = MZ80C
+#define VMMODE_MZ1200                         0x02                                // Video mode = MZ1200
+#define VMMODE_MZ80A                          0x03                                // Video mode = MZ80A
+#define VMMODE_MZ700                          0x04                                // Video mode = MZ700
+#define VMMODE_MZ800                          0x05                                // Video mode = MZ800
+#define VMMODE_MZ1500                         0x06                                // Video mode = MZ1500
+#define VMMODE_MZ80B                          0x07                                // Video mode = MZ80B
+#define VMMODE_MZ2000                         0x08                                // Video mode = MZ2000
+#define VMMODE_MZ2200                         0x09                                // Video mode = MZ2200
+#define VMMODE_MZ2500                         0x0A                                // Video mode = MZ2500
+#define VMMODE_80CHAR                         0x80                                // Enable 80 character display.
+#define VMMODE_80CHAR_MASK                    0x7F                                // Mask to filter out display width control bit.
+#define VMMODE_COLOUR                         0x20                                // Enable colour display.
+#define VMMODE_COLOUR_MASK                    0xDF                                // Mask to filter out colour control bit.
         
 // Sharp MZ colour attributes.
-#define VMATTR_FG_BLACK              0x00                                // Foreground black character attribute.
-#define VMATTR_FG_BLUE               0x10                                // Foreground blue character attribute.
-#define VMATTR_FG_RED                0x20                                // Foreground red character attribute.
-#define VMATTR_FG_PURPLE             0x30                                // Foreground purple character attribute.
-#define VMATTR_FG_GREEN              0x40                                // Foreground green character attribute.
-#define VMATTR_FG_CYAN               0x50                                // Foreground cyan character attribute.
-#define VMATTR_FG_YELLOW             0x60                                // Foreground yellow character attribute.
-#define VMATTR_FG_WHITE              0x70                                // Foreground white character attribute.
-#define VMATTR_FG_MASKOUT            0x8F                                // Mask to filter out foreground attribute.
-#define VMATTR_FG_MASKIN             0x70                                // Mask to filter out foreground attribute.
-#define VMATTR_BG_BLACK              0x00                                // Background black character attribute.
-#define VMATTR_BG_BLUE               0x01                                // Background blue character attribute.
-#define VMATTR_BG_RED                0x02                                // Background red character attribute.
-#define VMATTR_BG_PURPLE             0x03                                // Background purple character attribute.
-#define VMATTR_BG_GREEN              0x04                                // Background green character attribute.
-#define VMATTR_BG_CYAN               0x05                                // Background cyan character attribute.
-#define VMATTR_BG_YELLOW             0x06                                // Background yellow character attribute.
-#define VMATTR_BG_WHITE              0x07                                // Background white character attribute.
-#define VMATTR_BG_MASKOUT            0xF8                                // Mask to filter out background attribute.
-#define VMATTR_BG_MASKIN             0x07                                // Mask to filter out background attribute.
+#define VMATTR_FG_BLACK                       0x00                                // Foreground black character attribute.
+#define VMATTR_FG_BLUE                        0x10                                // Foreground blue character attribute.
+#define VMATTR_FG_RED                         0x20                                // Foreground red character attribute.
+#define VMATTR_FG_PURPLE                      0x30                                // Foreground purple character attribute.
+#define VMATTR_FG_GREEN                       0x40                                // Foreground green character attribute.
+#define VMATTR_FG_CYAN                        0x50                                // Foreground cyan character attribute.
+#define VMATTR_FG_YELLOW                      0x60                                // Foreground yellow character attribute.
+#define VMATTR_FG_WHITE                       0x70                                // Foreground white character attribute.
+#define VMATTR_FG_MASKOUT                     0x8F                                // Mask to filter out foreground attribute.
+#define VMATTR_FG_MASKIN                      0x70                                // Mask to filter out foreground attribute.
+#define VMATTR_BG_BLACK                       0x00                                // Background black character attribute.
+#define VMATTR_BG_BLUE                        0x01                                // Background blue character attribute.
+#define VMATTR_BG_RED                         0x02                                // Background red character attribute.
+#define VMATTR_BG_PURPLE                      0x03                                // Background purple character attribute.
+#define VMATTR_BG_GREEN                       0x04                                // Background green character attribute.
+#define VMATTR_BG_CYAN                        0x05                                // Background cyan character attribute.
+#define VMATTR_BG_YELLOW                      0x06                                // Background yellow character attribute.
+#define VMATTR_BG_WHITE                       0x07                                // Background white character attribute.
+#define VMATTR_BG_MASKOUT                     0xF8                                // Mask to filter out background attribute.
+#define VMATTR_BG_MASKIN                      0x07                                // Mask to filter out background attribute.
 
 // Sharp MZ constants.
 //
-#define MBADDR_KEYPA                 0xE000                              // Mainboard 8255 Port A
-#define MBADDR_KEYPB                 0xE001                              // Mainboard 8255 Port B
-#define MBADDR_KEYPC                 0xE002                              // Mainboard 8255 Port C
-#define MBADDR_KEYPF                 0xE003                              // Mainboard 8255 Mode Control
-#define MBADDR_CSTR                  0xE002                              // Mainboard 8255 Port C
-#define MBADDR_CSTPT                 0xE003                              // Mainboard 8255 Mode Control
-#define MBADDR_CONT0                 0xE004                              // Mainboard 8253 Counter 0
-#define MBADDR_CONT1                 0xE005                              // Mainboard 8253 Counter 1
-#define MBADDR_CONT2                 0xE006                              // Mainboard 8253 Counter 1
-#define MBADDR_CONTF                 0xE007                              // Mainboard 8253 Mode Control
-#define MBADDR_SUNDG                 0xE008                              // Register for reading the tempo timer status (cursor flash). horizontal blank and switching sound on/off.
-#define MBADDR_TEMP                  0xE008                              // As above, different name used in original source when writing.
-#define MBADDR_MEMSW                 0xE00C                              // Memory swap, 0000->C000, C000->0000
-#define MBADDR_MEMSWR                0xE010                              // Reset memory swap.
-#define MBADDR_NRMDSP                0xE014                              // Return display to normal.
-#define MBADDR_INVDSP                0xE015                              // Invert display.
-#define MBADDR_SCLDSP                0xE200                              // Hardware scroll, a read to each location adds 8 to the start of the video access address therefore creating hardware scroll. 00 - reset to power up
-#define MBADDR_SCLBASE               0xE2                                // High byte scroll base.
-#define MBADDR_DSPCTL                0xDFFF                              // Display 40/80 select register (bit 7)
+#define MBADDR_KEYPA                          0xE000                              // Mainboard 8255 Port A
+#define MBADDR_KEYPB                          0xE001                              // Mainboard 8255 Port B
+#define MBADDR_KEYPC                          0xE002                              // Mainboard 8255 Port C
+#define MBADDR_KEYPF                          0xE003                              // Mainboard 8255 Mode Control
+#define MBADDR_CSTR                           0xE002                              // Mainboard 8255 Port C
+#define MBADDR_CSTPT                          0xE003                              // Mainboard 8255 Mode Control
+#define MBADDR_CONT0                          0xE004                              // Mainboard 8253 Counter 0
+#define MBADDR_CONT1                          0xE005                              // Mainboard 8253 Counter 1
+#define MBADDR_CONT2                          0xE006                              // Mainboard 8253 Counter 1
+#define MBADDR_CONTF                          0xE007                              // Mainboard 8253 Mode Control
+#define MBADDR_SUNDG                          0xE008                              // Register for reading the tempo timer status (cursor flash). horizontal blank and switching sound on/off.
+#define MBADDR_TEMP                           0xE008                              // As above, different name used in original source when writing.
+#define MBADDR_MEMSW                          0xE00C                              // Memory swap, 0000->C000, C000->0000
+#define MBADDR_MEMSWR                         0xE010                              // Reset memory swap.
+#define MBADDR_NRMDSP                         0xE014                              // Return display to normal.
+#define MBADDR_INVDSP                         0xE015                              // Invert display.
+#define MBADDR_SCLDSP                         0xE200                              // Hardware scroll, a read to each location adds 8 to the start of the video access address therefore creating hardware scroll. 00 - reset to power up
+#define MBADDR_SCLBASE                        0xE2                                // High byte scroll base.
+#define MBADDR_DSPCTL                         0xDFFF                              // Display 40/80 select register (bit 7)
 
 //Common character definitions.
-#define SCROLL                       0x01                                // Set scroll direction UP.
-#define BELL                         0x07
-#define ENQ                          0x05
-#define SPACE                        0x20
-#define TAB                          0x09                                // TAB ACROSS (8 SPACES FOR SD-BOARD)
-#define CR                           0x0D
-#define LF                           0x0A
-#define FF                           0x0C
-#define DELETE                       0x7F
-#define BACKS                        0x08
-#define SOH                          0x01                                // For XModem etc.
-#define EOT                          0x04
-#define ACK                          0x06
-#define NAK                          0x15
-#define NUL                          0x00
-//#define NULL                         0x00
-#define CTRL_A                       0x01
-#define CTRL_B                       0x02
-#define CTRL_C                       0x03
-#define CTRL_D                       0x04
-#define CTRL_E                       0x05
-#define CTRL_F                       0x06
-#define CTRL_G                       0x07
-#define CTRL_H                       0x08
-#define CTRL_I                       0x09
-#define CTRL_J                       0x0A
-#define CTRL_K                       0x0B
-#define CTRL_L                       0x0C
-#define CTRL_M                       0x0D
-#define CTRL_N                       0x0E
-#define CTRL_O                       0x0F
-#define CTRL_P                       0x10
-#define CTRL_Q                       0x11
-#define CTRL_R                       0x12
-#define CTRL_S                       0x13
-#define CTRL_T                       0x14
-#define CTRL_U                       0x15
-#define CTRL_V                       0x16
-#define CTRL_W                       0x17
-#define CTRL_X                       0x18
-#define CTRL_Y                       0x19
-#define CTRL_Z                       0x1A
-#define ESC                          0x1B
-#define CTRL_SLASH                   0x1C
-#define CTRL_LB                      0x1B
-#define CTRL_RB                      0x1D
-#define CTRL_CAPPA                   0x1E
-#define CTRL_UNDSCR                  0x1F
-#define CTRL_AT                      0x00
-#define FUNC1                        0x80
-#define FUNC2                        0x81
-#define FUNC3                        0x82
-#define FUNC4                        0x83
-#define FUNC5                        0x84
-#define FUNC6                        0x85
-#define FUNC7                        0x86
-#define FUNC8                        0x87
-#define FUNC9                        0x88
-#define FUNC10                       0x89
-#define PAGEUP                       0xE0
-#define PAGEDOWN                     0xE1
-#define CURHOMEKEY                   0xE2
-#define ALPHAGRAPHKEY                0xE3
-#define HOTKEY_ORIGINAL              0xE8
-#define HOTKEY_RFS80                 0xE9
-#define HOTKEY_RFS40                 0xEA
-#define HOTKEY_TZFS                  0xEB
-#define HOTKEY_LINUX                 0xEC
-#define NOKEY                        0xF0
-#define CURSRIGHT                    0xF1
-#define CURSLEFT                     0xF2
-#define CURSUP                       0xF3
-#define CURSDOWN                     0xF4
-#define DBLZERO                      0xF5
-#define INSERT                       0xF6
-#define CLRKEY                       0xF7
-#define HOMEKEY                      0xF8
-#define ENDKEY                       0xF9
-#define ANSITGLKEY                   0xFA
-#define BREAKKEY                     0xFB
-#define GRAPHKEY                     0xFC
-#define ALPHAKEY                     0xFD
-#define DEBUGKEY                     0xFE                                // Special key to enable debug features such as the ANSI emulation.
+#define SCROLL                                0x01                                // Set scroll direction UP.
+#define BELL                                  0x07
+#define ENQ                                   0x05
+#define SPACE                                 0x20
+#define TAB                                   0x09                                // TAB ACROSS (8 SPACES FOR SD-BOARD)
+#define CR                                    0x0D
+#define LF                                    0x0A
+#define FF                                    0x0C
+#define DELETE                                0x7F
+#define BACKS                                 0x08
+#define SOH                                   0x01                                // For XModem etc.
+#define EOT                                   0x04
+#define ACK                                   0x06
+#define NAK                                   0x15
+#define NUL                                   0x00
+//#define NULL                                  0x00
+#define CTRL_A                                0x01
+#define CTRL_B                                0x02
+#define CTRL_C                                0x03
+#define CTRL_D                                0x04
+#define CTRL_E                                0x05
+#define CTRL_F                                0x06
+#define CTRL_G                                0x07
+#define CTRL_H                                0x08
+#define CTRL_I                                0x09
+#define CTRL_J                                0x0A
+#define CTRL_K                                0x0B
+#define CTRL_L                                0x0C
+#define CTRL_M                                0x0D
+#define CTRL_N                                0x0E
+#define CTRL_O                                0x0F
+#define CTRL_P                                0x10
+#define CTRL_Q                                0x11
+#define CTRL_R                                0x12
+#define CTRL_S                                0x13
+#define CTRL_T                                0x14
+#define CTRL_U                                0x15
+#define CTRL_V                                0x16
+#define CTRL_W                                0x17
+#define CTRL_X                                0x18
+#define CTRL_Y                                0x19
+#define CTRL_Z                                0x1A
+#define ESC                                   0x1B
+#define CTRL_SLASH                            0x1C
+#define CTRL_LB                               0x1B
+#define CTRL_RB                               0x1D
+#define CTRL_CAPPA                            0x1E
+#define CTRL_UNDSCR                           0x1F
+#define CTRL_AT                               0x00
+#define FUNC1                                 0x80
+#define FUNC2                                 0x81
+#define FUNC3                                 0x82
+#define FUNC4                                 0x83
+#define FUNC5                                 0x84
+#define FUNC6                                 0x85
+#define FUNC7                                 0x86
+#define FUNC8                                 0x87
+#define FUNC9                                 0x88
+#define FUNC10                                0x89
+#define PAGEUP                                0xE0
+#define PAGEDOWN                              0xE1
+#define CURHOMEKEY                            0xE2
+#define ALPHAGRAPHKEY                         0xE3
+#define HOTKEY_ORIGINAL                       0xE8
+#define HOTKEY_RFS80                          0xE9
+#define HOTKEY_RFS40                          0xEA
+#define HOTKEY_TZFS                           0xEB
+#define HOTKEY_LINUX                          0xEC
+#define NOKEY                                 0xF0
+#define CURSRIGHT                             0xF1
+#define CURSLEFT                              0xF2
+#define CURSUP                                0xF3
+#define CURSDOWN                              0xF4
+#define DBLZERO                               0xF5
+#define INSERT                                0xF6
+#define CLRKEY                                0xF7
+#define HOMEKEY                               0xF8
+#define ENDKEY                                0xF9
+#define ANSITGLKEY                            0xFA
+#define BREAKKEY                              0xFB
+#define GRAPHKEY                              0xFC
+#define ALPHAKEY                              0xFD
+#define DEBUGKEY                              0xFE                                // Special key to enable debug features such as the ANSI emulation.
 
 // Macros.
 //
@@ -285,7 +313,7 @@ typedef struct {
     uint8_t                          dispCode;
 } t_dispCodeMap;
 
-// Mapping table from keyboard scan codes to Sharp MZ-700 keys.
+// Mapping table from keyboard scan codes to Sharp MZ keys.
 //
 typedef struct {
     uint8_t                          scanCode[80];

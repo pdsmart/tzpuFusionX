@@ -127,10 +127,10 @@ set_location_assignment PIN_21 -to VSOM_RSV[1]
 # SOM Control Signals
 # ===================
 set_location_assignment PIN_28 -to VSOM_READY
-set_location_assignment PIN_18 -to VSOM_LTSTATE
+set_location_assignment PIN_19 -to VSOM_LTSTATE
 set_location_assignment PIN_27 -to VSOM_BUSRQ
 set_location_assignment PIN_26 -to VSOM_BUSACK
-set_location_assignment PIN_19 -to VSOM_INT
+set_location_assignment PIN_18 -to VSOM_INT
 set_location_assignment PIN_22 -to VSOM_NMI
 set_location_assignment PIN_25 -to VSOM_WAIT
 set_location_assignment PIN_23 -to VSOM_RESET

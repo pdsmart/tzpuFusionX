@@ -431,7 +431,7 @@ uint8_t z80io_SPI_Send32(uint32_t txData, uint32_t *rxData)
 //--------------------------------------------------------
 // Test Methods.
 //--------------------------------------------------------
-#ifdef INCLUDE_TEST_METHODS
+#if defined(INCLUDE_TEST_METHODS) && INCLUDE_TEST_METHODS == 1
 #include "z80io_test.c"
 #else
 uint8_t z80io_Z80_TestMemory(void)

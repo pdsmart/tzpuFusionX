@@ -101,9 +101,15 @@ static t_Z80Ctrl             *Z80Ctrl = NULL;
 static uint8_t               *Z80RAM = NULL;
 static uint8_t               *Z80ROM = NULL;
 
+// Millisecond delay routine.
+void delay(int ms_delay)
+{
+    usleep(1000 * ms_delay);
+}
+
 // Method to reset the Z80 CPU.
 //
-void reqResetZ80(uint8_t memoryMode)
+void reqResetZ80(void)
 {
     // Locals.
     //
@@ -116,7 +122,7 @@ void reqResetZ80(uint8_t memoryMode)
 
 // Method to start the Z80 CPU.
 //
-void startZ80(uint8_t memoryMode)
+void startZ80(void)
 {
     // Locals.
     //
@@ -129,7 +135,7 @@ void startZ80(uint8_t memoryMode)
 
 // Method to stop the Z80 CPU.
 //
-void stopZ80(uint8_t memoryMode)
+void stopZ80(void)
 {
     // Locals.
     //
@@ -323,24 +329,42 @@ int main(int argc, char *argv[])
                     ioctl(arbCtrl.fdTTY, IOCTL_CMD_SUSPEND_IO, &result);
                    
                     // Stop the Z80.
-                    ioctlCmd.cmd = IOCTL_CMD_Z80_STOP;
-                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);
+                    stopZ80();
 
                     // Remove drivers. Remove all because an external event could have changed last configured driver.
                     //
                     ioctlCmd.cmd = IOCTL_CMD_DEL_DEVICE;
+                  #if(TARGET_HOST_MZ80A == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ80A;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #elif(TARGET_HOST_MZ2000 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ2000;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #elif(TARGET_HOST_MZ700 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ700;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #endif
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_RFS80;
                     ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_RFS40;
                     ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_TZPU;
                     ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                 
+                    // Add in the required driver.
+                    ioctlCmd.cmd = IOCTL_CMD_ADD_DEVICE;
+                  #if(TARGET_HOST_MZ80A == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ80A;
+                  #elif(TARGET_HOST_MZ2000 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ2000;
+                  #elif(TARGET_HOST_MZ700 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ700;
+                  #endif
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
 
                     // Reset and start the Z80.
-                    ioctlCmd.cmd = IOCTL_CMD_Z80_RESET;
-                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);
-                    ioctlCmd.cmd = IOCTL_CMD_Z80_START;
-                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);
+                    delay(500);
+                    reqResetZ80();
                     break;
 
                 case HOTKEY_RFS80:
@@ -349,12 +373,21 @@ int main(int argc, char *argv[])
                     ioctl(arbCtrl.fdTTY, IOCTL_CMD_SUSPEND_IO, &result);
                   
                     // Stop the Z80.
-                    ioctlCmd.cmd = IOCTL_CMD_Z80_STOP;
-                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);
+                    stopZ80();
 
                     // Remove drivers. Remove all because an external event could have changed last configured driver.
                     //
                     ioctlCmd.cmd = IOCTL_CMD_DEL_DEVICE;
+                  #if(TARGET_HOST_MZ80A == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ80A;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #elif(TARGET_HOST_MZ2000 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ2000;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #elif(TARGET_HOST_MZ700 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ700;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #endif
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_RFS80;
                     ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_RFS40;
@@ -368,10 +401,8 @@ int main(int argc, char *argv[])
                     ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
 
                     // Reset and start the Z80.
-                    ioctlCmd.cmd = IOCTL_CMD_Z80_RESET;
-                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);
-                    ioctlCmd.cmd = IOCTL_CMD_Z80_START;
-                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);
+                    delay(500);
+                    reqResetZ80();
                     break;
 
                 case HOTKEY_TZFS:
@@ -379,12 +410,21 @@ int main(int argc, char *argv[])
                     ioctl(arbCtrl.fdTTY, IOCTL_CMD_SUSPEND_IO, &result);
 
                     // Stop the Z80.
-                    ioctlCmd.cmd = IOCTL_CMD_Z80_STOP;
-                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);
+                    stopZ80();
 
                     // Remove drivers. Remove all because an external event could have changed last configured driver.
                     //
                     ioctlCmd.cmd = IOCTL_CMD_DEL_DEVICE;
+                  #if(TARGET_HOST_MZ80A == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ80A;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #elif(TARGET_HOST_MZ2000 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ2000;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #elif(TARGET_HOST_MZ700 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ700;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #endif
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_RFS80;
                     ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_RFS40;
@@ -396,12 +436,6 @@ int main(int argc, char *argv[])
                     ioctlCmd.cmd = IOCTL_CMD_ADD_DEVICE;
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_TZPU;
                     ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
-                   
-                    // Reset and start the Z80.
-                    ioctlCmd.cmd = IOCTL_CMD_Z80_RESET;
-                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);
-                 //   ioctlCmd.cmd = IOCTL_CMD_Z80_START;
-                 //   ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);
                     break;
 
                 case HOTKEY_LINUX:
@@ -412,6 +446,16 @@ int main(int argc, char *argv[])
                     // Remove drivers. Remove all because an external event could have changed last configured driver.
                     //
                     ioctlCmd.cmd = IOCTL_CMD_DEL_DEVICE;
+                  #if(TARGET_HOST_MZ80A == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ80A;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #elif(TARGET_HOST_MZ2000 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ2000;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #elif(TARGET_HOST_MZ700 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ700;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #endif
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_RFS80;
                     ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_RFS40;
