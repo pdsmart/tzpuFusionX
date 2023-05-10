@@ -3,8 +3,7 @@ Development Cycle
 
 z80drv now supports several machines, ie. MZ-80A, MZ-700, MZ-2000, PCW-8256 with more in the pipeline. 
 
-Please edit Makefile and set the model prior to changing the Model source. In theory this file will be deleted once the source is
-merged. Alternatively, isse make with the host name, ie. make MZ80A.
+Please edit Makefile and set the model prior to changing the Model source. Alternatively, isse make with the host name, ie. make MZ80A.
 
 The virtual device concept (ie. an MZ-700 with a tranZPUter SW card) has been incorporated as virtual hardware modules, ie. z80vhw_rfs.c
 which adds the RFS card to the MZ-700/MZ-80A. These virtual devices are built and added to the target kernel module dependent on supported
