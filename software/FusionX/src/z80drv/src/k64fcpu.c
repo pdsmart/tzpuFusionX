@@ -19,6 +19,7 @@
 // History:         Feb 2023 v1.0  - Source copied from zSoft and modified to run as a daemon, stripping
 //                                   out all low level control methods.
 //                           v1.01 - Updates to make compatible with the TZFS changes.
+//                  Apr      v1.02 - Updates to add MZ-2000 servicing.
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -64,7 +65,7 @@ extern "C" {
 #include "z80driver.h"
 #include "tzpu.h"
 
-#define VERSION                      "1.01"
+#define VERSION                      "1.02"
 #define AUTHOR                       "P.D.Smart"
 #define COPYRIGHT                    "(c) 2018-23"
   
@@ -2402,6 +2403,7 @@ void processServiceRequest(void)
     // Update the service control record address according to memory mode.
     //
     z80Control.svcControlAddr = getServiceAddr();
+printf("Service Addr:%04x\n", z80Control.svcControlAddr);
 
     // Get the command and associated parameters.
     copyFromZ80((uint8_t *)&svcControl, z80Control.svcControlAddr, TZSVC_CMD_SIZE, TRANZPUTER);
@@ -2411,7 +2413,7 @@ void processServiceRequest(void)
     {
         copyFromZ80((uint8_t *)&svcControl.sector, z80Control.svcControlAddr+TZSVC_CMD_SIZE, TZSVC_SECTOR_SIZE, TRANZPUTER);
     }
-
+printf("Received command:%02x\n", svcControl.cmd);
     //memoryDump((uint32_t)&svcControl, sizeof(svcControl), 5, 8, 0, 0);
     // Check this is a valid request.
     if(svcControl.result == TZSVC_STATUS_REQUEST)
@@ -2560,7 +2562,7 @@ void processServiceRequest(void)
                 break;
                
             // Load the MZ-2000 IPL ROM into memory for compatibility switch.
-            case TZSVC_CMD_LOAD2000IPL:
+            case TZSVC_CMD_LOAD2KIPL:
                 loadBIOS((const char *)OS_BASE_DIR TZSVC_DEFAULT_TZFS_DIR "/" MZ_ROM_MZ2000_IPL, MZ_MROM_ADDR);
               
                 // Set the frequency of the CPU if we are emulating the hardware.
@@ -2569,6 +2571,21 @@ void processServiceRequest(void)
                     // Change frequency to match Sharp MZ-80B
                     setZ80CPUFrequency(MZ_2000_CPU_FREQ, 1);
                 }
+                break;
+               
+            // Load the MZ-2000 Basic 1Z001 into memory.
+            case TZSVC_CMD_LOAD2KBASIC1:
+                loadBIOS((const char *)OS_BASE_DIR TZSVC_DEFAULT_ROM_DIR "/" MZ_ROM_MZ2000_1Z001, MZ_MROM_ADDR);
+                break;
+              
+            // Load the MZ-2000 Basic 1Z002 into memory.
+            case TZSVC_CMD_LOAD2KBASIC2:
+                loadBIOS((const char *)OS_BASE_DIR TZSVC_DEFAULT_ROM_DIR "/" MZ_ROM_MZ2000_1Z002, MZ_MROM_ADDR);
+                break;
+
+            // Load the MZ-2000 1Z001M Monitor ROM into memory.
+            case TZSVC_CMD_LOAD2KMON:
+                loadBIOS((const char *)OS_BASE_DIR TZSVC_DEFAULT_ROM_DIR "/" MZ_ROM_MZ2000_1Z001M, MZ_MROM_ADDR);
                 break;
 
             // Load TZFS upon request. This service is for the MZ-80B/MZ-2000 which dont have a monitor BIOS installed and TZFS isnt loaded upon reset but rather through user request.
@@ -2708,6 +2725,8 @@ void processServiceRequest(void)
             case TZSVC_CMD_SD_WRITESECTOR:
                 printf("Error: Unsupported Raw SD Write feature.\n");
                 break;
+
+            // Load
 
             // Command to exit from TZFS and return machine to original mode.
             case TZSVC_CMD_EXIT:

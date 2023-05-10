@@ -82,6 +82,7 @@ extern "C" {
 //    { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, // 0XEF
 //    { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }, { 0x20 }  // 0XFF
 //};
+#if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
 static t_dispCodeMap dispCodeMap[] = {
     { 0xCC }, //  NUL '\0' (null character)     
     { 0xE0 }, //  SOH (start of heading)     
@@ -212,6 +213,7 @@ static t_dispCodeMap dispCodeMap[] = {
     { 0xA5 }, //  ~
     { 0xC0 }  //  DEL
 };
+#endif
 
 #if (TARGET_HOST_MZ700 == 1)
 static t_scanCodeMap scanCodeMap[] = {
@@ -1155,468 +1157,558 @@ static t_scanCodeMap scanCodeMap[] = {
 static t_scanCodeMap scanCodeMap[] = {
     // MZ_2000 NO SHIFT
     {{
-      //  S0   00 - 07
-        NOKEY    ,                                           //  BREAK/CTRL
-        NOKEY    ,                                           // 
-        NOKEY    ,                                           //  
-        NOKEY    ,                                           //  
-        NOKEY    ,                                           //  
-        NOKEY    ,                                           //  
-        GRAPHKEY ,                                           //  GRAPH
-        NOKEY    ,                                           //  SHIFT
+        //  S0   00 - 07
+        FUNC8    ,                                           //  Function Key 8
+        FUNC7    ,                                           //  Function Key 7
+        FUNC6    ,                                           //  Function Key 6
+        FUNC5    ,                                           //  Function Key 5
+        FUNC4    ,                                           //  Function Key 4
+        FUNC3    ,                                           //  Function Key 3
+        FUNC2    ,                                           //  Function Key 2
+        FUNC1    ,                                           //  Function Key 1
         // S1   08 - 0F
-        '2'      ,                                           //  2
-        '1'      ,                                           //  1
-        'w'      ,                                           //  w
-        'q'      ,                                           //  q
-        'a'      ,                                           //  a
-        BACKS    ,                                           //  DELETE
-        NOKEY    ,                                           //  NULL
-        'z'      ,                                           //  z
+        '-'      ,                                           //  KP -
+        '+'      ,                                           //  KP +
+        '.'      ,                                           //  KP .
+        DBLZERO  ,                                           //  KP Double Zero
+        '9'      ,                                           //  KP 9
+        '8'      ,                                           //  KP 8
+        FUNC10   ,                                           //  Function Key 10
+        FUNC9    ,                                           //  Function Key 9
         // S2   10 - 17
-        '4'      ,                                           //  4
-        '3'      ,                                           //  3
-        'r'      ,                                           //  r
-        'e'      ,                                           //  e
-        'd'      ,                                           //  d
-        's'      ,                                           //  s
-        'x'      ,                                           //  x
-        'c'      ,                                           //  c
+        '7'      ,                                           //  KP 7
+        '6'      ,                                           //  KP 6
+        '5'      ,                                           //  KP 5
+        '4'      ,                                           //  KP 4
+        '3'      ,                                           //  KP 3
+        '2'      ,                                           //  KP 2
+        '1'      ,                                           //  KP 1
+        '0'      ,                                           //  KP 0
         // S3   18 - 1F
-        '6'      ,                                           //  6
-        '5'      ,                                           //  5
-        'y'      ,                                           //  y
-        't'      ,                                           //  t
+        BREAKKEY ,                                           //  Break Key
+        CURSRIGHT,                                           //  Cursor Right
+        CURSLEFT ,                                           //  Cursor Left
+        CURSDOWN ,                                           //  Cursor Down
+        CURSUP   ,                                           //  Cursor Up
+        CR       ,                                           //  Carriage Return
+        SPACE    ,                                           //  SPACE
+        TAB      ,                                           //  TAB
+        // S4   20 - 27
         'g'      ,                                           //  g
         'f'      ,                                           //  f
-        'v'      ,                                           //  v
+        'e'      ,                                           //  e
+        'd'      ,                                           //  d
+        'c'      ,                                           //  c
         'b'      ,                                           //  b
-        // S4   20 - 27
-        '8'      ,                                           //  8
-        '7'      ,                                           //  7
-        'i'      ,                                           //  i
-        'u'      ,                                           //  u
-        'j'      ,                                           //  j
-        'h'      ,                                           //  h
-        'n'      ,                                           //  n
-        ' '      ,                                           //  SPACE
+        'a'      ,                                           //  a
+        '/'      ,                                           //  /
         // S5   28 - 2F
-        '0'      ,                                           //  0
-        '9'      ,                                           //  9
-        'p'      ,                                           //  p
         'o'      ,                                           //  o
+        'n'      ,                                           //  n
+        'm'      ,                                           //  m
         'l'      ,                                           //  l
         'k'      ,                                           //  k
-        ','      ,                                           //  ,
-        'm'      ,                                           //  m
+        'j'      ,                                           //  j
+        'i'      ,                                           //  i
+        'h'      ,                                           //  h
         // S6   30 - 37
-        '^'      ,                                           //  ^
-        '-'      ,                                           //  -
-        '['      ,                                           //  [
-        '@'      ,                                           //  @
-        ':'      ,                                           //  :
-        ';'      ,                                           //  ;
-        '/'      ,                                           //  /
-        '.'      ,                                           //  .
+        'w'      ,                                           //  w
+        'v'      ,                                           //  v
+        'u'      ,                                           //  u
+        't'      ,                                           //  t
+        's'      ,                                           //  s
+        'r'      ,                                           //  r
+        'q'      ,                                           //  q
+        'p'      ,                                           //  p
         // S7   38 - 3F
-        HOMEKEY  ,                                           //  HOME.
+        ','      ,                                           //  ,
+        '.'      ,                                           //  .
+        '?'      ,                                           //  Question
         '\\'     ,                                           //  Backslash
-        CURSRIGHT,                                           //  CURSOR RIGHT
-        CURSUP   ,                                           //  CURSOR UP
-        CR       ,                                           //  CR
-        ']'      ,                                           //  ]
+        '^'      ,                                           //  ^
+        'z'      ,                                           //  z
+        'y'      ,                                           //  y
+        'x'      ,                                           //  x
+        // S8   40 - 47
+        '7'      ,                                           // 7
+        '6'      ,                                           // 6
+        '5'      ,                                           // 5
+        '4'      ,                                           // 4
+        '3'      ,                                           // 3
+        '2'      ,                                           // 2
+        '1'      ,                                           // 1
+        '0'      ,                                           // 0
+        // S9   48 - 4F
         NOKEY    ,                                           //
-        '?'      ,                                           //  ?
-        // S8   40 - 47 - Keypad keys.
-        '8'      ,                                           // Keypad 8
-        '7'      ,                                           //        7
-        '5'      ,                                           //        5
-        '4'      ,                                           //        4
-        '2'      ,                                           //        2
-        '1'      ,                                           //        1
-        DBLZERO  ,                                           //       00 
-        '0'      ,                                           //        0
-        // S9   48 - 4F - Keypad keys.
-        '+'      ,                                           //        +
-        '0'      ,                                           //        9
-        '-'      ,                                           //        -
-        '6'      ,                                           //        6
+        '['      ,                                           // [
+        '@'      ,                                           // @
+        '-'      ,                                           // -
+        ';'      ,                                           // ;
+        ':'      ,                                           // :
+        '9'      ,                                           // 9
+        '8'      ,                                           // 8 
+        // S10   50 - 57
         NOKEY    ,                                           //
-        '3'      ,                                           //        3
-        NOKEY    ,
-        '.'                                                  //        .
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        DELETE   ,                                           // DELETE
+        HOMEKEY  ,                                           // HOME
+        NOKEY    ,                                           // 
+        ']'      ,                                           // ]
+        // S11   58 - 5F
+        NOKEY    ,                                           //
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // RVS
+        NOKEY    ,                                           // SHIFT
+        SHIFTLOCKKEY,                                        // SHIFT LOCK
+        GRAPHKEY                                             // GRAPH
     }},
     // MZ_2000 CAPS LOCK
     {{
-      //  S0   00 - 07
-        NOKEY    ,                                           //  BREAK/CTRL
-        NOKEY    ,                                           // 
-        NOKEY    ,                                           // 
-        NOKEY    ,                                           // 
-        NOKEY    ,                                           // 
-        NOKEY    ,                                           // 
-        ALPHAKEY ,                                           //  GRAPH
-        NOKEY    ,                                           //  SHIFT
+        //  S0   00 - 07
+        FUNC7    ,                                           //  Function Key 7
+        FUNC6    ,                                           //  Function Key 6
+        FUNC5    ,                                           //  Function Key 5
+        FUNC4    ,                                           //  Function Key 4
+        FUNC3    ,                                           //  Function Key 3
+        FUNC2    ,                                           //  Function Key 2
+        FUNC1    ,                                           //  Function Key 1
+        FUNC8    ,                                           //  Function Key 8
         // S1   08 - 0F
-        '2'      ,                                           //  2
-        '1'      ,                                           //  1
-        'W'      ,                                           //  W
-        'Q'      ,                                           //  Q
-        'A'      ,                                           //  A
-        BACKS    ,                                           //  DELETE
-        NOKEY    ,                                           //  NULL
-        'Z'      ,                                           //  Z
+        '-'      ,                                           //  KP -
+        '+'      ,                                           //  KP +
+        '.'      ,                                           //  KP .
+        DBLZERO  ,                                           //  KP Double Zero
+        '9'      ,                                           //  KP 9
+        '8'      ,                                           //  KP 8
+        FUNC10   ,                                           //  Function Key 10
+        FUNC9    ,                                           //  Function Key 9
         // S2   10 - 17
-        '4'      ,                                           //  4
-        '3'      ,                                           //  3
-        'R'      ,                                           //  R
-        'E'      ,                                           //  E
-        'D'      ,                                           //  D
-        'S'      ,                                           //  S
-        'X'      ,                                           //  X
-        'C'      ,                                           //  C
+        '7'      ,                                           //  KP 7
+        '6'      ,                                           //  KP 6
+        '5'      ,                                           //  KP 5
+        '4'      ,                                           //  KP 4
+        '3'      ,                                           //  KP 3
+        '2'      ,                                           //  KP 2
+        '1'      ,                                           //  KP 1
+        '0'      ,                                           //  KP 0
         // S3   18 - 1F
-        '6'      ,                                           //  6
-        '5'      ,                                           //  5
-        'Y'      ,                                           //  Y
-        'T'      ,                                           //  T
+        BREAKKEY ,                                           //  Break Key
+        CURSRIGHT,                                           //  Cursor Right
+        CURSLEFT ,                                           //  Cursor Left
+        CURSDOWN ,                                           //  Cursor Down
+        CURSUP   ,                                           //  Cursor Up
+        CR       ,                                           //  Carriage Return
+        SPACE    ,                                           //  SPACE
+        TAB      ,                                           //  TAB
+        // S4   20 - 27
         'G'      ,                                           //  G
         'F'      ,                                           //  F
-        'V'      ,                                           //  V
+        'E'      ,                                           //  E
+        'D'      ,                                           //  D
+        'C'      ,                                           //  C
         'B'      ,                                           //  B
-        // S4   20 - 27
-        '8'      ,                                           //  8
-        '7'      ,                                           //  7
-        'I'      ,                                           //  I
-        'U'      ,                                           //  U
-        'J'      ,                                           //  J
-        'H'      ,                                           //  H
-        'N'      ,                                           //  N
-        ' '      ,                                           //  SPACE
+        'A'      ,                                           //  A
+        '/'      ,                                           //  /
         // S5   28 - 2F
-        '0'      ,                                           //  0
-        '9'      ,                                           //  9
-        'P'      ,                                           //  P
         'O'      ,                                           //  O
+        'N'      ,                                           //  N
+        'M'      ,                                           //  M
         'L'      ,                                           //  L
         'K'      ,                                           //  K
-        ','      ,                                           //  ,
-        'M'      ,                                           //  M
+        'J'      ,                                           //  J
+        'I'      ,                                           //  I
+        'H'      ,                                           //  H
         // S6   30 - 37
-        '^'      ,                                           //  ^
-        '-'      ,                                           //  -
-        '['      ,                                           //  [
-        '@'      ,                                           //  @
-        ':'      ,                                           //  :
-        ';'      ,                                           //  ;
-        '/'      ,                                           //  /
-        '.'      ,                                           //  .
+        'W'      ,                                           //  W
+        'V'      ,                                           //  V
+        'U'      ,                                           //  U
+        'T'      ,                                           //  T
+        'S'      ,                                           //  S
+        'R'      ,                                           //  R
+        'Q'      ,                                           //  Q
+        'P'      ,                                           //  P
         // S7   38 - 3F
-        HOMEKEY  ,                                           //  HOME.
+        ','      ,                                           //  ,
+        '.'      ,                                           //  .
+        '?'      ,                                           //  Question
         '\\'     ,                                           //  Backslash
-        CURSRIGHT,                                           //  CURSOR RIGHT
-        CURSUP   ,                                           //  CURSOR UP
-        CR       ,                                           //  CR
-        ']'      ,                                           //  ]
+        '^'      ,                                           //  ^
+        'Z'      ,                                           //  Z
+        'Y'      ,                                           //  Y
+        'X'      ,                                           //  X
+        // S8   40 - 47
+        '7'      ,                                           // 7
+        '6'      ,                                           // 6
+        '5'      ,                                           // 5
+        '4'      ,                                           // 4
+        '3'      ,                                           // 3
+        '2'      ,                                           // 2
+        '1'      ,                                           // 1
+        '0'      ,                                           // 0
+        // S9   48 - 4F
         NOKEY    ,                                           //
-        '?'      ,                                           //  ?
-        // S8   40 - 47 - Keypad keys.
-        '8'      ,                                           // Keypad 8
-        '7'      ,                                           //        7
-        '5'      ,                                           //        5
-        '4'      ,                                           //        4
-        '2'      ,                                           //        2
-        '1'      ,                                           //        1
-        DBLZERO  ,                                           //       00 
-        '0'      ,                                           //        0
-        // S9   48 - 4F - Keypad keys.
-        '+'      ,                                           //        +
-        '0'      ,                                           //        9
-        '-'      ,                                           //        -
-        '6'      ,                                           //        6
+        '['      ,                                           // [
+        '@'      ,                                           // @
+        '-'      ,                                           // -
+        ';'      ,                                           // ;
+        ':'      ,                                           // :
+        '9'      ,                                           // 9
+        '8'      ,                                           // 8 
+        // S10   50 - 57
         NOKEY    ,                                           //
-        '3'      ,                                           //        3
-        NOKEY    ,
-        '.'                                                  //        .
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        DELETE   ,                                           // DELETE
+        HOMEKEY  ,                                           // HOME
+        NOKEY    ,                                           // 
+        ']'      ,                                           // [
+        // S11   58 - 5F
+        NOKEY    ,                                           //
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // RVS
+        NOKEY    ,                                           // SHIFT
+        SHIFTLOCKKEY,                                        // SHIFT LOCK
+        GRAPHKEY                                             // GRAPH
     }},
     // MZ_2000 SHIFT LOCK.
     {{
-      //  S0   00 - 07
-        NOKEY    ,                                           //  BREAK/CTRL
-        NOKEY    ,                                           // 
-        NOKEY    ,                                           // 
-        NOKEY    ,                                           // 
-        NOKEY    ,                                           // 
-        NOKEY    ,                                           // 
-        ALPHAKEY ,                                           //  GRAPH
-        NOKEY    ,                                           //  SHIFT
+        //  S0   00 - 07
+        FUNC8    ,                                           //  Function Key 8
+        FUNC7    ,                                           //  Function Key 7
+        FUNC6    ,                                           //  Function Key 6
+        FUNC5    ,                                           //  Function Key 5
+        FUNC4    ,                                           //  Function Key 4
+        FUNC3    ,                                           //  Function Key 3
+        FUNC2    ,                                           //  Function Key 2
+        FUNC1    ,                                           //  Function Key 1
         // S1   08 - 0F
-        '"'      ,                                           //  "
-        '!'      ,                                           //  !
-        'W'      ,                                           //  W
-        'Q'      ,                                           //  Q
-        'A'      ,                                           //  A
-        INSERT   ,                                           //  INSERT
-        NOKEY    ,                                           //  NULL
-        'Z'      ,                                           //  Z
+        '-'      ,                                           //  KP -
+        '+'      ,                                           //  KP +
+        '.'      ,                                           //  KP .
+        DBLZERO  ,                                           //  KP Double Zero
+        '9'      ,                                           //  KP 9
+        '8'      ,                                           //  KP 8
+        FUNC10   ,                                           //  Function Key 10
+        FUNC9    ,                                           //  Function Key 9
         // S2   10 - 17
-        '$'      ,                                           //  $
-        '#'      ,                                           //  #
-        'R'      ,                                           //  R
-        'E'      ,                                           //  E
-        'D'      ,                                           //  D
-        'S'      ,                                           //  S
-        'X'      ,                                           //  X
-        'C'      ,                                           //  C
+        '7'      ,                                           //  KP 7
+        '6'      ,                                           //  KP 6
+        '5'      ,                                           //  KP 5
+        '4'      ,                                           //  KP 4
+        '3'      ,                                           //  KP 3
+        '2'      ,                                           //  KP 2
+        '1'      ,                                           //  KP 1
+        '0'      ,                                           //  KP 0
         // S3   18 - 1F
-        '&'      ,                                           //  &
-        '%'      ,                                           //  %
-        'Y'      ,                                           //  Y
-        'T'      ,                                           //  T
+        BREAKKEY ,                                           //  Break Key
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        PAGEDOWN ,                                           //  Page Down
+        PAGEUP   ,                                           //  Page Up
+        CR       ,                                           //  Carriage Return
+        SPACE    ,                                           //  SPACE
+        TAB      ,                                           //  TAB
+        // S4   20 - 27
         'G'      ,                                           //  G
         'F'      ,                                           //  F
-        'V'      ,                                           //  V
+        'E'      ,                                           //  E
+        'D'      ,                                           //  D
+        'C'      ,                                           //  C
         'B'      ,                                           //  B
-        // S4   20 - 27
-        '('      ,                                           //  (
-        '\''     ,                                           //  '
-        'I'      ,                                           //  I
-        'U'      ,                                           //  U
-        'J'      ,                                           //  J
-        'H'      ,                                           //  H
-        'N'      ,                                           //  N
-        ' '      ,                                           //  SPACE
+        'A'      ,                                           //  A
+        NOKEY    ,                                           //  Arrow Right
         // S5   28 - 2F
-        '_'      ,                                           //  _
-        ')'      ,                                           //  )
-        'P'      ,                                           //  P
         'O'      ,                                           //  O
+        'N'      ,                                           //  N
+        'M'      ,                                           //  M
         'L'      ,                                           //  L
         'K'      ,                                           //  K
-        '<'      ,                                           //  <
-        'M'      ,                                           //  M
+        'J'      ,                                           //  J
+        'I'      ,                                           //  I
+        'H'      ,                                           //  H
         // S6   30 - 37
-        '~'      ,                                           //  ~
-        '='      ,                                           //  =
-        '{'      ,                                           //  {
-        '`'      ,                                           //  `
-        '*'      ,                                           //  *
-        '+'      ,                                           //  +
-        NOKEY    ,                                           //  
-        '>'      ,                                           //  >
+        'W'      ,                                           //  W
+        'V'      ,                                           //  V
+        'U'      ,                                           //  U
+        'T'      ,                                           //  T
+        'S'      ,                                           //  S
+        'R'      ,                                           //  R
+        'Q'      ,                                           //  Q
+        'P'      ,                                           //  P
         // S7   38 - 3F
-        CLRKEY   ,                                           //  CLR.
+        '<'      ,                                           //  <
+        '>'      ,                                           //  >
+        NOKEY    ,                                           //  Arrow Up
         '|'      ,                                           //  |
-        CURSLEFT ,                                           //  CURSOR LEFT
-        CURSDOWN ,                                           //  CURSOR DOWN
-        CR       ,                                           //  CR
-        '}'      ,                                           //  }
+        '~'      ,                                           //  ~
+        'Z'      ,                                           //  Z
+        'Y'      ,                                           //  Y
+        'X'      ,                                           //  X
+        // S8   40 - 47
+        '\''     ,                                           // '
+        '&'      ,                                           // &
+        '%'      ,                                           // %
+        '$'      ,                                           // $
+        '#'      ,                                           // #
+        '"'      ,                                           // Double Quote
+        '!'      ,                                           // !
+        '-'      ,                                           // -
+        // S9   48 - 4F
+        NOKEY    ,                                           //
+        '{'      ,                                           // {
+        '\\'     ,                                           // Back slash
+        '='      ,                                           // =
+        '+'      ,                                           // +
+        '*'      ,                                           // *
+        ')'      ,                                           // )
+        '('      ,                                           // ( 
+        // S10   50 - 57
         NOKEY    ,                                           //
         NOKEY    ,                                           // 
-        // S8   40 - 47 - Keypad keys.
-        '8'      ,                                           // Keypad 8
-        '7'      ,                                           //        7
-        '5'      ,                                           //        5
-        '4'      ,                                           //        4
-        '2'      ,                                           //        2
-        '1'      ,                                           //        1
-        DBLZERO  ,                                           //       00 
-        '0'      ,                                           //        0
-        // S9   48 - 4F - Keypad keys.
-        '+'      ,                                           //        +
-        '0'      ,                                           //        9
-        '-'      ,                                           //        -
-        '6'      ,                                           //        6
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        INSERT   ,                                           // INSERT
+        CLRKEY   ,                                           // CLR
+        NOKEY    ,                                           // 
+        '}'      ,                                           // }
+        // S11   58 - 5F
         NOKEY    ,                                           //
-        '3'      ,                                           //        3
-        NOKEY    ,
-        '.'                                                  //        .
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // RVS
+        NOKEY    ,                                           // SHIFT
+        SHIFTLOCKKEY,                                        // SHIFT LOCK
+        ALPHAKEY                                             // ALPHA
     }},
     // MZ_2000 CONTROL CODE
     {{
-      //  S0   00 - 07
-        NOKEY    ,                                           //  BREAK/CTRL
-        NOKEY    ,                                           // 
-        NOKEY    ,                                           // 
-        NOKEY    ,                                           // 
-        NOKEY    ,                                           // 
-        NOKEY    ,                                           // 
-        ALPHAGRAPHKEY,                                       //  GRAPH
-        NOKEY    ,                                           //  SHIFT
+        //  S0   00 - 07
+        FUNC8    ,                                           //  Function Key 8
+        FUNC7    ,                                           //  Function Key 7
+        FUNC6    ,                                           //  Function Key 6
+        FUNC5    ,                                           //  Function Key 5
+        HOTKEY_LINUX,                                        //  Function Key 4 - Hotkey to invoke Linux mode.
+        FUNC3    ,                                           //  Function Key 3
+        FUNC2    ,                                           //  Function Key 2
+        HOTKEY_ORIGINAL,                                     //  Function Key 1 - Hotkey for Aribiter to switch to original mode.
         // S1   08 - 0F
-        NOKEY    ,                                           //  
-        NOKEY    ,                                           // 
-        CTRL_W   ,                                           //  CTRL_W
-        CTRL_Q   ,                                           //  CTRL_Q
-        CTRL_A   ,                                           //  CTRL_A
-        DELETE   ,                                           //  DELETE
-        NOKEY    ,                                           //  NULL
-        CTRL_Z   ,                                           //  CTRL_Z
+        '-'      ,                                           //  KP -
+        '+'      ,                                           //  KP +
+        '.'      ,                                           //  KP .
+        DBLZERO  ,                                           //  KP Double Zero
+        '9'      ,                                           //  KP 9
+        '8'      ,                                           //  KP 8
+        FUNC10   ,                                           //  Function Key 10
+        FUNC9    ,                                           //  Function Key 9
         // S2   10 - 17
-        NOKEY    ,                                           //  
-        NOKEY    ,                                           //  
-        CTRL_R   ,                                           //  CTRL_R
-        CTRL_E   ,                                           //  CTRL_E
-        CTRL_D   ,                                           //  CTRL_D
-        CTRL_S   ,                                           //  CTRL_S
-        CTRL_X   ,                                           //  CTRL_X
-        CTRL_C   ,                                           //  CTRL_C
+        '7'      ,                                           //  KP 7
+        '6'      ,                                           //  KP 6
+        '5'      ,                                           //  KP 5
+        '4'      ,                                           //  KP 4
+        '3'      ,                                           //  KP 3
+        '2'      ,                                           //  KP 2
+        '1'      ,                                           //  KP 1
+        '0'      ,                                           //  KP 0
         // S3   18 - 1F
-        NOKEY    ,                                           //  
-        NOKEY    ,                                           //  
-        CTRL_Y   ,                                           //  CTRL_Y
-        CTRL_T   ,                                           //  CTRL_T
-        CTRL_G   ,                                           //  CTRL_G
-        CTRL_F   ,                                           //  CTRL_F
-        CTRL_V   ,                                           //  CTRL_V
-        CTRL_B   ,                                           //  CTRL_B
+        BREAKKEY ,                                           //  Break Key
+        CURSRIGHT,                                           //  Cursor Right
+        CURSLEFT ,                                           //  Cursor Left
+        CURSDOWN ,                                           //  Cursor Down
+        CURSUP   ,                                           //  Cursor Up
+        CR       ,                                           //  Carriage Return
+        SPACE    ,                                           //  SPACE
+        TAB      ,                                           //  TAB
         // S4   20 - 27
-        NOKEY    ,                                           //  
-        NOKEY    ,                                           //  
-        CTRL_I   ,                                           //  CTRL_I
-        CTRL_U   ,                                           //  CTRL_U
-        CTRL_J   ,                                           //  CTRL_J
-        CTRL_H   ,                                           //  CTRL_H
-        CTRL_N   ,                                           //  CTRL_N
-        ' '      ,                                           //  SPACE
+        CTRL_G   ,                                           //  CTRL+G
+        CTRL_F   ,                                           //  CTRL+F
+        CTRL_E   ,                                           //  CTRL+E
+        CTRL_D   ,                                           //  CTRL+D
+        CTRL_C   ,                                           //  CTRL+C
+        CTRL_B   ,                                           //  CTRL+B
+        CTRL_A   ,                                           //  CTRL+A
+        CTRL_SLASH,                                          //  CTRL Slash
         // S5   28 - 2F
-        CTRL_UNDSCR,                                         //  CTRL+_
-        NOKEY    ,                                           //  
-        CTRL_P   ,                                           //  CTRL_P
-        CTRL_O   ,                                           //  CTRL_O
-        CTRL_L   ,                                           //  CTRL_L
-        CTRL_K   ,                                           //  CTRL_K
-        NOKEY    ,                                           //  
-        CTRL_M   ,                                           //  CTRL_M
+        CTRL_O   ,                                           //  CTRL+O
+        CTRL_N   ,                                           //  CTRL+N
+        CTRL_M   ,                                           //  CTRL+M
+        CTRL_L   ,                                           //  CTRL+L
+        CTRL_K   ,                                           //  CTRL+K
+        CTRL_J   ,                                           //  CTRL+J
+        CTRL_I   ,                                           //  CTRL+I
+        CTRL_H   ,                                           //  CTRL+H
         // S6   30 - 37
-        CTRL_CAPPA,                                          //  CTRL+^
-        NOKEY    ,                                           //  
-        CTRL_LB  ,                                           //  CTRL+[ 
-        CTRL_AT  ,                                           //  CTRL+@
-        NOKEY    ,                                           //  
-        NOKEY    ,                                           //  
-        CTRL_SLASH,                                          //  CTRL+/
-        NOKEY    ,                                           //  
+        CTRL_W   ,                                           //  CTRL+W
+        CTRL_V   ,                                           //  CTRL+V
+        CTRL_U   ,                                           //  CTRL+U
+        CTRL_T   ,                                           //  CTRL+T
+        CTRL_S   ,                                           //  CTRL+S
+        CTRL_R   ,                                           //  CTRL+R
+        CTRL_Q   ,                                           //  CTRL+Q
+        CTRL_P   ,                                           //  CTRL+P
         // S7   38 - 3F
         NOKEY    ,                                           //  
         NOKEY    ,                                           //  
         NOKEY    ,                                           //  
         NOKEY    ,                                           //  
+        CTRL_CAPPA,                                          //  CTRL+^
+        CTRL_Z   ,                                           //  CTRL+Z
+        CTRL_Y   ,                                           //  CTRL+Y
+        CTRL_X   ,                                           //  CTRL+X
+        // S8   40 - 47
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        CTRL_UNDSCR,                                         //  CTRL+_
+        // S9   48 - 4F
+        NOKEY    ,                                           //
+        CTRL_LB  ,                                           // CTRL+[
+        CTRL_SLASH,                                          // CTRL+slash
+        CTRL_AT  ,                                           // CTRL+@
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
         NOKEY    ,                                           //  
-        CTRL_RB  ,                                           //  CTRL+]
+        // S10   50 - 57
         NOKEY    ,                                           //
         NOKEY    ,                                           // 
-        // S8   40 - 47 - Keypad keys.
-        NOKEY    ,                                           // Keypad 8
-        NOKEY    ,                                           //        7
-        NOKEY    ,                                           //        5
-        HOTKEY_LINUX,                                        //        4 - Hotkey to invoke Linux mode.
-        HOTKEY_RFS40,                                        //        2 - Hotkey to invoke RFS 40 mode.
-        HOTKEY_RFS80,                                        //        1 - Hotkey to invoke RFS 80 mode.
-        NOKEY    ,                                           //       00 
-        HOTKEY_ORIGINAL,                                     //        0 - Hotkey to invoke original mode.
-        // S9   48 - 4F - Keypad keys.
-        NOKEY    ,                                           //        +
-        NOKEY    ,                                           //        9
-        NOKEY    ,                                           //        -
-        NOKEY    ,                                           //        6
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        CTRL_RB  ,                                           // CTRL+]
+        // S11   58 - 5F
         NOKEY    ,                                           //
-        HOTKEY_TZFS,                                         //        3 - Hotkey to invoke TZFS mode.
-        NOKEY    ,
-        NOKEY                                                //        .
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // RVS
+        SHIFTLOCKKEY,                                        // SHIFT
+        NOKEY    ,                                           // SHIFT LOCK
+        GRAPHKEY                                             // GRAPH
     }},
     // MZ_2000 KANA
     {{
-        // S0   00 - 07
-        NOKEY    ,                                          //  BREAK/CTRL
-        NOKEY    ,                                          //  
-        NOKEY    ,                                          // 
-        NOKEY    ,                                          //  
-        NOKEY    ,                                          // 
-        NOKEY    ,                                          //  
-        GRAPHKEY ,                                          //  DAKU TEN
-        NOKEY    ,                                          //  
+        //  S0   00 - 07
+        FUNC8    ,                                           //  Function Key 8
+        FUNC7    ,                                           //  Function Key 7
+        FUNC6    ,                                           //  Function Key 6
+        FUNC5    ,                                           //  Function Key 5
+        FUNC4    ,                                           //  Function Key 4
+        FUNC3    ,                                           //  Function Key 3
+        FUNC2    ,                                           //  Function Key 2
+        FUNC1    ,                                           //  Function Key 1
         // S1   08 - 0F
-        0x35     ,                                          //  HA
-        0x77     ,                                          //  TA
-        0xD7     ,                                          //  WA
-        0xB3     ,                                          //  YO
-        0xB7     ,                                          //  HANDAKU
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    ,
+        '-'      ,                                           //  KP -
+        '+'      ,                                           //  KP +
+        '.'      ,                                           //  KP .
+        DBLZERO  ,                                           //  KP Double Zero
+        '9'      ,                                           //  KP 9
+        '8'      ,                                           //  KP 8
+        FUNC10   ,                                           //  Function Key 10
+        FUNC9    ,                                           //  Function Key 9
         // S2   10 - 17
-        0x7C     ,                                          //  KA
-        0x70     ,                                          //  KE
-        0x41     ,                                          //  SHI
-        0x31     ,                                          //  KO
-        0x39     ,                                          // HI
-        0xA6     ,                                          //  TE
-        0x78     ,                                          //  KI
-        0xDD     ,                                          //  CHI
+        '7'      ,                                           //  KP 7
+        '6'      ,                                           //  KP 6
+        '5'      ,                                           //  KP 5
+        '4'      ,                                           //  KP 4
+        '3'      ,                                           //  KP 3
+        '2'      ,                                           //  KP 2
+        '1'      ,                                           //  KP 1
+        '0'      ,                                           //  KP 0
         // S3   18 - 1F
-        0x3D     ,                                          //  FU
-        0x5D     ,                                          //  MI
-        0x6C     ,                                          //  MU
-        0x56     ,                                          //  ME
-        0x1D     ,                                          //  RHI
-        0x33     ,                                          //  RA
-        0xD5     ,                                          //  HE
-        0xB1     ,                                          //  HO
+        BREAKKEY ,                                           //  Break Key
+        CURSRIGHT,                                           //  Cursor Right
+        CURSLEFT ,                                           //  Cursor Left
+        CURSDOWN ,                                           //  Cursor Down
+        CURSUP   ,                                           //  Cursor Up
+        CR       ,                                           //  Carriage Return
+        SPACE    ,                                           //  SPACE
+        TAB      ,                                           //  TAB
         // S4   20 - 27
-        0x46     ,                                          //  SA
-        0x6E     ,                                          //  TO
-        0xD9     ,                                          //  THU
-        0x48     ,                                          //  SU
-        0x74     ,                                          //  KU
-        0x43     ,                                          //  SE
-        0x4C     ,                                          //  SO
-        0x73     ,                                          //  MA
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
         // S5   28 - 2F
-        0x3F     ,                                          //  A
-        0x36     ,                                          //  I
-        0x7E     ,                                          //  U
-        0x3B     ,                                          //  E
-        0x7A     ,                                          //  O
-        0x1E     ,                                          //  NA
-        0x5F     ,                                          //  NI
-        0xA2     ,                                          //  NU
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
         // S6   30 - 37
-        0xD3     ,                                          //  YO
-        0x9F     ,                                          //  YU
-        0xD1     ,                                          //  YA
-        0x00     ,                                          //  SPACE
-        0x9D     ,                                          //  NO
-        0xA3     ,                                          //  NE
-        0xD0     ,                                          //  RU
-        0xB9     ,                                          //  RE
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
         // S7   38 - 3F
-        0xC6     ,                                          //  ?CLR
-        0xC5     ,                                          //  ?HOME
-        0xC2     ,                                          //  ?CURSOR UP
-        0xC1     ,                                          //  ?CURSOR DOWN
-        0xC3     ,                                          //  ?CURSOR RIGHT
-        0xC4     ,                                          //  ?CURSOR LEFT 
-        0xBB     ,                                          //  DASH
-        0xBE     ,                                          //  RO
-        // S8   40 - 47 - Keypad keys.
-        '8'      ,                                           // Keypad 8
-        '7'      ,                                           //        7
-        '5'      ,                                           //        5
-        '4'      ,                                           //        4
-        '2'      ,                                           //        2
-        '1'      ,                                           //        1
-        DBLZERO  ,                                           //       00 
-        '0'      ,                                           //        0
-        // S9   48 - 4F - Keypad keys.
-        '+'      ,                                           //        +
-        '0'      ,                                           //        9
-        '-'      ,                                           //        -
-        '6'      ,                                           //        6
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           //  
+        // S8   40 - 47
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        // S9   48 - 4F
+        NOKEY    ,                                           //  
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
         NOKEY    ,                                           //
-        '3'      ,                                           //        3
-        NOKEY    ,
-        '.'                                                  //        .
+        // S10   50 - 57
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           //
+        // S11   58 - 5F
+        NOKEY    ,                                           //
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // 
+        NOKEY    ,                                           // RVS
+        NOKEY    ,                                           // SHIFT
+        SHIFTLOCKKEY,                                        // SHIFT LOCK
+        GRAPHKEY                                             // GRAPH
     }} 
 };
 
@@ -1656,7 +1748,7 @@ static t_ansiKeyMap ansiKeySeq[] = {
                                               .maxDisplayRow = VC_MAX_ROWS, .maxBackingCol = 40, .useAnsiTerm = 1, .lineWrap = 0, .inDebug = 0
                                             };
     // Keyboard control structure. Used to manage keyboard sweep, mapping and store.
-    const t_keyboard      keyboardDefault = { .holdTimer = 0L, .autorepeat = 0, .mode = KEYB_LOWERCASE, .cursorOn = 1, .flashTimer = 0L, .keyBuf[0] = 0x00, .keyBufPtr = 0,
+    const t_keyboard      keyboardDefault = { .holdTimer = 0L, .autorepeat = 0, .cursorOn = 1, .flashTimer = 0L, .keyBuf[0] = 0x00, .keyBufPtr = 0,
                                               .mode = KEYB_LOWERCASE, .dualmode = KEYB_DUAL_NONE 
                                             };
 
@@ -1683,7 +1775,7 @@ static t_ansiKeyMap ansiKeySeq[] = {
                                             };
 
     // Keyboard control structure. Used to manage keyboard sweep, mapping and store.
-    const t_keyboard      keyboardDefault = { .holdTimer = 0L, .autorepeat = 0, .mode = KEYB_LOWERCASE, .cursorOn = 1, .flashTimer = 0L, .keyBuf[0] = 0x00, .keyBufPtr = 0,
+    const t_keyboard      keyboardDefault = { .holdTimer = 0L, .autorepeat = 0, .cursorOn = 1, .flashTimer = 0L, .keyBuf[0] = 0x00, .keyBufPtr = 0,
                                               .mode = KEYB_LOWERCASE, .dualmode = KEYB_DUAL_GRAPH
                                             };
 
@@ -1711,8 +1803,8 @@ static t_ansiKeyMap ansiKeySeq[] = {
                                             };
 
     // Keyboard control structure. Used to manage keyboard sweep, mapping and store.
-    const t_keyboard      keyboardDefault = { .holdTimer = 0L, .autorepeat = 0, .mode = KEYB_LOWERCASE, .cursorOn = 1, .flashTimer = 0L, .keyBuf[0] = 0x00, .keyBufPtr = 0,
-                                              .mode = KEYB_LOWERCASE, .dualmode = KEYB_DUAL_GRAPH
+    const t_keyboard      keyboardDefault = { .holdTimer = 0L, .autorepeat = 0, .cursorOn = 1, .flashTimer = 0L, .keyBuf[0] = 0x00, .keyBufPtr = 0,
+                                              .mode = KEYB_LOWERCASE, .dualmode = KEYB_DUAL_NONE
                                             };
 
     // Audio control structure. Used to manage audio output.
@@ -1748,11 +1840,18 @@ static t_ansiKeyMap ansiKeySeq[] = {
 //
 uint8_t mzInitMBHardware(void)
 {
+    // Locals.
+  #if (TARGET_HOST_MZ2000 == 1)
+    uint32_t     idx;
+    uint32_t     idx2;
+  #endif
+
   #if (TARGET_HOST_MZ700 == 1)
     // Ensure memory paging is set to default.
     SPI_SEND_32(0x00e4, 0x00 << 8 | CPLD_CMD_WRITEIO_ADDR);
   #endif
 
+  #if (TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ80A == 1)
     // From the 1Z-013A monitor code, initialise the 8255 PIO.
     //
     WRITE_HARDWARE(1, MBADDR_KEYPF, 0x8A);                                       // 10001010 CTRL WORD MODE0
@@ -1778,6 +1877,52 @@ uint8_t mzInitMBHardware(void)
    
     // Disable the hardware sound output.
     WRITE_HARDWARE(0, MBADDR_SUNDG, 0x00);                                       // Sound could be enabled on start, disable it.
+
+  #elif (TARGET_HOST_MZ2000 == 1)
+    // Initialise the Z80 PIO/8255 controllers.
+    //
+    WRITE_HARDWARE_IO(1, MBADDR_PPICTL,      0x82);                              // 8255 A=OUT B=IN C=OUT
+    WRITE_HARDWARE_IO(1, MBADDR_PPIC,        0x58);                              // BST=1 NST=0 OPEN=1 WRITE=1
+    WRITE_HARDWARE_IO(1, MBADDR_PPIA,        0xF7);                              // All signals inactive, stop cassette.
+    WRITE_HARDWARE_IO(1, MBADDR_PIOCTLA,     0x0F);                              // Setup PIO A
+    WRITE_HARDWARE_IO(1, MBADDR_PIOCTLB,     0xCF);                              // Setup PIO B
+    WRITE_HARDWARE_IO(1, MBADDR_PIOCTLB,     0xFF);
+
+    // Initialise video hardware.
+    //
+    WRITE_HARDWARE_IO(1, MBADDR_CRTGRPHSEL,  0x00);                              // Set Graphics VRAM to default, no access to GRAM.
+    WRITE_HARDWARE_IO(1, MBADDR_CRTBKCOLR,   0x00);                              // Set background colour on external output to black.
+    WRITE_HARDWARE_IO(1, MBADDR_GRAMCOLRSEL, 0x01);                              // Activate Blue graphics RAM bank for graphics operations (this is the default installed bank, red and green are optional). 
+    WRITE_HARDWARE_IO(1, MBADDR_CRTGRPHPRIO, 0x07);                              // Enable all colour bank graphic output with character priority.
+    WRITE_HARDWARE_IO(1, MBADDR_PIOA,        0xD3);                              // 11010011 = VRAM paged in for characters, 40 char mode, keyboard strobe bank 3.
+                                                                                 // A7 : H 0xD000:0xD7FF or 0xC000:0xFFFF VRAN paged in.
+                                                                                 // A6 : H Select Character VRAM (H) or Graphics VRAM (L)
+                                                                                 // A5 : H Select 80 char mode, 40 char mode = L
+                                                                                 // A4 : L Select all key strobe lines active, for detection of any key press.
+                                                                                 // A3-A0: Keyboard strobe lines
+    WRITE_HARDWARE_IO(1, MBADDR_PPIA,        0xFF);                              // Disable all PPI A signals.
+                                                                                 // A7 : L APSS Search for next program
+                                                                                 // A6 : L Automatic playback at end of rewind
+                                                                                 // A5 : L Automatic rewind during playback(recording)
+                                                                                 // A4 : L Invert Video
+                                                                                 // A3 : L Stop Cassette
+                                                                                 // A2 : L Play Cassette
+                                                                                 // A1 : L Fast Forward
+                                                                                 // A0 : L Rewind
+    // Clear VRAM.
+    //
+    WRITE_HARDWARE_IO(1, MBADDR_PIOA, 0x93);                                     // Page in VRAM.
+    for(idx=3; idx > 0; idx--)
+    { 
+        WRITE_HARDWARE_IO(1, MBADDR_GRAMCOLRSEL, idx);                           // Select graphics RAM bank to clear.
+        for(idx2=MBADDR_GRAMADDRL; idx2 < MBADDR_GRAMADDRL + 0x03E7F; idx2++)
+        {
+            WRITE_HARDWARE(1, idx2, 0x00);                                       // Clear VRAM.
+        }
+    }
+    WRITE_HARDWARE_IO(1, MBADDR_PIOA, 0x13);                                     // Disable VRAM.
+  #endif
+
     return(0);
 }
 
@@ -1820,7 +1965,7 @@ void mzBeep(uint32_t freq, uint32_t timeout)
     uint16_t   freqDiv = TIMER_8253_MZ700_FREQ/freq;
   #endif
 
-  #if (TARGET_HOST_MZ2000 == 0)
+  #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
     // Setup the 8253 Timer 0 to output a sound, enable output to amplifier and set timeout.
     WRITE_HARDWARE(0, MBADDR_CONTF, 0x34               );       // Timer 0 to square wave generator, load LSB first.
     WRITE_HARDWARE(0, MBADDR_CONT0, (freqDiv&0xff)     );  
@@ -1906,12 +2051,15 @@ void mzClearDisplay(uint8_t mode, uint8_t updPos)
             break;
     }
 
+    // Enable Video RAM if required (based on target host).
+    ENABLE_VIDEO();
+
     // Clear the physical character display and attribute RAM.
     for(dstVRAMAddr=dstVRAMStartAddr, dstARAMAddr = dstARAMStartAddr; dstVRAMAddr <= dstVRAMEndAddr; dstVRAMAddr+=1, dstARAMAddr+=1)
     {
         // Clear both Video and Attribute RAM.
-        WRITE_HARDWARE(0, dstVRAMAddr, 0x00);
-        WRITE_HARDWARE(0, dstARAMAddr, display.displayAttr);
+        WRITE_VRAM_CHAR(dstVRAMAddr, 0x00);
+        WRITE_VRAM_ATTRIBUTE(dstARAMAddr, display.displayAttr);
     }
     // Clear the shadow display scrollback RAM.
     for(dstAddr = startIdx; dstAddr < endIdx; dstAddr++)
@@ -1919,6 +2067,9 @@ void mzClearDisplay(uint8_t mode, uint8_t updPos)
         display.displayCharBuf[dstAddr] = 0x20;
         display.displayAttrBuf[dstAddr] = display.displayAttr;
     }
+
+    // Disable Video RAM.
+    DISABLE_VIDEO();
 
     return;
 }
@@ -1954,12 +2105,15 @@ void mzClearLine(int row, int colStart, int colEnd, uint8_t updPos)
     dstVRAMEndAddr   = dstVRAMStartAddr + newColEnd;
     dstARAMStartAddr = VIDEO_ARAM_BASE_ADDR+(newRow*display.maxBackingCol)+newColStart; 
 
+    // Enable Video RAM if required (based on target host).
+    ENABLE_VIDEO();
+
     // Select 32bit or 8 bit clear depending on the start/end position.
     //
     for(dstVRAMAddr=dstVRAMStartAddr, dstARAMAddr = dstARAMStartAddr; dstVRAMAddr <= dstVRAMEndAddr; dstVRAMAddr+=1, dstARAMAddr+=1)
     {
-        WRITE_HARDWARE(0, dstVRAMAddr, 0x00);
-        WRITE_HARDWARE(0, dstARAMAddr, display.displayAttr);
+        WRITE_VRAM_CHAR(dstVRAMAddr, 0x00);
+        WRITE_VRAM_ATTRIBUTE(dstARAMAddr, display.displayAttr);
     }
 
     // Clear the shadow display scrollback RAM.
@@ -1969,6 +2123,9 @@ void mzClearLine(int row, int colStart, int colEnd, uint8_t updPos)
         display.displayCharBuf[dstAddr] = 0x20;
         display.displayAttrBuf[dstAddr] = display.displayAttr;
     }
+
+    // Disable Video RAM.
+    DISABLE_VIDEO();
 
     // Update the display pointer if needed.
     if(updPos)
@@ -2014,17 +2171,31 @@ uint8_t mzSetDisplayWidth(uint8_t width)
     // Toggle the 40/80 bit according to requirements.
     if(width == 40)
     {
+        display.maxBackingCol = 40;
+
+      #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
         // Dummy read to enable access to control register.
         READ_HARDWARE_INIT(0, MBADDR_DSPCTL);
         WRITE_HARDWARE(0, MBADDR_DSPCTL, 0x00);
-        display.maxBackingCol = 40;
+      #elif (TARGET_HOST_MZ2000 == 1)
+        // Clear the 40/80 flag to set 40 column mode and use the DISABLE_VIDEO mode to reflect hardware change..
+        display.hwVideoMode = display.hwVideoMode & 0xDF;
+        DISABLE_VIDEO();
+      #endif
     }
     else
     {
+        display.maxBackingCol = 80;
+
+      #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
         // Dummy read to enable access to control register.
         READ_HARDWARE_INIT(0, MBADDR_DSPCTL);
         WRITE_HARDWARE(0, MBADDR_DSPCTL, VMMODE_80CHAR);
-        display.maxBackingCol = 80;
+      #elif (TARGET_HOST_MZ2000 == 1)
+        // Set the 40/80 flag to set 80 column mode and use the DISABLE_VIDEO mode to reflect hardware change..
+        display.hwVideoMode = display.hwVideoMode | 0x20;
+        DISABLE_VIDEO();
+      #endif
     }
 
     return(0);
@@ -2039,13 +2210,19 @@ void mzRefreshDisplay(void)
     uint32_t dstARAMAddr;
     uint32_t dstVRAMAddr;
 
+    // Enable Video RAM if required (based on target host).
+    ENABLE_VIDEO();
+
     // Refresh the display with buffer window contents
     startIdx = (display.backingRow < display.maxDisplayRow ? 0 : (display.backingRow - display.maxDisplayRow)+1) * display.maxBackingCol;
     for(srcIdx = startIdx, dstVRAMAddr = VIDEO_VRAM_BASE_ADDR, dstARAMAddr = VIDEO_ARAM_BASE_ADDR; srcIdx < startIdx+(display.maxDisplayRow*display.maxBackingCol); srcIdx++, dstVRAMAddr++, dstARAMAddr++)
     {
-        WRITE_HARDWARE(0, dstVRAMAddr, dispCodeMap[display.displayCharBuf[srcIdx]].dispCode);
-        WRITE_HARDWARE(0, dstARAMAddr, display.displayAttrBuf[srcIdx]);
+        WRITE_VRAM_CHAR(dstVRAMAddr, display.displayCharBuf[srcIdx]);
+        WRITE_VRAM_ATTRIBUTE(dstARAMAddr, display.displayAttrBuf[srcIdx]);
     }
+  
+    // Disable Video RAM.
+    DISABLE_VIDEO();
 }
 
 // Method to scroll the display contents upwards, either because new data is being added to the bottom or for scrollback.
@@ -2147,7 +2324,7 @@ uint8_t mzDeleteLines(uint8_t lines)
     // Locals.
     uint32_t srcAddr;
     uint32_t dstAddr;
-static char testbuf[VC_DISPLAY_BUFFER_SIZE*8];
+//static char testbuf[VC_DISPLAY_BUFFER_SIZE*8];
 
     // Sanity check.
     if(lines == 0 || lines > display.maxDisplayRow)
@@ -2156,20 +2333,20 @@ static char testbuf[VC_DISPLAY_BUFFER_SIZE*8];
     // Restore cursor character before scrolling.
     mzFlashCursor(CURSOR_RESTORE);
 
-    for(srcAddr=0; srcAddr < VC_DISPLAY_BUFFER_SIZE; srcAddr++)
-    {
-        if(srcAddr % display.maxBackingCol == 0)
-        {
-            if(srcAddr % 0x320 == 0)
-            {
-                pr_info("%s\n", testbuf);
-                testbuf[0] = 0x00;
-            }
-            sprintf(&testbuf[strlen(testbuf)], "\n%04x ", srcAddr);
-        }
-        sprintf(&testbuf[strlen(testbuf)], "%c", display.displayCharBuf[srcAddr]);
-    }
-    pr_info("%s\n", testbuf);
+//    for(srcAddr=0; srcAddr < VC_DISPLAY_BUFFER_SIZE; srcAddr++)
+//    {
+//        if(srcAddr % display.maxBackingCol == 0)
+//        {
+//            if(srcAddr % 0x320 == 0)
+//            {
+//                pr_info("%s\n", testbuf);
+//                testbuf[0] = 0x00;
+//            }
+//            sprintf(&testbuf[strlen(testbuf)], "\n%04x ", srcAddr);
+//        }
+//        sprintf(&testbuf[strlen(testbuf)], "%c", display.displayCharBuf[srcAddr]);
+//    }
+//    pr_info("%s\n", testbuf);
 
     // Starting line based on the current display row.
     srcAddr = ((display.displayRow+lines) * display.maxBackingCol);
@@ -2181,7 +2358,7 @@ static char testbuf[VC_DISPLAY_BUFFER_SIZE*8];
         display.displayCharBuf[dstAddr] = display.displayCharBuf[srcAddr];
         display.displayAttrBuf[dstAddr] = display.displayAttrBuf[srcAddr];
     }
-pr_info("SrcAddr=%04x, DstAddr=%04x\n", srcAddr, dstAddr);
+//pr_info("SrcAddr=%04x, DstAddr=%04x\n", srcAddr, dstAddr);
     // Fill end of buffer with space.
     for(; dstAddr < VC_DISPLAY_BUFFER_SIZE; dstAddr++)
     {
@@ -2189,20 +2366,20 @@ pr_info("SrcAddr=%04x, DstAddr=%04x\n", srcAddr, dstAddr);
         display.displayAttrBuf[dstAddr] = display.displayAttr;
     }
 
-    for(srcAddr=0; srcAddr < VC_DISPLAY_BUFFER_SIZE; srcAddr++)
-    {
-        if(srcAddr % display.maxBackingCol == 0)
-        {
-            if(srcAddr % 0x320 == 0)
-            {
-                pr_info("%s\n", testbuf);
-                testbuf[0] = 0x00;
-            }
-            sprintf(&testbuf[strlen(testbuf)], "\n%04x ", srcAddr);
-        }
-        sprintf(&testbuf[strlen(testbuf)], "%c", display.displayCharBuf[srcAddr]);
-    }
-    pr_info("%s\n", testbuf);
+//    for(srcAddr=0; srcAddr < VC_DISPLAY_BUFFER_SIZE; srcAddr++)
+//    {
+//        if(srcAddr % display.maxBackingCol == 0)
+//        {
+//            if(srcAddr % 0x320 == 0)
+//            {
+//                pr_info("%s\n", testbuf);
+//                testbuf[0] = 0x00;
+//            }
+//            sprintf(&testbuf[strlen(testbuf)], "\n%04x ", srcAddr);
+//        }
+//        sprintf(&testbuf[strlen(testbuf)], "%c", display.displayCharBuf[srcAddr]);
+//    }
+//    pr_info("%s\n", testbuf);
 
     // Refresh the display with buffer window contents
     mzRefreshDisplay();
@@ -2360,14 +2537,22 @@ int mzPutChar(char c)
     // Output to display if flag set.
     if(output)
     {
+        // Enable Video RAM if required (based on target host).
+        ENABLE_VIDEO();
+
         // Output character using default attributes.
         dispMemAddr = VIDEO_VRAM_BASE_ADDR + (display.displayRow * display.maxBackingCol) + display.displayCol;
-        WRITE_HARDWARE(0, dispMemAddr, (char)dispCodeMap[(int)c].dispCode);
+        WRITE_VRAM_CHAR(dispMemAddr, (char)c);
         display.displayCharBuf[(display.backingRow * display.maxBackingCol) + display.displayCol] = c;
         //
         dispMemAddr = VIDEO_ARAM_BASE_ADDR + (display.displayRow * display.maxBackingCol) + display.displayCol;
-        WRITE_HARDWARE(0, dispMemAddr, display.displayAttr);
+        WRITE_VRAM_ATTRIBUTE(dispMemAddr, display.displayAttr);
         display.displayAttrBuf[(display.backingRow * display.maxBackingCol) + display.displayCol] = display.displayAttr;
+
+        // Disable Video RAM.
+        DISABLE_VIDEO();
+
+        // Check for end of line conditions, scroll if necessary.
         if(++display.displayCol >= display.maxBackingCol)
         {
             if(display.lineWrap)
@@ -2408,14 +2593,22 @@ int mzPutRaw(char c)
     // Variables and locals.
     uint32_t dispMemAddr;
 
+    // Enable Video RAM if required (based on target host).
+    ENABLE_VIDEO();
+
     // Output character using default attributes.
     dispMemAddr = VIDEO_VRAM_BASE_ADDR + (display.displayRow * display.maxBackingCol) + display.displayCol;
-    WRITE_HARDWARE(0, dispMemAddr, (char)dispCodeMap[(int)c].dispCode);
+    WRITE_VRAM_CHAR(dispMemAddr, (char)c);
     display.displayCharBuf[(display.backingRow * display.maxBackingCol) + display.displayCol] = c;
     //
     dispMemAddr = VIDEO_ARAM_BASE_ADDR + (display.displayRow * display.maxBackingCol) + display.displayCol;
-    WRITE_HARDWARE(0, dispMemAddr, display.displayAttr);
+    WRITE_VRAM_ATTRIBUTE(dispMemAddr, display.displayAttr);
     display.displayAttrBuf[(display.backingRow * display.maxBackingCol) + display.displayCol] = display.displayAttr;
+    
+    // Disable Video RAM.
+    DISABLE_VIDEO();
+
+    // Check for end of line conditions, scroll if necessary.
     if(++display.displayCol >= display.maxBackingCol)
     {
         if(display.lineWrap)
@@ -3295,6 +3488,10 @@ uint8_t mzFlashCursor(enum CURSOR_STATES state)
     // Locals.
     uint32_t dispMemAddr = VIDEO_VRAM_BASE_ADDR + (display.displayRow * display.maxBackingCol) + display.displayCol;
     uint16_t srcIdx = (display.backingRow * display.maxBackingCol) + display.displayCol;
+    uint8_t  cursorChr;
+ 
+    // Enable Video RAM if required (based on target host).
+    ENABLE_VIDEO();
 
     // Action according to request.
     switch(state)
@@ -3305,7 +3502,7 @@ uint8_t mzFlashCursor(enum CURSOR_STATES state)
             // Only restore character if it had been previously saved and active.
             if(keyboard.cursorOn == 1 && keyboard.displayCursor == 1)
             {
-                WRITE_HARDWARE(0, dispMemAddr, dispCodeMap[display.displayCharBuf[srcIdx]].dispCode);
+                WRITE_VRAM_CHAR(dispMemAddr, display.displayCharBuf[srcIdx]);
             }
             keyboard.cursorOn = 0;
             keyboard.displayCursor = 0;
@@ -3321,7 +3518,7 @@ uint8_t mzFlashCursor(enum CURSOR_STATES state)
         case CURSOR_RESTORE:
             if(keyboard.displayCursor == 1)
             {
-                WRITE_HARDWARE(0, dispMemAddr, dispCodeMap[display.displayCharBuf[srcIdx]].dispCode);
+                WRITE_VRAM_CHAR(dispMemAddr, display.displayCharBuf[srcIdx]);
                 keyboard.displayCursor = 0;
             }
             break;
@@ -3337,23 +3534,30 @@ uint8_t mzFlashCursor(enum CURSOR_STATES state)
                     switch(keyboard.mode)
                     {
                         case KEYB_LOWERCASE:
-                            WRITE_HARDWARE(0, dispMemAddr, CURSOR_UNDERLINE);
+                            cursorChr = CURSOR_CHR_UNDERLINE;
                             break;
                         case KEYB_CAPSLOCK:
-                            WRITE_HARDWARE(0, dispMemAddr, CURSOR_BLOCK);
+                            cursorChr = CURSOR_CHR_BLOCK;
                             break;
                         case KEYB_SHIFTLOCK:
+                            cursorChr = CURSOR_CHR_THICK_BLOCK;
+                            break;
+                        case KEYB_GRAPHMODE:
                         default:
-                            WRITE_HARDWARE(0, dispMemAddr, CURSOR_THICK_BLOCK);
+                            cursorChr = CURSOR_CHR_GRAPH;
                             break;
                     }
+                    WRITE_VRAM_CHAR(dispMemAddr, cursorChr);
                 } else
                 {
-                    WRITE_HARDWARE(0, dispMemAddr, dispCodeMap[display.displayCharBuf[srcIdx]].dispCode);
+                    WRITE_VRAM_CHAR(dispMemAddr, display.displayCharBuf[srcIdx]);
                 }
             }
             break;
     }
+
+    // Disable Video RAM.
+    DISABLE_VIDEO();
     return(0);
 }
 
@@ -3386,21 +3590,21 @@ uint8_t mzSweepKeys(void)
     uint64_t  delay;
 
     // Sequence through the strobe lines and read back the scan data into the buffer.
-    for(strobe=0xF0; strobe < 0xFA; strobe++)
+    for(strobe=0xF0; strobe < (0xF0+KEY_SCAN_ROWS); strobe++)
     {
         // Output the keyboard strobe.
-        WRITE_HARDWARE(0, MBADDR_KEYPA, strobe);
+        WRITE_KEYB_STROBE(strobe);
 
         // Slight delay to allow for bounce.
         delay = ktime_get_ns(); while((ktime_get_ns() - delay) < 1000000);
 
         // Read the scan lines.
-        READ_HARDWARE_INIT(0, MBADDR_KEYPB);
-        keyboard.scanbuf[0][strobe-0xF0] = ctrl.suspendIO == 0 ? READ_HARDWARE() : 0xFF;
+        READ_KEYB_INIT();
+        keyboard.scanbuf[0][strobe-0xF0] = ctrl.suspendIO == 0 ? READ_KEYB() : 0xFF;
     }
 
     // Now look for active keys.
-    for(strobeIdx=0; strobeIdx < 10; strobeIdx++)
+    for(strobeIdx=0; strobeIdx < KEY_SCAN_ROWS; strobeIdx++)
     {
         // Skip over modifier keys.
         //if(strobeIdx == 8) continue;
@@ -3499,21 +3703,21 @@ uint8_t mzSweepKeys(void)
   #elif (TARGET_HOST_MZ2000 == 1)
     // Check for modifiers.
     //
-    if((keyboard.scanbuf[0][0] & 0x01) == 0)
+    if((keyboard.scanbuf[0][11] & 0x04) == 0)
     {
         keyboard.shiftKey = 1;
     } else
     {
         keyboard.shiftKey = 0;
     }
-    if((keyboard.scanbuf[0][0] & 0x80) == 0 && keyboard.shiftKey == 0)
+    if((keyboard.scanbuf[0][11] & 0x08) == 0 && keyboard.shiftKey == 0)
     {
         keyboard.ctrlKey = 1;
     } else
     {
         keyboard.ctrlKey = 0;
     }
-    if((keyboard.scanbuf[0][0] & 0x80) == 0 && keyboard.shiftKey == 1)
+    if((keyboard.scanbuf[0][3] & 0x01) == 0 && keyboard.shiftKey == 1)
     {
         keyboard.breakKey = 1;
     } else
@@ -3559,7 +3763,7 @@ int mzGetKey(uint8_t mode)
             mzSweepKeys();
 
             // Run through the strobe sequence and identify any pressed keys, mapping to an ASCII value for return.
-            for(strobeIdx=0; strobeIdx < 10; strobeIdx++)
+            for(strobeIdx=0; strobeIdx < KEY_SCAN_ROWS; strobeIdx++)
             {
                 // Skip over modifier keys.
                 //if(strobeIdx == 8) continue;
@@ -3618,9 +3822,15 @@ int mzGetKey(uint8_t mode)
                     retcode = -1;
                     break;
 
+                // Shift lock when present on host.
+                case SHIFTLOCKKEY:
+                    keyboard.mode = keyboard.mode == KEYB_LOWERCASE ? KEYB_SHIFTLOCK : keyboard.mode == KEYB_SHIFTLOCK ? KEYB_CAPSLOCK : KEYB_LOWERCASE;
+                    retcode = -1;
+                    break;
+
                 // Switch to graphics mode character set.
                 case GRAPHKEY:
-                    keyboard.mode = (keyboard.mode == KEYB_GRAPHMODE ? KEYB_CAPSLOCK : KEYB_GRAPHMODE);
+                    keyboard.mode = (keyboard.mode == KEYB_GRAPHMODE ? KEYB_LOWERCASE : KEYB_GRAPHMODE);
                     retcode = -1;
                     break;
                   

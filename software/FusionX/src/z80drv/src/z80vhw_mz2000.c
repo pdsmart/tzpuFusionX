@@ -51,16 +51,50 @@
 #include <infinity2m/gpio.h>
 #include <infinity2m/registers.h>
 
+#include "tzpu.h"
+
 // Device constants.
 #define RAM_BASE_ADDR                         0x00000                                   // Base address of the 512K RAM.
 
 // System ROM's, either use the host machine ROM or preload a ROM image.
 #define ROM_DIR                               "/apps/FusionX/host/MZ-2000/ROMS/"
-#define ROM_IPL_ORIG_FILENAME                  ROM_DIR "mz2000_ipl.orig"
+#define ROM_IPL_ORIG_FILENAME                  ROM_DIR "mz2000_ipl_original.rom"
+#define ROM_IPL_FUSIONX_FILENAME               ROM_DIR "mz2000_ipl_fusionx.rom"
+#define ROM_IPL_TZPU_FILENAME                  ROM_DIR "mz2000_ipl_tzpu.rom"
+#define ROM_1Z001M_FILENAME                    ROM_DIR "1Z001M.rom"
 
 // Boot ROM rom load and size definitions. 
 #define ROM_BOOT_LOAD_ADDR                    0x000000
-#define ROM_BOOT_SIZE                         0x800
+#define ROM_1Z001M_LOAD_ADDR                  0x000000
+#define ROM_ORIG_BOOT_SIZE                    0x800
+#define ROM_TZPU_BOOT_SIZE                    0x1000
+#define ROM_FUSIONX_BOOT_SIZE                 0x1000
+#define ROM_1Z001M_BOOT_SIZE                  0x10FB
+
+// Sharp MZ-2000 constants.
+#define MBADDR_FDC                            0x0D8                               // MB8866 IO Region 0D8h - 0DBh
+#define MBADDR_FDC_CR                         MBADDR_FDC + 0x00                   // Command Register
+#define MBADDR_FDC_STR                        MBADDR_FDC + 0x00                   // Status Register
+#define MBADDR_FDC_TR                         MBADDR_FDC + 0x01                   // Track Register
+#define MBADDR_FDC_SCR                        MBADDR_FDC + 0x02                   // Sector Register
+#define MBADDR_FDC_DR                         MBADDR_FDC + 0x03                   // Data Register
+#define MBADDR_FDC_MOTOR                      MBADDR_FDC + 0x04                   // DS[0-3] and Motor control. 4 drives  DS= BIT 0 -> Bit 2 = Drive number, 2=1,1=0,0=0 DS0, 2=1,1=0,0=1 DS1 etc
+                                                                                  //  bit 7 = 1 MOTOR ON LOW (Active)
+#define MBADDR_FDC_SIDE                       MBADDR_FDC + 0x05                   // Side select, Bit 0 when set = SIDE SELECT LOW, 
+#define MBADDR_FDC_DDEN                       MBADDR_FDC + 0x06                   // Double density enable, 0 = double density, 1 = single density disks.
+#define MBADDR_PPIA                           0x0E0                               // 8255 Port A
+#define MBADDR_PPIB                           0x0E1                               // 8255 Port B
+#define MBADDR_PPIC                           0x0E2                               // 8255 Port C
+#define MBADDR_PPICTL                         0x0E3                               // 8255 Control Port
+#define MBADDR_PIOA                           0x0E8                               // Z80 PIO Port A
+#define MBADDR_PIOCTLA                        0x0E9                               // Z80 PIO Port A Control Port
+#define MBADDR_PIOB                           0x0EA                               // Z80 PIO Port B
+#define MBADDR_PIOCTLB                        0x0EB                               // Z80 PIO Port B Control Port
+#define MBADDR_CRTBKCOLR                      0x0F4                               // Configure external CRT background colour.
+#define MBADDR_CRTGRPHPRIO                    0x0F5                               // Graphics priority register, character or a graphics colour has front display priority.
+#define MBADDR_CRTGRPHSEL                     0x0F6                               // Graphics output select on CRT or external CRT
+#define MBADDR_GRAMCOLRSEL                    0x0F7                               // Graphics RAM colour bank select.
+#define MBADDR_GRAMADDRL                      0x0C000                             // Graphics RAM base address.
 
 // PCW control.
 typedef struct {
@@ -83,9 +117,6 @@ void mz2000SetupMemory(enum Z80_MEMORY_PROFILE mode)
 {
     // Locals.
     uint32_t    idx;
-
-    // The PCW contains upto 512KB of standard RAM which can be expnded to a physical max of 2MB. The kernel malloc limit is 2MB so the whole virtual
-    // memory can be mapped into the PCW memory address range.
 
     // Setup defaults.
     MZ2000Ctrl.lowMemorySwap   = 0x01;   // Set memory swap flag to swapped, ie. IPL mode sees DRAM 0x0000:0x7FFF swapped to 0x8000:0xFFFF and ROM pages into 0x0000.
@@ -148,12 +179,22 @@ void mz2000SetupMemory(enum Z80_MEMORY_PROFILE mode)
         Z80Ctrl->refreshDRAM = 2;
     }
 
+    // tranZPUter I/O Ports need to be declared virtual to process locally.
+    for(idx=0x0000; idx < IO_PAGE_SIZE; idx+=0x0100)
+    {
+        Z80Ctrl->iopage[idx+IO_TZ_SVCREQ]     = IO_TZ_SVCREQ     | IO_TYPE_VIRTUAL_HW;
+        Z80Ctrl->iopage[idx+IO_TZ_SYSREQ]     = IO_TZ_SYSREQ     | IO_TYPE_VIRTUAL_HW;
+    }
+
+    // Ensure 40 char mode is enabled.
+//    SPI_SEND_32(MBADDR_PIOA, 0x13);
+
     pr_info("MZ-2000 Memory Setup complete.\n");
 }
 
 // Method to load a ROM image into the RAM memory.
 //
-uint8_t mz2000LoadROM(const char* romFileName, uint32_t loadAddr, uint32_t loadSize)
+uint8_t mz2000LoadROM(const char* romFileName, uint8_t useROM, uint32_t loadAddr, uint32_t loadSize)
 {
     // Locals.
     uint8_t     result = 0;
@@ -168,10 +209,10 @@ uint8_t mz2000LoadROM(const char* romFileName, uint32_t loadAddr, uint32_t loadS
     } else
     {
         vfs_llseek(fp, 0, SEEK_SET);
-        noBytes = kernel_read(fp, fp->f_pos, &Z80Ctrl->ram[loadAddr], loadSize);
+        noBytes = kernel_read(fp, fp->f_pos, useROM == 1 ? &Z80Ctrl->rom[loadAddr] : &Z80Ctrl->ram[loadAddr], loadSize);
         if(noBytes < loadSize)
         {
-            pr_info("Short load, ROM Image:%s, bytes loaded:%08x\n:", romFileName, loadSize);
+            pr_info("Short load, Image:%s, bytes loaded:%08x\n:", romFileName, loadSize);
         }
         filp_close(fp,NULL);
     }
@@ -185,6 +226,35 @@ void mz2000Init(uint8_t mode)
     // Locals.
     uint32_t  idx;
     
+//    // Initialise the Z80 PIO/8255 controllers.
+//    //
+//    SPI_SEND_32(MBADDR_PPICTL,      0x82);                              // 8255 A=OUT B=IN C=OUT
+//    SPI_SEND_32(MBADDR_PPIC,        0x58);                              // BST=1 NST=0 OPEN=1 WRITE=1
+//    SPI_SEND_32(MBADDR_PPIA,        0xF7);                              // All signals inactive, stop cassette.
+//    SPI_SEND_32(MBADDR_PIOCTLA,     0x0F);                              // Setup PIO A
+//    SPI_SEND_32(MBADDR_PIOCTLB,     0xCF);                              // Setup PIO B
+//    SPI_SEND_32(MBADDR_PIOCTLB,     0xFF);
+//
+//    // Initialise video hardware.
+//    //
+//    SPI_SEND_32(MBADDR_CRTGRPHSEL,  0x00);                              // Set Graphics VRAM to default, no access to GRAM.
+//    SPI_SEND_32(MBADDR_CRTBKCOLR,   0x00);                              // Set background colour on external output to black.
+//    SPI_SEND_32(MBADDR_GRAMCOLRSEL, 0x01);                              // Activate Blue graphics RAM bank for graphics operations (this is the default installed bank, red and green are optional). 
+//    SPI_SEND_32(MBADDR_CRTGRPHPRIO, 0x07);                              // Enable all colour bank graphic output with character priority.
+//    SPI_SEND_32(MBADDR_PIOA,        0x13);                              // A7 : H 0xD000:0xD7FF or 0xC000:0xFFFF VRAN paged in.
+//                                                                        // A6 : H Select Character VRAM (H) or Graphics VRAM (L)
+//                                                                        // A5 : H Select 80 char mode, 40 char mode = L
+//                                                                        // A4 : L Select all key strobe lines active, for detection of any key press.
+//                                                                        // A3-A0: Keyboard strobe lines
+//    SPI_SEND_32(MBADDR_PPIA,        0xFF);                              // A7 : L APSS Search for next program
+//                                                                        // A6 : L Automatic playback at end of rewind
+//                                                                        // A5 : L Automatic rewind during playback(recording)
+//                                                                        // A4 : L Invert Video
+//                                                                        // A3 : L Stop Cassette
+//                                                                        // A2 : L Play Cassette
+//                                                                        // A1 : L Fast Forward
+//                                                                        // A0 : L Rewind
+                                                                      
     // Initialise the virtual RAM from the HOST DRAM. This is to maintain compatibility as some applications (in my experience) have 
     // bugs, which Im putting down to not initialising variables. The host DRAM is in a pattern of 0x00..0x00, 0xFF..0xFF repeating
     // when first powered on.
@@ -226,8 +296,11 @@ void mz2000Init(uint8_t mode)
 
     // Initial memory config.
     mz2000SetupMemory(Z80Ctrl->defaultPageMode);
-
-    // mz2000LoadROM(ROM_IPL_ORIG_FILENAME, ROM_BOOT_LOAD_ADDR, ROM_BOOT_SIZE);
+   
+    // Overwrite the ROM with a modified version (comment out) if needed.
+    //mz2000LoadROM(ROM_IPL_ORIG_FILENAME, ROM_BOOT_LOAD_ADDR, ROM_ORIG_BOOT_SIZE);
+    //mz2000LoadROM(ROM_IPL_TZPU_FILENAME, ROM_BOOT_LOAD_ADDR, ROM_TZPU_BOOT_SIZE);
+    mz2000LoadROM(ROM_IPL_FUSIONX_FILENAME, 1, ROM_BOOT_LOAD_ADDR,   ROM_FUSIONX_BOOT_SIZE);
 
     pr_info("Enabling MZ-2000 driver.\n");
     return;
@@ -299,6 +372,7 @@ static inline void mz2000DecodeMemoryMapSetup(zuint16 address, zuint8 data, uint
                             // NST pages in all RAM and resets cpu.
                             if(data & 0x01)
                             {
+pr_info("NST Reset\n");
                                 MZ2000Ctrl.lowMemorySwap = 0;
                                 for(idx=0x0000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
                                 {
@@ -320,6 +394,7 @@ static inline void mz2000DecodeMemoryMapSetup(zuint16 address, zuint8 data, uint
                             // If IPL is active (L), reconfigure memory for power on state.
                             if((data & 0x01) == 0)
                             {
+pr_info("IPL Reset\n");
                                 mz2000SetupMemory(Z80Ctrl->defaultPageMode);
                             }
                             break;
@@ -415,9 +490,28 @@ static inline void mz2000Write(zuint16 address, zuint8 data, uint8_t ioFlag)
     // I/O Operation?
     if(ioFlag)
     {
-        switch(address)
+        // Only the lower 8 bits of the I/O address are processed as the upper byte is not used in the Sharp models.
+        //
+        switch(address & 0x00FF)
         {
+            case IO_TZ_SVCREQ:    
+              #if(DEBUG_ENABLED & 0x01)
+                if(Z80Ctrl->debug >= 3) pr_info("SVCREQ:%02x\n", data);
+              #endif
+
+                // If a k64f process has registered, send it a service request signal.
+pr_info("Sending signal,%02x\n", data);
+                sendSignal(Z80Ctrl->ioTask, SIGIO);
+                break;
+                
+            case IO_TZ_SYSREQ:    
+              #if(DEBUG_ENABLED & 0x01)
+                if(Z80Ctrl->debug >= 3) pr_info("SYSREQ:%02x\n", data);
+              #endif
+                break;
+
             default:
+                pr_info("PORT:%02x\n", data);
                 break;
         }
     } else

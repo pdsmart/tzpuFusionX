@@ -18,6 +18,7 @@
 //                                   switching between a Linux session and a Z80 session, the idea
 //                                   being the TTY will continue to run within the mirrored framebuffer
 //                                   and when reselected, refresh the hardware screen.
+//                  Apr 2023 - v1.1  Updated to include MZ-2000 mode.                                   
 //
 // Notes:           See Makefile to enable/disable conditional components
 //

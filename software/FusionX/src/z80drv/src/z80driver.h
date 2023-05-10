@@ -12,9 +12,10 @@
 // Copyright:       (c) 2019-2023 Philip Smart <philip.smart@net2net.org>
 //                  (c) 1999-2023 Manuel Sainz de Baranda y Goñi
 //
-// History:         Oct 2022 - v1.0  Initial write of the z80 kernel driver software.
-//                  Jan 2023 - v1.1  Added MZ-2000/MZ-80A modes.
-//                  Feb 2023 - v1.2  Added RFS virtual driver.
+// History:         Oct 2022 - v1.0   Initial write of the z80 kernel driver software.
+//                  Jan 2023 - v1.1   Added MZ-2000/MZ-80A modes.
+//                  Feb 2023 - v1.2   Added RFS virtual driver.
+//                  Apr 2023 - v1.4.1 Completed MZ2000 mode to work with arbiter and ttymz.
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -67,7 +68,7 @@
 #define DRIVER_LICENSE                        "GPL"
 #define DRIVER_AUTHOR                         "Philip D Smart"
 #define DRIVER_DESCRIPTION                    "Z80 CPU Emulator and Hardware Interface Driver"
-#define DRIVER_VERSION                        "v1.4"
+#define DRIVER_VERSION                        "v1.4.1"
 #define DRIVER_VERSION_DATE                   "Apr 2023"
 #define DRIVER_COPYRIGHT                      "(C) 2018-2023"
 #define Z80_VIRTUAL_ROM_SIZE                  (65536 * 32)       // Sized to maximum Kernel contiguous allocation size, 2M which is 4x512K ROMS.
@@ -99,11 +100,11 @@
 #define IO_TYPE_VIRTUAL_HW                    0x40000000
 
 // Hotkeys handled. 
-#define HOTKEY_ORIGINAL                       0xE8
-#define HOTKEY_RFS40                          0xE9
-#define HOTKEY_RFS80                          0xEA
-#define HOTKEY_TZFS                           0xEB
-#define HOTKEY_LINUX                          0xEC
+#define HOTKEY_ORIGINAL                       0xE0
+#define HOTKEY_RFS40                          0xE1
+#define HOTKEY_RFS80                          0xE2
+#define HOTKEY_TZFS                           0xE3
+#define HOTKEY_LINUX                          0xE4
 
 //*********************************************************************************************
 // Delay periods for the various hosts, which need adding to the primary opcode fetch in 
@@ -310,7 +311,7 @@ enum Z80_INSTRUCTION_DELAY {
   #define INSTRUCTION_DELAY_ROM_64MHZ         14
   #define INSTRUCTION_DELAY_ROM_128MHZ        7
   #define INSTRUCTION_DELAY_ROM_256MHZ        3
-  #define INSTRUCTION_DELAY_RAM_2MHZ          425
+  #define INSTRUCTION_DELAY_RAM_2MHZ          429
   #define INSTRUCTION_DELAY_RAM_4MHZ          210
   #define INSTRUCTION_DELAY_RAM_8MHZ          105
   #define INSTRUCTION_DELAY_RAM_16MHZ         52
@@ -573,12 +574,12 @@ enum Z80_INSTRUCTION_DELAY {
                                               }
 #define resetZ80()                            {\
                                                   setupMemory(Z80Ctrl->defaultPageMode);\
+                                                  z80_instant_reset(&Z80CPU);\
                                                   if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_TZPU)\
                                                   {\
+                                                      Z80RunMode = Z80_STOPPED;\
                                                       sendSignal(Z80Ctrl->ioTask, SIGUSR1); \
-                                                      udelay(2000);\
                                                   }\
-                                                  z80_instant_reset(&Z80CPU);\
                                               }
 
 #define IO_ADDR_E0                            0xE0

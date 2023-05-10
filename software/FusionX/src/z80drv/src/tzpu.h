@@ -321,7 +321,11 @@
 
 // Service request constants.
 //
-#define TZSVC_CMD_STRUCT_ADDR_TZFS   0x0ED80                             // Address of the command structure within TZFS - exists in 64K Block 0.
+#if (TARGET_HOST_MZ2000 == 1)
+  #define TZSVC_CMD_STRUCT_ADDR_TZFS 0x06D80                             // Address of the command structure within MZ-2000 IPL Mode
+#else
+  #define TZSVC_CMD_STRUCT_ADDR_TZFS 0x0ED80                             // Address of the command structure within TZFS - exists in 64K Block 0.
+#endif
 #define TZSVC_CMD_STRUCT_ADDR_CPM    0x4F560                             // Address of the command structure within CP/M - exists in 64K Block 4.
 #define TZSVC_CMD_STRUCT_ADDR_MZ700  0x6FD80                             // Address of the command structure within MZ700 compatible programs - exists in 64K Block 6.
 #define TZSVC_CMD_STRUCT_ADDR_ZOS    0x11FD80 // 0x7FD80                             // Address of the command structure for zOS use, exists in shared memory rather than FPGA. Spans top of block 6 and all of block 7.
@@ -351,7 +355,10 @@
 #define TZSVC_CMD_LOAD700BIOS80      0x23                                // Service command requesting that the MZ700 1Z-013A 80 column patched BIOS is loaded.
 #define TZSVC_CMD_LOAD80BIPL         0x24                                // Service command requesting the MZ-80B IPL is loaded.
 #define TZSVC_CMD_LOAD800BIOS        0x25                                // Service command requesting that the MZ800 9Z-504M BIOS is loaded.
-#define TZSVC_CMD_LOAD2000IPL        0x26                                // Service command requesting the MZ-2000 IPL is loaded.
+#define TZSVC_CMD_LOAD2KIPL          0x26                                // Service command requesting the MZ-2000 IPL is loaded.
+#define TZSVC_CMD_LOAD2KBASIC1       0x27                                // Service command to load BASIC 1Z-001 for the MZ-2000.
+#define TZSVC_CMD_LOAD2KBASIC2       0x28                                // Service command to load BASIC 1Z-002 for the MZ-2000.
+#define TZSVC_CMD_LOAD2KMON          0x29                                // Service command to load Monitor 1Z001M for the MZ-2000 IPL.
 #define TZSVC_CMD_LOADTZFS           0x2F                                // Service command requesting the loading of TZFS. This service is for machines which normally dont have a monitor BIOS. ie. MZ-80B/MZ-2000 and manually request TZFS.
 #define TZSVC_CMD_LOADBDOS           0x30                                // Service command to reload CPM BDOS+CCP.
 #define TZSVC_CMD_ADDSDDRIVE         0x31                                // Service command to attach a CPM disk to a drive number.
@@ -379,6 +386,7 @@
 #define TZSVC_CMD_SD_WRITESECTOR     0x62                                // Service command to provide raw write access to the underlying SD card.
 #define TZSVC_CMD_EXIT               0x7F                                // Service command to terminate TZFS and restart the machine in original mode.
 #define TZSVC_DEFAULT_TZFS_DIR       "TZFS"                              // Default directory where TZFS files are stored.
+#define TZSVC_DEFAULT_ROM_DIR        "ROMS"                              // Default directory where ROM files are stored.
 #define TZSVC_DEFAULT_CPM_DIR        "CPM"                               // Default directory where CPM files are stored.
 #define TZSVC_DEFAULT_MZF_DIR        "MZF"                               // Default directory where MZF files are stored.
 #define TZSVC_DEFAULT_CAS_DIR        "CAS"                               // Default directory where BASIC CASsette files are stored.
@@ -423,6 +431,9 @@
 #define MZ_ROM_MZ2000_IPL_TZPU        "MZ2000_IPL_TZPU.rom"              // Modified IPL ROM for the tranZPUter running on the Sharp MZ-2000.
 #define MZ_ROM_MZ2000_CGROM           "MZ2000_CGROM.rom"                 // MZ-2000 CGROM.
 #define MZ_ROM_TZFS                   "tzfs.rom"                         // tranZPUter Filing System ROM.
+#define MZ_ROM_MZ2000_1Z001           "mz2000_basic_1z001.rom"           // MZ-2000 BASIC 1Z-001.
+#define MZ_ROM_MZ2000_1Z002           "mz2000_basic_1z002.rom"           // MZ-2000 BASIC 1Z-002.
+#define MZ_ROM_MZ2000_1Z001M          "mz2000_mon_1z001m.rom"            // MZ-2000 BASIC 1Z-002.
       
 // CP/M constants.
 //

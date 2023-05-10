@@ -66,7 +66,7 @@
 
 // Video display constants.
 #define VC_MAX_ROWS                           25                                  // Maximum number of rows on display.
-#if defined(TARGET_HOST_MZ700)
+#if (TARGET_HOST_MZ700 == 1)
   #define VC_MAX_COLUMNS                      40                                  // Maximum number of columns on display.
 #else
   #define VC_MAX_COLUMNS                      80                                  // Maximum number of columns on display.
@@ -78,10 +78,20 @@
 #define KEYB_AUTOREPEAT_INITIAL_TIME          800                                 // Time in milliseconds before starting autorepeat.
 #define KEYB_AUTOREPEAT_TIME                  100                                 // Time in milliseconds between auto repeating characters.
 #define KEYB_FLASH_TIME                       350                                 // Time in milliseconds for the cursor flash change.
-#define CURSOR_THICK_BLOCK                    0x43                                // Thick block cursor for lower case CAPS OFF
-#define CURSOR_BLOCK                          0xEF                                // Block cursor for SHIFT Lock.
-#define CURSOR_UNDERLINE                      0x3E                                // Thick underscore for CAPS Lock.
 #define MAX_KEYB_BUFFER_SIZE                  32                                  // Maximum size of the keyboard buffer.
+#if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
+  #define KEY_SCAN_ROWS                       10                                  // Number of rows on keyboard to scan.
+  #define CURSOR_CHR_THICK_BLOCK              0x43                                // Thick block cursor for Shift Lock.
+  #define CURSOR_CHR_BLOCK                    0xEF                                // Block cursor for CAPS Lock.
+  #define CURSOR_CHR_GRAPH                    0xFF                                // Graphic cursor for GRAPH mode.
+  #define CURSOR_CHR_UNDERLINE                0x3E                                // Underline for lower case CAPS OFF.
+#elif (TARGET_HOST_MZ2000 == 1)
+  #define KEY_SCAN_ROWS                       12                                  
+  #define CURSOR_CHR_THICK_BLOCK              0x1E                                // Thick block cursor for Shift Lock.
+  #define CURSOR_CHR_BLOCK                    0x82                                // Block cursor for CAPS Lock.
+  #define CURSOR_CHR_GRAPH                    0x93                                // Graphic cursor for GRAPH mode.
+  #define CURSOR_CHR_UNDERLINE                0x1F                                // Underline for lower case CAPS OFF.
+#endif
 
 // Audio constants.
 #define TIMER_8253_MZ80A_FREQ                 2000000                             // Base input frequency of Timer 0 for square wave generation.
@@ -134,7 +144,7 @@
 #define VMATTR_BG_MASKOUT                     0xF8                                // Mask to filter out background attribute.
 #define VMATTR_BG_MASKIN                      0x07                                // Mask to filter out background attribute.
 
-// Sharp MZ constants.
+// Sharp MZ-80A/700 constants.
 //
 #define MBADDR_KEYPA                          0xE000                              // Mainboard 8255 Port A
 #define MBADDR_KEYPB                          0xE001                              // Mainboard 8255 Port B
@@ -155,6 +165,31 @@
 #define MBADDR_SCLDSP                         0xE200                              // Hardware scroll, a read to each location adds 8 to the start of the video access address therefore creating hardware scroll. 00 - reset to power up
 #define MBADDR_SCLBASE                        0xE2                                // High byte scroll base.
 #define MBADDR_DSPCTL                         0xDFFF                              // Display 40/80 select register (bit 7)
+
+// Sharp MZ-2000 constants.
+#define MBADDR_FDC                            0x0D8                               // MB8866 IO Region 0D8h - 0DBh
+#define MBADDR_FDC_CR                         MBADDR_FDC + 0x00                   // Command Register
+#define MBADDR_FDC_STR                        MBADDR_FDC + 0x00                   // Status Register
+#define MBADDR_FDC_TR                         MBADDR_FDC + 0x01                   // Track Register
+#define MBADDR_FDC_SCR                        MBADDR_FDC + 0x02                   // Sector Register
+#define MBADDR_FDC_DR                         MBADDR_FDC + 0x03                   // Data Register
+#define MBADDR_FDC_MOTOR                      MBADDR_FDC + 0x04                   // DS[0-3] and Motor control. 4 drives  DS= BIT 0 -> Bit 2 = Drive number, 2=1,1=0,0=0 DS0, 2=1,1=0,0=1 DS1 etc
+                                                                                  //  bit 7 = 1 MOTOR ON LOW (Active)
+#define MBADDR_FDC_SIDE                       MBADDR_FDC + 0x05                   // Side select, Bit 0 when set = SIDE SELECT LOW, 
+#define MBADDR_FDC_DDEN                       MBADDR_FDC + 0x06                   // Double density enable, 0 = double density, 1 = single density disks.
+#define MBADDR_PPIA                           0x0E0                               // 8255 Port A
+#define MBADDR_PPIB                           0x0E1                               // 8255 Port B
+#define MBADDR_PPIC                           0x0E2                               // 8255 Port C
+#define MBADDR_PPICTL                         0x0E3                               // 8255 Control Port
+#define MBADDR_PIOA                           0x0E8                               // Z80 PIO Port A
+#define MBADDR_PIOCTLA                        0x0E9                               // Z80 PIO Port A Control Port
+#define MBADDR_PIOB                           0x0EA                               // Z80 PIO Port B
+#define MBADDR_PIOCTLB                        0x0EB                               // Z80 PIO Port B Control Port
+#define MBADDR_CRTBKCOLR                      0x0F4                               // Configure external CRT background colour.
+#define MBADDR_CRTGRPHPRIO                    0x0F5                               // Graphics priority register, character or a graphics colour has front display priority.
+#define MBADDR_CRTGRPHSEL                     0x0F6                               // Graphics output select on CRT or external CRT
+#define MBADDR_GRAMCOLRSEL                    0x0F7                               // Graphics RAM colour bank select.
+#define MBADDR_GRAMADDRL                      0x0C000                             // Graphics RAM base address.
 
 //Common character definitions.
 #define SCROLL                                0x01                                // Set scroll direction UP.
@@ -201,7 +236,7 @@
 #define CTRL_Z                                0x1A
 #define ESC                                   0x1B
 #define CTRL_SLASH                            0x1C
-#define CTRL_LB                               0x1B
+#define CTRL_LB                               0x1
 #define CTRL_RB                               0x1D
 #define CTRL_CAPPA                            0x1E
 #define CTRL_UNDSCR                           0x1F
@@ -216,15 +251,16 @@
 #define FUNC8                                 0x87
 #define FUNC9                                 0x88
 #define FUNC10                                0x89
-#define PAGEUP                                0xE0
-#define PAGEDOWN                              0xE1
-#define CURHOMEKEY                            0xE2
-#define ALPHAGRAPHKEY                         0xE3
-#define HOTKEY_ORIGINAL                       0xE8
-#define HOTKEY_RFS80                          0xE9
-#define HOTKEY_RFS40                          0xEA
-#define HOTKEY_TZFS                           0xEB
-#define HOTKEY_LINUX                          0xEC
+#define HOTKEY_ORIGINAL                       0xE0
+#define HOTKEY_RFS80                          0xE1
+#define HOTKEY_RFS40                          0xE2
+#define HOTKEY_TZFS                           0xE3
+#define HOTKEY_LINUX                          0xE4
+#define PAGEUP                                0xE8
+#define PAGEDOWN                              0xE9
+#define CURHOMEKEY                            0xEA
+#define ALPHAGRAPHKEY                         0xEB
+#define SHIFTLOCKKEY                          0xEC
 #define NOKEY                                 0xF0
 #define CURSRIGHT                             0xF1
 #define CURSLEFT                              0xF2
@@ -263,6 +299,58 @@
 #define READ_HARDWARE()              (\
                                          z80io_PRL_Read8(1)\
                                      )
+#define WRITE_HARDWARE_IO(__force__,__addr__,__data__)\
+                                     {\
+                                         if(!ctrl.suspendIO || __force__ == 1)\
+                                         {\
+                                             SPI_SEND32((uint32_t)__addr__ << 16 | __data__ << 8 | CPLD_CMD_WRITEIO_ADDR);\
+                                         }\
+                                     }
+#define READ_HARDWARE_IO_INIT(__force__,__addr__)\
+                                     {\
+                                         if(!ctrl.suspendIO || __force__ == 1)\
+                                         {\
+                                             SPI_SEND32((uint32_t)__addr__ << 16 | 0x00 << 8 | CPLD_CMD_READIO_ADDR);\
+                                             while(CPLD_READY() == 0);\
+                                         }\
+                                     }
+#define READ_HARDWARE_IO()           (\
+                                         z80io_PRL_Read8(1)\
+                                     )
+// Video memory macros, allows for options based on host hardware - All Sharp MZ series are very similar.
+#if (TARGET_HOST_MZ2000 == 1)
+  // A7 : H 0xD000:0xD7FF or 0xC000:0xFFFF VRAM paged in.
+  // A6 : H Select Character VRAM (H) or Graphics VRAM (L)
+  // A5 : H Select 80 char mode, 40 char mode = L
+  // A4 : L Select all key strobe lines active, for detection of any key press.
+  // A3-A0: Keyboard strobe lines
+  #define ENABLE_VIDEO()             {\
+                                         display.hwVideoMode = (display.hwVideoMode & 0x3F) | 0xC0;\
+                                         WRITE_HARDWARE_IO(0, MBADDR_PIOA, display.hwVideoMode);\
+                                     }
+  #define DISABLE_VIDEO()            {\
+                                         display.hwVideoMode = (display.hwVideoMode & 0x3F);\
+                                         WRITE_HARDWARE_IO(0, MBADDR_PIOA, display.hwVideoMode);\
+                                     }
+  #define WRITE_VRAM_CHAR(__addr__,__data__)      WRITE_HARDWARE(0,__addr__,__data__)
+  #define WRITE_VRAM_ATTRIBUTE(__addr__,__data__) {}
+  #define WRITE_KEYB_STROBE(__data__)\
+                                     {\
+                                         display.hwVideoMode = (display.hwVideoMode & 0xF0) | 0x10 | (__data__ & 0x0F);\
+                                         WRITE_HARDWARE_IO(0, MBADDR_PIOA, display.hwVideoMode );\
+                                     }
+  #define READ_KEYB_INIT()           READ_HARDWARE_IO_INIT(0, MBADDR_PIOB)
+  #define READ_KEYB()                READ_HARDWARE_IO()
+#else
+  #define ENABLE_VIDEO()             {}
+  #define DISABLE_VIDEO()            {}
+  #define WRITE_VRAM_CHAR(__addr__,__data__)      WRITE_HARDWARE(0,__addr__,dispCodeMap[__data__].dispCode)
+  #define WRITE_VRAM_ATTRIBUTE(__addr__,__data__) WRITE_HARDWARE(0,__addr__,__data__)
+  #define WRITE_KEYB_STROBE(__data__)                       WRITE_HARDWARE(0, MBADDR_KEYPA, __data__)
+  #define READ_KEYB_INIT()           READ_HARDWARE_INIT(0, MBADDR_KEYPB)
+  #define READ_KEYB()                READ_HARDWARE()
+#endif
+
 
 
 // Cursor flash mechanism control states.
@@ -316,7 +404,7 @@ typedef struct {
 // Mapping table from keyboard scan codes to Sharp MZ keys.
 //
 typedef struct {
-    uint8_t                          scanCode[80];
+    uint8_t                          scanCode[KEY_SCAN_ROWS*8];
 } t_scanCodeMap;
 
 // Mapping table of a sharp keycode to an ANSI escape sequence string.
@@ -349,16 +437,19 @@ typedef struct {
     uint8_t                          lineWrap;                           // Wrap line at display edge (1) else stop printing at display edge.
     uint8_t                          useAnsiTerm;                        // Enable (1) Ansi Terminal Emulator, (0) disable.
     uint8_t                          inDebug;                            // Prevent recursion when outputting debug information.
+
+    // Working variables.
+    uint8_t                          hwVideoMode;                        // Physical configuration of the video control register.
 } t_displayBuffer;
 
 // Structure for maintaining the Sharp MZ keyboard parameters and data. Used to retrieve and map a key along with associated
 // attributes such as cursor flashing.
 //
 typedef struct {
-    uint8_t                          scanbuf[2][10];
-    uint8_t                          keydown[10];
-    uint8_t                          keyup[10];
-    uint8_t                          keyhold[10];
+    uint8_t                          scanbuf[2][KEY_SCAN_ROWS];
+    uint8_t                          keydown[KEY_SCAN_ROWS];
+    uint8_t                          keyup[KEY_SCAN_ROWS];
+    uint8_t                          keyhold[KEY_SCAN_ROWS];
     uint32_t                         holdTimer;
     uint8_t                          breakKey;                           // Break key pressed.
     uint8_t                          ctrlKey;                            // Ctrl key pressed.
@@ -398,10 +489,10 @@ typedef struct {
     uint8_t                          setDisplayMode;                     // Display mode command detected.
     uint8_t                          setExtendedMode;                    // Extended mode command detected.
     uint8_t                          charbuf[80];                        // Storage for the parameter characters as they are received.
-    uint16_t                         param[10];                          // Parsed paraemters.
+    uint16_t                         param[10];                          // Parsed parameters.
     uint8_t                          saveRow;                            // Store the current row when requested.
     uint8_t                          saveCol;                            // Store the current column when requested.
-    uint8_t                          saveDisplayRow;                      // Store the current display buffer row when requested.
+    uint8_t                          saveDisplayRow;                     // Store the current display buffer row when requested.
 } t_AnsiTerm;
 
 // Application execution constants.

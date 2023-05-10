@@ -74,9 +74,6 @@ void mz700SetupMemory(enum Z80_MEMORY_PROFILE mode)
     // Locals.
     uint32_t    idx;
 
-    // The PCW contains upto 512KB of standard RAM which can be expnded to a physical max of 2MB. The kernel malloc limit is 2MB so the whole virtual
-    // memory can be mapped into the PCW memory address range.
-
     // Setup defaults.
     MZ700Ctrl.regCtrl         = 0x00;
 
@@ -196,6 +193,9 @@ void mz700Init(uint8_t mode)
     // Locals.
     uint32_t  idx;
     
+    // Reset memory paging to default.
+    SPI_SEND_32(0x00e4, 0x00 << 8 | CPLD_CMD_WRITEIO_ADDR);
+
     // Initialise the virtual RAM from the HOST DRAM. This is to maintain compatibility as some applications (in my experience) have 
     // bugs, which Im putting down to not initialising variables. The host DRAM is in a pattern of 0x00..0x00, 0xFF..0xFF repeating
     // when first powered on.    
@@ -230,29 +230,27 @@ void mz700Init(uint8_t mode)
         }
     }
 
-    // Add in a test program to guage execution speed.
-    #if(TARGET_HOST_MZ700 == 1)
-      Z80Ctrl->ram[0x1200] = 0x01;
-      Z80Ctrl->ram[0x1201] = 0x86;
-      Z80Ctrl->ram[0x1202] = 0xf2;
-      Z80Ctrl->ram[0x1203] = 0x3e;
-      Z80Ctrl->ram[0x1204] = 0x15;
-      Z80Ctrl->ram[0x1205] = 0x3d;
-      Z80Ctrl->ram[0x1206] = 0x20;
-      Z80Ctrl->ram[0x1207] = 0xfd;
-      Z80Ctrl->ram[0x1208] = 0x0b;
-      Z80Ctrl->ram[0x1209] = 0x78;
-      Z80Ctrl->ram[0x120a] = 0xb1;
-      Z80Ctrl->ram[0x120b] = 0x20;
-      Z80Ctrl->ram[0x120c] = 0xf6;
-      Z80Ctrl->ram[0x120d] = 0xc3;
-      Z80Ctrl->ram[0x120e] = 0x00;
-      Z80Ctrl->ram[0x120f] = 0x00;
-    #endif
-   
-    // Reset memory paging to default.
-    SPI_SEND_32(0x00e4, 0x00 << 8 | CPLD_CMD_WRITEIO_ADDR);
+    // Initial memory config.
+    mz700SetupMemory(Z80Ctrl->defaultPageMode);
 
+    // Add in a test program to guage execution speed.
+    Z80Ctrl->ram[0x1200] = 0x01;
+    Z80Ctrl->ram[0x1201] = 0x86;
+    Z80Ctrl->ram[0x1202] = 0xf2;
+    Z80Ctrl->ram[0x1203] = 0x3e;
+    Z80Ctrl->ram[0x1204] = 0x15;
+    Z80Ctrl->ram[0x1205] = 0x3d;
+    Z80Ctrl->ram[0x1206] = 0x20;
+    Z80Ctrl->ram[0x1207] = 0xfd;
+    Z80Ctrl->ram[0x1208] = 0x0b;
+    Z80Ctrl->ram[0x1209] = 0x78;
+    Z80Ctrl->ram[0x120a] = 0xb1;
+    Z80Ctrl->ram[0x120b] = 0x20;
+    Z80Ctrl->ram[0x120c] = 0xf6;
+    Z80Ctrl->ram[0x120d] = 0xc3;
+    Z80Ctrl->ram[0x120e] = 0x00;
+    Z80Ctrl->ram[0x120f] = 0x00;
+   
     pr_info("Enabling MZ-700 driver.\n");
     return;
 }

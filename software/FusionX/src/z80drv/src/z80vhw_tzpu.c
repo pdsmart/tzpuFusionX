@@ -150,7 +150,7 @@ void tzpuSetupMemory(enum Z80_MEMORY_PROFILE mode)
     TZPUCtrl.regCpldCfg     = 0x00;   // Not used, as no CPLD available, but need to store/return value if addressed.
 
     // Default memory mode, TZFS.
-    Z80Ctrl->memoryMode = TZMM_ORIG;
+    Z80Ctrl->memoryMode = TZMM_TZFS;
 
     // Reset IO mapping.
     for(idx=0x0000; idx < IO_PAGE_SIZE; idx++)

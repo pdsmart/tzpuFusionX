@@ -194,6 +194,9 @@ void pcwInit(uint8_t mode)
     Z80Ctrl->ram[0] = 0x00;
     Z80Ctrl->ram[1] = 0x00;
 
+    // Initial memory config.
+    pcwSetupMemory(Z80Ctrl->defaultPageMode);
+
     pr_info("Enabling PCW-%s driver.\n", mode == 0 ? "8256" : "9256");
     return;
 }
@@ -297,7 +300,7 @@ pr_info("VORIGIN:%02x\n", data);
 pr_info("SCREENATTR:%02x\n", data);
                 break;
             case IO_GACMD:
-pr_info("GACMD:%02x\n", data);
+//pr_info("GACMD:%02x\n", data);
                 break;
 
             default:

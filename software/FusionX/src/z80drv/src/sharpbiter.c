@@ -20,6 +20,7 @@
 // Copyright:       (c) 2019-2023 Philip Smart <philip.smart@net2net.org>
 //
 // History:         Feb 2023 v1.0  - Initial write.
+//                  Apr 2023 v1.1  - Updates to include MZ-2000.
 //
 // Notes:           See Makefile to enable/disable conditional components
 //

@@ -13,31 +13,32 @@
 // Copyright:       (c) 2019-2023 Philip Smart <philip.smart@net2net.org>
 //                  (c) 1999-2023 Manuel Sainz de Baranda y Goñi
 //
-// History:         Oct 2022 - v1.0  Initial write of the z80 kernel driver software.
-//                  Jan 2023 - v1.1  Added MZ-2000/MZ-80A modes. There are serious limitations with the
-//                                   SSD202 I/O. The I/O Bus appears to run at 72MHz and the GPIO bits
-//                                   are split across 2x16 registers per bit. This limits 8bit read 
-//                                   speed to < 2MB/s, write speed slower due to select signal. Thus it
-//                                   is not feasible to run a program in the host memory at full speed.
-//                                   Virtual (Kernel) memory is used for all programs and host is only
-//                                   accessed for specific reasons, such as the MZ-80A FDD Bios which 
-//                                   changes according to state of READY signal. I/O operations have to
-//                                   use lookahead during fetch cycle to steal time in order to meet timings.
-//                                   If SigmaStar make a newer SSD or an alternative becomes available which
-//                                   has I/O bus running at 4x speed or has 32bit per cycle GPIO access then
-//                                   the design needs to be upgraded to fulfill the idea of running programs
-//                                   in host memory at full speed.
-//                  Feb 2023 - v1.2  Added MZ-80A Rom Filing System device driver. This allows the FusionX
-//                                   hosted in an MZ-80A to run the original RFS Monitor and software.
-//                  Feb 2023 - v1.3  Added tranZPUter SW device driver. This allows the FusionX hosted
-//                                   in any supported host to run TZFS and the updated applications
-//                                   such as CP/M, SA-5510 Basic, MS-Basic etc. Adding this device driver
-//                                   prepares the ground to add the SOM GPU as the Video emulation of
-//                                   the Sharp machines.
-//                  Mar 2023 - v1.4  With the advent of the PCW-8XXX series, seperated distinct machine
-//                                   configurations into device driver modules, which are only built
-//                                   if same as the target machine. This then allows the z80 driver to be
-//                                   a vanilla Z80 or customisations for hosts pulled in.
+// History:         Oct 2022 - v1.0   Initial write of the z80 kernel driver software.
+//                  Jan 2023 - v1.1   Added MZ-2000/MZ-80A modes. There are serious limitations with the
+//                                    SSD202 I/O. The I/O Bus appears to run at 72MHz and the GPIO bits
+//                                    are split across 2x16 registers per bit. This limits 8bit read 
+//                                    speed to < 2MB/s, write speed slower due to select signal. Thus it
+//                                    is not feasible to run a program in the host memory at full speed.
+//                                    Virtual (Kernel) memory is used for all programs and host is only
+//                                    accessed for specific reasons, such as the MZ-80A FDD Bios which 
+//                                    changes according to state of READY signal. I/O operations have to
+//                                    use lookahead during fetch cycle to steal time in order to meet timings.
+//                                    If SigmaStar make a newer SSD or an alternative becomes available which
+//                                    has I/O bus running at 4x speed or has 32bit per cycle GPIO access then
+//                                    the design needs to be upgraded to fulfill the idea of running programs
+//                                    in host memory at full speed.
+//                  Feb 2023 - v1.2   Added MZ-80A Rom Filing System device driver. This allows the FusionX
+//                                    hosted in an MZ-80A to run the original RFS Monitor and software.
+//                  Feb 2023 - v1.3   Added tranZPUter SW device driver. This allows the FusionX hosted
+//                                    in any supported host to run TZFS and the updated applications
+//                                    such as CP/M, SA-5510 Basic, MS-Basic etc. Adding this device driver
+//                                    prepares the ground to add the SOM GPU as the Video emulation of
+//                                    the Sharp machines.
+//                  Mar 2023 - v1.4   With the advent of the PCW-8XXX series, seperated distinct machine
+//                                    configurations into device driver modules, which are only built
+//                                    if same as the target machine. This then allows the z80 driver to be
+//                                    a vanilla Z80 or customisations for hosts pulled in.
+//                  Apr 2023 - v1.4.1 Completed MZ2000 mode to work with arbiter and ttymz.
 //
 //
 // Notes:           See Makefile to enable/disable conditional components
@@ -526,6 +527,8 @@ static zuint8 z80_read(void *context, zuint16 address)
             Z80Ctrl->keyportTrigger = 0;
         }
     }
+  #elif (TARGET_HOST_MZ2000 == 1)
+
   #endif
 
   #if(DEBUG_ENABLED & 1)
@@ -807,6 +810,31 @@ static zuint8 z80_in(void *context, zuint16 port)
         // Finally ensure the data from the port is ready and retrieve it.
         while(CPLD_READY() == 0);
         value = z80io_PRL_Read();
+      
+      #if (TARGET_HOST_MZ2000 == 1)
+        // Keyport data? Store.
+        if((port&0xff) == 0xEA)
+        {
+            // If this is the CTRL key row, check the CTRL key.
+            if((Z80Ctrl->keyportStrobe & 0x1f) == 0x1b)
+            {
+                Z80Ctrl->keyportShiftCtrl = (value & 0x08) == 0 ? 0x01 : 0x00;
+                if(Z80Ctrl->keyportShiftCtrl == 1)
+                {
+                    Z80Ctrl->keyportTrigger = 0;
+                }
+            } else
+            // If CTRL key is held and we scan the Function Key Row (not all keys mode), then action the pressed key.
+            if(Z80Ctrl->keyportShiftCtrl == 1 && (Z80Ctrl->keyportStrobe & 0x1f) == 0x10 && (value&0x0f) != 0x0f)
+            {
+                Z80Ctrl->keyportHotKey = (value & 0x01) == 0 ? HOTKEY_ORIGINAL :
+                                      // (value & 0x02) == 0 ? HOTKEY_RFS40    :
+                                      // (value & 0x04) == 0 ? HOTKEY_TZFS     :
+                                         (value & 0x08) == 0 ? HOTKEY_LINUX    : 0x00;
+                Z80Ctrl->keyportTrigger = Z80Ctrl->keyportHotKey;
+            }
+        }
+      #endif
     } else
     // Virtual I/O Port.
     if(isVirtualIO(port))
@@ -853,6 +881,14 @@ static void z80_out(void *context, zuint16 port, zuint8 value)
        
         // Decode address to action any host specific memory map changes.
         decodeMemoryMapSetup(port, value, 1, false);
+      #endif
+
+      #if (TARGET_HOST_MZ2000 == 1)
+        // To detect Hotkey presses, we need to store the keyboard strobe data and on keydata read.
+        if((port&0xff) == 0xE8)
+        {
+            Z80Ctrl->keyportStrobe = value;
+        }
       #endif
     } else
     if(isVirtualIO(port))
@@ -1007,39 +1043,38 @@ int thread_z80(void * thread_nr)
         // Reset pressed?
         if(CPLD_RESET())
         {
-            resetZ80();
-
             // Wait for release before restarting CPU.
             while(CPLD_RESET());
-        } else
-        {
-            // Update state to indicate request has been actioned.
-            mutex_lock(&Z80RunModeMutex);
-            if(Z80RunMode == Z80_STOP)     Z80RunMode = Z80_STOPPED;
-            if(Z80RunMode == Z80_PAUSE)    Z80RunMode = Z80_PAUSED;
-            if(Z80RunMode == Z80_CONTINUE) Z80RunMode = Z80_RUNNING;
-            if(Z80RunMode == Z80_RUNNING) canRun=1; else canRun=0;
-            mutex_unlock(&Z80RunModeMutex);
 
-          #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
-            // Hotkey pressed? Bring up user menu.
-            if(Z80Ctrl->keyportTrigger != 0x00 && Z80Ctrl->keyportTriggerLast == 0)
-            {
-                z80menu();
-
-                // Send signal to arbiter to change run mode.
-                sendSignal(Z80Ctrl->arbTask, SIGUSR1);
-                Z80Ctrl->keyportShiftCtrl = 0;
-
-                // Suspend processing until arbiter sets up new environment.
-                mutex_lock(&Z80RunModeMutex);
-                Z80RunMode = Z80_STOPPED;
-                canRun = 0;
-                mutex_unlock(&Z80RunModeMutex);
-            }
-            Z80Ctrl->keyportTriggerLast = Z80Ctrl->keyportTrigger;
-          #endif
+            resetZ80();
         }
+
+        // Update state to indicate request has been actioned.
+        mutex_lock(&Z80RunModeMutex);
+        if(Z80RunMode == Z80_STOP)     Z80RunMode = Z80_STOPPED;
+        if(Z80RunMode == Z80_PAUSE)    Z80RunMode = Z80_PAUSED;
+        if(Z80RunMode == Z80_CONTINUE) Z80RunMode = Z80_RUNNING;
+        if(Z80RunMode == Z80_RUNNING) canRun=1; else canRun=0;
+        mutex_unlock(&Z80RunModeMutex);
+
+      #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ2000 == 1)
+        // Hotkey pressed? Bring up user menu.
+        if(Z80Ctrl->keyportTrigger != 0x00 && Z80Ctrl->keyportTriggerLast == 0)
+        {
+            z80menu();
+
+            // Send signal to arbiter to change run mode.
+            sendSignal(Z80Ctrl->arbTask, SIGUSR1);
+            Z80Ctrl->keyportShiftCtrl = 0;
+
+            // Suspend processing until arbiter sets up new environment.
+            mutex_lock(&Z80RunModeMutex);
+            Z80RunMode = Z80_STOPPED;
+            canRun = 0;
+            mutex_unlock(&Z80RunModeMutex);
+        }
+        Z80Ctrl->keyportTriggerLast = Z80Ctrl->keyportTrigger;
+      #endif
     }
 
     // Release spinlock as we are unloading driver.
@@ -1388,7 +1423,7 @@ void setupMemory(enum Z80_MEMORY_PROFILE mode)
     else
   #endif
     // tranZPUter operates in all supported Sharp machines.
-  #if(TARGET_HOST_PCW == 0)
+  #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
     if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_TZPU)
         tzpuSetupMemory(mode);
     else

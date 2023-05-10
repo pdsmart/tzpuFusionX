@@ -11,6 +11,7 @@
 // Copyright:       (c) 2019-2023 Philip Smart <philip.smart@net2net.org>
 //
 // History:         Feb 2023 - v1.0  Initial write of the Sharp MZ tty driver software.
+//                  Apr 2023 - v1.1  Updated to include MZ-2000 mode.
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -35,8 +36,8 @@
 #define DRIVER_LICENSE                        "GPL"
 #define DRIVER_AUTHOR                         "Philip D Smart"
 #define DRIVER_DESCRIPTION                    "Sharp MZ TTY Driver"
-#define DRIVER_VERSION                        "v1.01"
-#define DRIVER_VERSION_DATE                   "Mar 2023"
+#define DRIVER_VERSION                        "v1.1"
+#define DRIVER_VERSION_DATE                   "Apr 2023"
 #define DRIVER_COPYRIGHT                      "(C) 2018-2023"
 #define DEVICE_NAME                           "ttymz"
 #define DRIVER_NAME                           "SharpMZ_tty"
