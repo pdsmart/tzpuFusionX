@@ -1,12 +1,14 @@
 Development Cycle
 -----------------
 
-To avoid changes for one host affecting another the driver is split into seperate hosts containing almost identical code.
-The idea, after development is complete, is to merge them into a single drive which autodetects, via the CPLD, the host model
-and selects the code accordingly.
+z80drv now supports several machines, ie. MZ-80A, MZ-700, MZ-2000, PCW-8256 with more in the pipeline. 
 
 Please edit Makefile and set the model prior to changing the Model source. In theory this file will be deleted once the source is
-merged.
+merged. Alternatively, isse make with the host name, ie. make MZ80A.
+
+The virtual device concept (ie. an MZ-700 with a tranZPUter SW card) has been incorporated as virtual hardware modules, ie. z80vhw_rfs.c
+which adds the RFS card to the MZ-700/MZ-80A. These virtual devices are built and added to the target kernel module dependent on supported
+host.
 
 Zeta
 ----
