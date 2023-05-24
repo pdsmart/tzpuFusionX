@@ -50,6 +50,8 @@
   #define OS_BASE_DIR                "/apps/FusionX/host/MZ-80A/"        // Linux base directory where all the files are stored. On a real tranZPUter this would be the SD card root dir.
 #elif (TARGET_HOST_MZ700 == 1)
   #define OS_BASE_DIR                "/apps/FusionX/host/MZ-700/"
+#elif (TARGET_HOST_MZ1500 == 1)
+  #define OS_BASE_DIR                "/apps/FusionX/host/MZ-1500/"
 #elif (TARGET_HOST_MZ2000 == 1)
   #define OS_BASE_DIR                "/apps/FusionX/host/MZ-2000/"
 #endif
@@ -203,7 +205,7 @@
 // CPLD Configuration constants.
 #define HWMODE_MZ80K                 0x00                                // Hardware mode = MZ80K
 #define HWMODE_MZ80C                 0x01                                // Hardware mode = MZ80C
-#define HWMODE_MZ1200                0x02                                // Hardware mode = MZ1200
+#define HWMODE_MZ1500                0x02                                // Hardware mode = MZ1500
 #define HWMODE_MZ80A                 0x03                                // Hardware mode = MZ80A
 #define HWMODE_MZ700                 0x04                                // Hardware mode = MZ700
 #define HWMODE_MZ800                 0x05                                // Hardware mode = MZ800
@@ -421,6 +423,7 @@
 #define MZ_ROM_1Z_013A_KM_40C         "1Z-013A-KM.rom"                   // Original 40 character Monitor ROM for the Sharp MZ700 with keyboard remapped for the MZ80A.
 #define MZ_ROM_1Z_013A_KM_80C         "1Z-013A-KM-8.rom"                 // Original Monitor ROM patched for the Sharp MZ700 with keyboard remapped for the MZ80A and patched for 80 column mode.
 #define MZ_ROM_1Z_013A_2000           "1Z-013A-2000.rom"                 // Original 40 character Monitor ROM for the Sharp MZ700 modified to run on an MZ-2000.
+#define MZ_ROM_1Z_009B_40C            "1Z-009B.rom"                      // Original 40 character MZ-1500 Monitor ROM.
 #define MZ_ROM_9Z_504M_COMBINED       "MZ800_IPL.rom"                    // Original MZ-800 BIOS which comprises the 1Z_013B BIOS, 9Z_504M IPL, CGROM and IOCS.
 #define MZ_ROM_9Z_504M                "MZ800_9Z_504M.rom"                // Modified MZ-800 9Z_504M IPL to contain a select TZFS option.
 #define MZ_ROM_1Z_013B                "MZ800_1Z_013B.rom"                // Original MZ-800 1Z_013B MZ-700 compatible BIOS.
@@ -481,7 +484,7 @@ enum TARGETS {
 enum MACHINE_HW_TYPES {
     HW_MZ80K                         = HWMODE_MZ80K,                     // Host hardware = MZ-80K.
     HW_MZ80C                         = HWMODE_MZ80C,                     // Host hardware = MZ-80C.
-    HW_MZ1200                        = HWMODE_MZ1200,                    // Host hardware = MZ-1200.
+    HW_MZ1500                        = HWMODE_MZ1500,                    // Host hardware = MZ-1500.
     HW_MZ80A                         = HWMODE_MZ80A,                     // Host hardware = MZ-80A.
     HW_MZ700                         = HWMODE_MZ700,                     // Host hardware = MZ-700.
     HW_MZ800                         = HWMODE_MZ800,                     // Host hardware = MZ-800.

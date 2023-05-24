@@ -21,6 +21,7 @@
 //
 // History:         Feb 2023 v1.0  - Initial write.
 //                  Apr 2023 v1.1  - Updates to include MZ-2000.
+//                  Apr 2023 v1.2  - Updates to include MZ-1500.
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -338,11 +339,14 @@ int main(int argc, char *argv[])
                   #if(TARGET_HOST_MZ80A == 1)
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ80A;
                     ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
-                  #elif(TARGET_HOST_MZ2000 == 1)
-                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ2000;
-                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
                   #elif(TARGET_HOST_MZ700 == 1)
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ700;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #elif(TARGET_HOST_MZ1500 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ1500;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #elif(TARGET_HOST_MZ2000 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ2000;
                     ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
                   #endif
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_RFS80;
@@ -356,10 +360,12 @@ int main(int argc, char *argv[])
                     ioctlCmd.cmd = IOCTL_CMD_ADD_DEVICE;
                   #if(TARGET_HOST_MZ80A == 1)
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ80A;
-                  #elif(TARGET_HOST_MZ2000 == 1)
-                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ2000;
                   #elif(TARGET_HOST_MZ700 == 1)
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ700;
+                  #elif(TARGET_HOST_MZ1500 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ1500;
+                  #elif(TARGET_HOST_MZ2000 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ2000;
                   #endif
                     ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
 
@@ -382,11 +388,14 @@ int main(int argc, char *argv[])
                   #if(TARGET_HOST_MZ80A == 1)
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ80A;
                     ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
-                  #elif(TARGET_HOST_MZ2000 == 1)
-                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ2000;
-                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
                   #elif(TARGET_HOST_MZ700 == 1)
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ700;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #elif(TARGET_HOST_MZ1500 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ1500;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #elif(TARGET_HOST_MZ2000 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ2000;
                     ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
                   #endif
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_RFS80;
@@ -419,11 +428,14 @@ int main(int argc, char *argv[])
                   #if(TARGET_HOST_MZ80A == 1)
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ80A;
                     ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
-                  #elif(TARGET_HOST_MZ2000 == 1)
-                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ2000;
-                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
                   #elif(TARGET_HOST_MZ700 == 1)
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ700;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #elif(TARGET_HOST_MZ1500 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ1500;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #elif(TARGET_HOST_MZ2000 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ2000;
                     ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
                   #endif
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_RFS80;
@@ -450,11 +462,14 @@ int main(int argc, char *argv[])
                   #if(TARGET_HOST_MZ80A == 1)
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ80A;
                     ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
-                  #elif(TARGET_HOST_MZ2000 == 1)
-                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ2000;
-                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
                   #elif(TARGET_HOST_MZ700 == 1)
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ700;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #elif(TARGET_HOST_MZ1500 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ1500;
+                    ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
+                  #elif(TARGET_HOST_MZ2000 == 1)
+                    ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ2000;
                     ioctl(arbCtrl.fdZ80, IOCTL_CMD_SEND, &ioctlCmd);                     
                   #endif
                     ioctlCmd.vdev.device = VIRTUAL_DEVICE_RFS80;

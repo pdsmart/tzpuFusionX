@@ -12,6 +12,8 @@
 // Copyright:       (c) 2019-2023 Philip Smart <philip.smart@net2net.org>
 //
 // History:         v1.0 Feb 2023  - Initial write of the Sharp MZ series hardware interface software.
+//                  v1.01 Mar 2023 - Bug fixes and additional ESC sequence processing.
+//                  v1.02 May 2023 - Updates to accommodate MZ-1500 host.
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -37,36 +39,47 @@
 #endif
 
 // Build time target. Overrides if compile time definition given.
-#if defined(TARGET_HOST_MZ700)
-  #define TARGET_HOST_MZ700                   1
-  #define TARGET_HOST_MZ2000                  0
-  #define TARGET_HOST_MZ80A                   0
-  #define TARGET_HOST_PCW                     0
-#elif defined(TARGET_HOST_MZ2000)
-  #define TARGET_HOST_MZ2000                  1
-  #define TARGET_HOST_MZ700                   0
-  #define TARGET_HOST_MZ80A                   0
-  #define TARGET_HOST_PCW                     0
-#elif defined(TARGET_HOST_MZ80A)
+#if defined(TARGET_HOST_MZ80A)
   #define TARGET_HOST_MZ80A                   1
   #define TARGET_HOST_MZ2000                  0
   #define TARGET_HOST_MZ700                   0
+  #define TARGET_HOST_MZ1500                  0
+  #define TARGET_HOST_PCW                     0
+#elif defined(TARGET_HOST_MZ700)
+  #define TARGET_HOST_MZ700                   1
+  #define TARGET_HOST_MZ80A                   0
+  #define TARGET_HOST_MZ1500                  0
+  #define TARGET_HOST_MZ2000                  0
+  #define TARGET_HOST_PCW                     0
+#elif defined(TARGET_HOST_MZ1500)
+  #define TARGET_HOST_MZ1500                  1
+  #define TARGET_HOST_MZ80A                   0
+  #define TARGET_HOST_MZ700                   0
+  #define TARGET_HOST_MZ2000                  0
+  #define TARGET_HOST_PCW                     0
+#elif defined(TARGET_HOST_MZ2000)
+  #define TARGET_HOST_MZ2000                  1
+  #define TARGET_HOST_MZ80A                   0
+  #define TARGET_HOST_MZ700                   0
+  #define TARGET_HOST_MZ1500                  0
   #define TARGET_HOST_PCW                     0
 #elif defined(TARGET_HOST_PCW8XXX) || defined(TARGET_HOST_PCW9XXX)
   #define TARGET_HOST_PCW                     1
-  #define TARGET_HOST_MZ2000                  0
-  #define TARGET_HOST_MZ700                   0
   #define TARGET_HOST_MZ80A                   0
+  #define TARGET_HOST_MZ700                   0
+  #define TARGET_HOST_MZ1500                  0
+  #define TARGET_HOST_MZ2000                  0
 #else
   #define TARGET_HOST_MZ700                   0                                   // Target compilation for an MZ700
-  #define TARGET_HOST_MZ2000                  0                                   //                           MZ2000
   #define TARGET_HOST_MZ80A                   0                                   //                           MZ80A
+  #define TARGET_HOST_MZ1500                  0                                   //                           MZ1500
+  #define TARGET_HOST_MZ2000                  0                                   //                           MZ2000
   #define TARGET_HOST_PCW                     0                                   //                           Amstrad PCW8XXX/9XXX
 #endif
 
 // Video display constants.
 #define VC_MAX_ROWS                           25                                  // Maximum number of rows on display.
-#if (TARGET_HOST_MZ700 == 1)
+#if (TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1)
   #define VC_MAX_COLUMNS                      40                                  // Maximum number of columns on display.
 #else
   #define VC_MAX_COLUMNS                      80                                  // Maximum number of columns on display.
@@ -79,12 +92,12 @@
 #define KEYB_AUTOREPEAT_TIME                  100                                 // Time in milliseconds between auto repeating characters.
 #define KEYB_FLASH_TIME                       350                                 // Time in milliseconds for the cursor flash change.
 #define MAX_KEYB_BUFFER_SIZE                  32                                  // Maximum size of the keyboard buffer.
-#if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
+#if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1)
   #define KEY_SCAN_ROWS                       10                                  // Number of rows on keyboard to scan.
   #define CURSOR_CHR_THICK_BLOCK              0x43                                // Thick block cursor for Shift Lock.
-  #define CURSOR_CHR_BLOCK                    0xEF                                // Block cursor for CAPS Lock.
+  #define CURSOR_CHR_BLOCK                    0xD0                                // Block cursor for CAPS Lock.
   #define CURSOR_CHR_GRAPH                    0xFF                                // Graphic cursor for GRAPH mode.
-  #define CURSOR_CHR_UNDERLINE                0x3E                                // Underline for lower case CAPS OFF.
+  #define CURSOR_CHR_UNDERLINE                0x3C                                // Underline for lower case CAPS OFF.
 #elif (TARGET_HOST_MZ2000 == 1)
   #define KEY_SCAN_ROWS                       12                                  
   #define CURSOR_CHR_THICK_BLOCK              0x1E                                // Thick block cursor for Shift Lock.
@@ -96,6 +109,7 @@
 // Audio constants.
 #define TIMER_8253_MZ80A_FREQ                 2000000                             // Base input frequency of Timer 0 for square wave generation.
 #define TIMER_8253_MZ700_FREQ                 768000                              // Base input frequency of Timer 0 for square wave generation.
+#define TIMER_8253_MZ1500_FREQ                768000                              // Base input frequency of Timer 0 for square wave generation.
 
 // Base addresses and sizes within the Video Controller.
 #define VIDEO_BASE_ADDR                       0x000000                            // Base address of the Video Controller.
@@ -165,6 +179,20 @@
 #define MBADDR_SCLDSP                         0xE200                              // Hardware scroll, a read to each location adds 8 to the start of the video access address therefore creating hardware scroll. 00 - reset to power up
 #define MBADDR_SCLBASE                        0xE2                                // High byte scroll base.
 #define MBADDR_DSPCTL                         0xDFFF                              // Display 40/80 select register (bit 7)
+#define IO_ADDR_E0                            0xE0
+#define IO_ADDR_E1                            0xE1
+#define IO_ADDR_E2                            0xE2
+#define IO_ADDR_E3                            0xE3
+#define IO_ADDR_E4                            0xE4
+#define IO_ADDR_E5                            0xE5
+#define IO_ADDR_E6                            0xE6
+#define IO_ADDR_E7                            0xE7
+#define IO_ADDR_E8                            0xE8
+#define IO_PSG_BOTH                           0xE9
+#define IO_ADDR_EA                            0xEA
+#define IO_ADDR_EB                            0xEB
+#define IO_PCG_PRIO                           0xF0
+#define IO_PALETTE                            0xF1
 
 // Sharp MZ-2000 constants.
 #define MBADDR_FDC                            0x0D8                               // MB8866 IO Region 0D8h - 0DBh
@@ -332,7 +360,7 @@
                                          display.hwVideoMode = (display.hwVideoMode & 0x3F);\
                                          WRITE_HARDWARE_IO(0, MBADDR_PIOA, display.hwVideoMode);\
                                      }
-  #define WRITE_VRAM_CHAR(__addr__,__data__)      WRITE_HARDWARE(0,__addr__,__data__)
+  #define WRITE_VRAM_CHAR(__addr__,__data__,__xlat__)  WRITE_HARDWARE(0,__addr__,__data__)
   #define WRITE_VRAM_ATTRIBUTE(__addr__,__data__) {}
   #define WRITE_KEYB_STROBE(__data__)\
                                      {\
@@ -344,9 +372,9 @@
 #else
   #define ENABLE_VIDEO()             {}
   #define DISABLE_VIDEO()            {}
-  #define WRITE_VRAM_CHAR(__addr__,__data__)      WRITE_HARDWARE(0,__addr__,dispCodeMap[__data__].dispCode)
-  #define WRITE_VRAM_ATTRIBUTE(__addr__,__data__) WRITE_HARDWARE(0,__addr__,__data__)
-  #define WRITE_KEYB_STROBE(__data__)                       WRITE_HARDWARE(0, MBADDR_KEYPA, __data__)
+  #define WRITE_VRAM_CHAR(__addr__,__data__,__xlat__)  WRITE_HARDWARE(0,__addr__,(__xlat__ == 1 ? dispCodeMap[(int)__data__].dispCode : __data__))
+  #define WRITE_VRAM_ATTRIBUTE(__addr__,__data__)      WRITE_HARDWARE(0,__addr__,__data__)
+  #define WRITE_KEYB_STROBE(__data__)                  WRITE_HARDWARE(0, MBADDR_KEYPA, __data__)
   #define READ_KEYB_INIT()           READ_HARDWARE_INIT(0, MBADDR_KEYPB)
   #define READ_KEYB()                READ_HARDWARE()
 #endif

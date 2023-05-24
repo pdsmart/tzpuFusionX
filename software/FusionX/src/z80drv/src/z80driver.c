@@ -39,6 +39,7 @@
 //                                    if same as the target machine. This then allows the z80 driver to be
 //                                    a vanilla Z80 or customisations for hosts pulled in.
 //                  Apr 2023 - v1.4.1 Completed MZ2000 mode to work with arbiter and ttymz.
+//                  May 2023 - v1.5   Added MZ1500 modes.
 //
 //
 // Notes:           See Makefile to enable/disable conditional components
@@ -118,11 +119,14 @@ static DEFINE_MUTEX(Z80DRV_MUTEX);
 #if(TARGET_HOST_MZ80A == 1)
   #include "z80vhw_mz80a.c"
 #endif
-#if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
+#if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1)
   #include "z80vhw_rfs.c"
 #endif
 #if(TARGET_HOST_MZ700 == 1)
   #include "z80vhw_mz700.c"
+#endif
+#if(TARGET_HOST_MZ1500 == 1)
+  #include "z80vhw_mz1500.c"
 #endif
 #if(TARGET_HOST_MZ2000 == 1)
   #include "z80vhw_mz2000.c"
@@ -162,13 +166,19 @@ static inline void decodeMemoryMapSetup(zuint16 address, zuint8 data, uint8_t io
         mz700DecodeMemoryMapSetup(address, data, ioFlag, readFlag);
     } else
   #endif
+  #if(TARGET_HOST_MZ1500 == 1)
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ1500)
+    {
+        mz1500DecodeMemoryMapSetup(address, data, ioFlag, readFlag);
+    } else
+  #endif
   #if(TARGET_HOST_MZ2000 == 1)
     if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ2000)
     {
         mz2000DecodeMemoryMapSetup(address, data, ioFlag, readFlag);
     } else
   #endif
-  #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
+  #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1)
     if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_RFS)
     {
         rfsDecodeMemoryMapSetup(address, data, ioFlag, readFlag);
@@ -214,6 +224,12 @@ static inline zuint8 readVirtual(zuint16 address, uint8_t ioFlag)
         data = mz700Read(address, ioFlag);
     } else
   #endif
+  #if(TARGET_HOST_MZ1500 == 1)
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ1500)
+    {
+        data = mz1500Read(address, ioFlag);
+    } else
+  #endif
   #if(TARGET_HOST_MZ2000 == 1)
     if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ2000)
     {
@@ -227,7 +243,7 @@ static inline zuint8 readVirtual(zuint16 address, uint8_t ioFlag)
     } else
   #endif
 
-  #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
+  #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1)
     // RFS only has memory mapped registers.
     if((Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_RFS) && ioFlag == 0)
     {
@@ -268,6 +284,12 @@ static inline void writeVirtual(zuint16 address, zuint8 data, uint8_t ioFlag)
         mz700Write(address, data, ioFlag);
     } else
   #endif
+  #if(TARGET_HOST_MZ1500 == 1)
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ1500)
+    {
+        mz1500Write(address, data, ioFlag);
+    } else
+  #endif
   #if(TARGET_HOST_MZ2000 == 1)
     if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ2000)
     {
@@ -281,7 +303,7 @@ static inline void writeVirtual(zuint16 address, zuint8 data, uint8_t ioFlag)
     } else
   #endif
 
-  #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
+  #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1)
     // RFS only has memory mapped registers.
     if((Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_RFS) && ioFlag == 0)
     {
@@ -458,6 +480,10 @@ static zuint8 z80_read(void *context, zuint16 address)
     // Only read if the address is in physical RAM.
   #if(TARGET_HOST_PCW == 0)
     if(isPhysical(address))
+  #elif(TARGET_HOST_MZ1500 == 1)
+    // MZ-1500 take into account PCG being active, always go to hardware when active. Cannot use the map because
+    // this can change during PCG active mode and must be reflected when PCG is deactivated.
+    if(isPhysicalHW(address) || (Z80Ctrl->pcgMode == 1 && address >= 0xD000))
   #else
     if(isPhysicalHW(address))
   #endif
@@ -527,6 +553,26 @@ static zuint8 z80_read(void *context, zuint16 address)
             Z80Ctrl->keyportTrigger = 0;
         }
     }
+  #elif (TARGET_HOST_MZ1500 == 1)
+    // Keyport data? Store.
+    if(isHW(address) && address == 0xE001 && (Z80Ctrl->keyportStrobe & 0x0f) == 8)
+    {
+        Z80Ctrl->keyportShiftCtrl = (data & 0x40) == 0 ? 0x01 : 0x00;
+    } else
+    if(isHW(address) && address == 0xE001 && Z80Ctrl->keyportShiftCtrl == 1)
+    {
+        if((Z80Ctrl->keyportStrobe & 0x0f) == 5 && (data & 0xF0) != 0xF0)
+        {
+            Z80Ctrl->keyportHotKey = (data & 0x80) == 0 ? HOTKEY_ORIGINAL :
+                                     (data & 0x40) == 0 ? HOTKEY_RFS40    :
+                                     (data & 0x20) == 0 ? HOTKEY_TZFS     :
+                                     (data & 0x10) == 0 ? HOTKEY_LINUX    : 0x00;
+            Z80Ctrl->keyportTrigger = Z80Ctrl->keyportHotKey;
+        } else
+        {
+            Z80Ctrl->keyportTrigger = 0;
+        }
+    }
   #elif (TARGET_HOST_MZ2000 == 1)
 
   #endif
@@ -548,7 +594,7 @@ static void z80_write(void *context, zuint16 address, zuint8 data)
     // Locals.
     Z_UNUSED(context)
 
-  #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
+  #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1)
     // To detect Hotkey presses, we need to store the keyboard strobe data and on keydata read.
     if(isHW(address) && address == 0xE000)
     {
@@ -563,8 +609,15 @@ static void z80_write(void *context, zuint16 address, zuint8 data)
         if(isPhysicalRAM(address))
             writeVirtualRAM(address, data);
         Z80Ctrl->ioReadAhead = 0;
-    }
-    else if(isPhysical(address))
+    } else 
+
+  #if(TARGET_HOST_MZ1500 == 1)
+    // MZ-1500 take into account PCG being active, always go to hardware when active. Cannot use the map because
+    // this can change during PCG active mode and must be reflected when PCG is deactivated.
+    if(isPhysical(address) || (Z80Ctrl->pcgMode == 1 && address >= 0xD000))
+  #else
+    if(isPhysical(address))
+  #endif
     {
         // Commence cycle to write the data to real RAM.
         SPI_SEND_32(address, data << 8 | CPLD_CMD_WRITE_ADDR);
@@ -1057,7 +1110,7 @@ int thread_z80(void * thread_nr)
         if(Z80RunMode == Z80_RUNNING) canRun=1; else canRun=0;
         mutex_unlock(&Z80RunModeMutex);
 
-      #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ2000 == 1)
+      #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1 || TARGET_HOST_MZ2000 == 1)
         // Hotkey pressed? Bring up user menu.
         if(Z80Ctrl->keyportTrigger != 0x00 && Z80Ctrl->keyportTriggerLast == 0)
         {
@@ -1411,13 +1464,18 @@ void setupMemory(enum Z80_MEMORY_PROFILE mode)
         mz700SetupMemory(mode);
     else
   #endif
+  #if(TARGET_HOST_MZ1500 == 1)
+    if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ1500)
+        mz1500SetupMemory(mode);
+    else
+  #endif
   #if(TARGET_HOST_MZ2000 == 1)
     if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_MZ2000)
         mz2000SetupMemory(mode);
     else
   #endif
-    // RFS board only works in an MZ-80A at present.
-  #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
+    // RFS board only works on an MZ-80A/MZ-700/MZ-1500 at present.
+  #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500)
     if(Z80Ctrl->virtualDeviceBitMap & VIRTUAL_DEVICE_RFS)
         rfsSetupMemory(mode);
     else
@@ -1442,6 +1500,11 @@ void setupMemory(enum Z80_MEMORY_PROFILE mode)
 
     // Inhibit mode disabled.
     Z80Ctrl->inhibitMode = 0;
+
+  #if defined(TARGET_HOST_MZ1500)
+    // Flag to indicate PCG active, all memory accesses from D000:FFFF are sent to hardware.
+    Z80Ctrl->pcgMode = 0;
+  #endif
     return;
 }
 
@@ -1675,10 +1738,10 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                         if(idx < Z80Ctrl->virtualDeviceCnt)
                             break;
 
-                      #if(TARGET_HOST_MZ80A == 0 && TARGET_HOST_MZ700 == 0)
+                      #if(TARGET_HOST_MZ80A == 0 && TARGET_HOST_MZ700 == 0 && TARGET_HOST_MZ1500 == 0)
                         if(ioctlCmd.vdev.device & VIRTUAL_DEVICE_RFS)
                         {
-                            pr_info("RFS Board currently supported on MZ-80A/MZ-700 Hosts only.\n");
+                            pr_info("RFS Board currently supported on MZ-80A/MZ-700/MZ-1500 Hosts only.\n");
                             break;
                         }
                       #endif
@@ -1700,7 +1763,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                                 break;
                           #endif
 
-                          #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
+                          #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1)
                             case VIRTUAL_DEVICE_RFS40:
                             case VIRTUAL_DEVICE_RFS80:
                                 Z80Ctrl->virtualDevice[Z80Ctrl->virtualDeviceCnt++] = ioctlCmd.vdev.device;
@@ -1714,6 +1777,14 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                                 Z80Ctrl->virtualDevice[Z80Ctrl->virtualDeviceCnt++] = ioctlCmd.vdev.device;
                                 Z80Ctrl->virtualDeviceBitMap |= ioctlCmd.vdev.device;
                                 mz700Init(0);
+                                break;
+                          #endif
+
+                          #if(TARGET_HOST_MZ1500 == 1)
+                            case VIRTUAL_DEVICE_MZ1500:
+                                Z80Ctrl->virtualDevice[Z80Ctrl->virtualDeviceCnt++] = ioctlCmd.vdev.device;
+                                Z80Ctrl->virtualDeviceBitMap |= ioctlCmd.vdev.device;
+                                mz1500Init(0);
                                 break;
                           #endif
 
@@ -1791,7 +1862,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                                 break;
                           #endif
 
-                          #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
+                          #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1)
                             case VIRTUAL_DEVICE_RFS40:
                             case VIRTUAL_DEVICE_RFS80:
                                 Z80Ctrl->virtualDeviceBitMap &= ~ioctlCmd.vdev.device;
@@ -1803,6 +1874,13 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                             case VIRTUAL_DEVICE_MZ700:
                                 Z80Ctrl->virtualDeviceBitMap &= ~ioctlCmd.vdev.device;
                                 mz700Remove();
+                                break;
+                          #endif
+
+                          #if(TARGET_HOST_MZ1500 == 1)
+                            case VIRTUAL_DEVICE_MZ1500:
+                                Z80Ctrl->virtualDeviceBitMap &= ~ioctlCmd.vdev.device;
+                                mz1500Remove();
                                 break;
                           #endif
 
@@ -2067,7 +2145,7 @@ static int __init ModuleInit(void)
     Z80Ctrl->ioReadAhead = 0;
     Z80Ctrl->ioWriteAhead = 0;
 
-  #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
+  #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1 || TARGET_HOST_MZ2000 == 1)
     // Initialse hotkey detection variables.
     Z80Ctrl->keyportStrobe      = 0x00;
     Z80Ctrl->keyportShiftCtrl   = 0x00;

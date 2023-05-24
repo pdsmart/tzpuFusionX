@@ -16,6 +16,7 @@
 //                  Jan 2023 - v1.1   Added MZ-2000/MZ-80A modes.
 //                  Feb 2023 - v1.2   Added RFS virtual driver.
 //                  Apr 2023 - v1.4.1 Completed MZ2000 mode to work with arbiter and ttymz.
+//                  May 2023 - v1.5   Added MZ1500 modes.
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -40,26 +41,37 @@
 #if defined(TARGET_HOST_MZ700)
   #define TARGET_HOST_MZ700                   1
   #define TARGET_HOST_MZ2000                  0
+  #define TARGET_HOST_MZ1500                  0
   #define TARGET_HOST_MZ80A                   0
   #define TARGET_HOST_PCW                     0
 #elif defined(TARGET_HOST_MZ2000)
   #define TARGET_HOST_MZ2000                  1
+  #define TARGET_HOST_MZ1500                  0
+  #define TARGET_HOST_MZ700                   0
+  #define TARGET_HOST_MZ80A                   0
+  #define TARGET_HOST_PCW                     0
+#elif defined(TARGET_HOST_MZ1500)
+  #define TARGET_HOST_MZ2000                  0
+  #define TARGET_HOST_MZ1500                  1
   #define TARGET_HOST_MZ700                   0
   #define TARGET_HOST_MZ80A                   0
   #define TARGET_HOST_PCW                     0
 #elif defined(TARGET_HOST_MZ80A)
   #define TARGET_HOST_MZ80A                   1
   #define TARGET_HOST_MZ2000                  0
+  #define TARGET_HOST_MZ1500                  0
   #define TARGET_HOST_MZ700                   0
   #define TARGET_HOST_PCW                     0
 #elif defined(TARGET_HOST_PCW8XXX) || defined(TARGET_HOST_PCW9XXX)
   #define TARGET_HOST_PCW                     1
   #define TARGET_HOST_MZ2000                  0
+  #define TARGET_HOST_MZ1500                  0
   #define TARGET_HOST_MZ700                   0
   #define TARGET_HOST_MZ80A                   0
 #else
   #define TARGET_HOST_MZ700                   0                  // Target compilation for an MZ700
   #define TARGET_HOST_MZ2000                  0                  //                           MZ2000
+  #define TARGET_HOST_MZ1500                  0                  //                           MZ1500
   #define TARGET_HOST_MZ80A                   0                  //                           MZ80A
   #define TARGET_HOST_PCW                     0                  //                           Amstrad PCW8XXX/9XXX
 #endif
@@ -68,8 +80,8 @@
 #define DRIVER_LICENSE                        "GPL"
 #define DRIVER_AUTHOR                         "Philip D Smart"
 #define DRIVER_DESCRIPTION                    "Z80 CPU Emulator and Hardware Interface Driver"
-#define DRIVER_VERSION                        "v1.4.1"
-#define DRIVER_VERSION_DATE                   "Apr 2023"
+#define DRIVER_VERSION                        "v1.5"
+#define DRIVER_VERSION_DATE                   "May 2023"
 #define DRIVER_COPYRIGHT                      "(C) 2018-2023"
 #define Z80_VIRTUAL_ROM_SIZE                  (65536 * 32)       // Sized to maximum Kernel contiguous allocation size, 2M which is 4x512K ROMS.
 #define Z80_VIRTUAL_RAM_SIZE                  (65536 * 32)       // Sized to maximum Kernel contiguous allocation size, 2M.
@@ -127,6 +139,82 @@
 // Approximate governor delays to regulate emulated CPU speed.
 // MZ-700
 #if(TARGET_HOST_MZ700 == 1)
+#if(DEBUG_ENABLED > 0)
+  #define INSTRUCTION_DELAY_ROM_3_54MHZ       253
+  #define INSTRUCTION_DELAY_ROM_7MHZ          126
+  #define INSTRUCTION_DELAY_ROM_14MHZ         63
+  #define INSTRUCTION_DELAY_ROM_28MHZ         32
+  #define INSTRUCTION_DELAY_ROM_56MHZ         16
+  #define INSTRUCTION_DELAY_ROM_112MHZ        8
+  #define INSTRUCTION_DELAY_ROM_224MHZ        4
+  #define INSTRUCTION_DELAY_ROM_448MHZ        1
+  #define INSTRUCTION_DELAY_RAM_3_54MHZ       253
+  #define INSTRUCTION_DELAY_RAM_7MHZ          126
+  #define INSTRUCTION_DELAY_RAM_14MHZ         63
+  #define INSTRUCTION_DELAY_RAM_28MHZ         32
+  #define INSTRUCTION_DELAY_RAM_56MHZ         16
+  #define INSTRUCTION_DELAY_RAM_112MHZ        8
+  #define INSTRUCTION_DELAY_RAM_224MHZ        4
+  #define INSTRUCTION_DELAY_RAM_448MHZ        1
+#endif
+#if(DEBUG_ENABLED == 0)
+  #define INSTRUCTION_DELAY_ROM_3_54MHZ       253
+  #define INSTRUCTION_DELAY_ROM_7MHZ          126
+  #define INSTRUCTION_DELAY_ROM_14MHZ         63
+  #define INSTRUCTION_DELAY_ROM_28MHZ         32
+  #define INSTRUCTION_DELAY_ROM_56MHZ         16
+  #define INSTRUCTION_DELAY_ROM_112MHZ        8
+  #define INSTRUCTION_DELAY_ROM_224MHZ        4
+  #define INSTRUCTION_DELAY_ROM_448MHZ        1
+  #define INSTRUCTION_DELAY_RAM_3_54MHZ       253
+  #define INSTRUCTION_DELAY_RAM_7MHZ          126
+  #define INSTRUCTION_DELAY_RAM_14MHZ         63
+  #define INSTRUCTION_DELAY_RAM_28MHZ         32
+  #define INSTRUCTION_DELAY_RAM_56MHZ         16
+  #define INSTRUCTION_DELAY_RAM_112MHZ        8
+  #define INSTRUCTION_DELAY_RAM_224MHZ        4
+  #define INSTRUCTION_DELAY_RAM_448MHZ        1
+#endif
+#define INSTRUCTION_EQUIV_FREQ_3_54MHZ        3540000
+#define INSTRUCTION_EQUIV_FREQ_7MHZ           7000000
+#define INSTRUCTION_EQUIV_FREQ_14MHZ          14000000
+#define INSTRUCTION_EQUIV_FREQ_28MHZ          28000000
+#define INSTRUCTION_EQUIV_FREQ_56MHZ          56000000
+#define INSTRUCTION_EQUIV_FREQ_112MHZ         112000000
+#define INSTRUCTION_EQUIV_FREQ_224MHZ         224000000
+#define INSTRUCTION_EQUIV_FREQ_448MHZ         448000000
+#define INSTRUCTION_GOVERNOR_IO_SKIP          10
+
+enum Z80_INSTRUCTION_DELAY {
+    ROM_DELAY_NORMAL                          = INSTRUCTION_DELAY_ROM_3_54MHZ,
+    ROM_DELAY_X2                              = INSTRUCTION_DELAY_ROM_7MHZ,
+    ROM_DELAY_X4                              = INSTRUCTION_DELAY_ROM_14MHZ,
+    ROM_DELAY_X8                              = INSTRUCTION_DELAY_ROM_28MHZ,
+    ROM_DELAY_X16                             = INSTRUCTION_DELAY_ROM_56MHZ,
+    ROM_DELAY_X32                             = INSTRUCTION_DELAY_ROM_112MHZ,
+    ROM_DELAY_X64                             = INSTRUCTION_DELAY_ROM_224MHZ,
+    ROM_DELAY_X128                            = INSTRUCTION_DELAY_ROM_448MHZ,
+    RAM_DELAY_NORMAL                          = INSTRUCTION_DELAY_RAM_3_54MHZ,
+    RAM_DELAY_X2                              = INSTRUCTION_DELAY_RAM_7MHZ,
+    RAM_DELAY_X4                              = INSTRUCTION_DELAY_RAM_14MHZ,
+    RAM_DELAY_X8                              = INSTRUCTION_DELAY_RAM_28MHZ,
+    RAM_DELAY_X16                             = INSTRUCTION_DELAY_RAM_56MHZ,
+    RAM_DELAY_X32                             = INSTRUCTION_DELAY_RAM_112MHZ,
+    RAM_DELAY_X64                             = INSTRUCTION_DELAY_RAM_224MHZ,
+    RAM_DELAY_X128                            = INSTRUCTION_DELAY_RAM_448MHZ,
+    CPU_FREQUENCY_NORMAL                      = INSTRUCTION_EQUIV_FREQ_3_54MHZ,
+    CPU_FREQUENCY_X2                          = INSTRUCTION_EQUIV_FREQ_7MHZ,
+    CPU_FREQUENCY_X4                          = INSTRUCTION_EQUIV_FREQ_14MHZ,
+    CPU_FREQUENCY_X8                          = INSTRUCTION_EQUIV_FREQ_28MHZ,
+    CPU_FREQUENCY_X16                         = INSTRUCTION_EQUIV_FREQ_56MHZ,
+    CPU_FREQUENCY_X32                         = INSTRUCTION_EQUIV_FREQ_112MHZ,
+    CPU_FREQUENCY_X64                         = INSTRUCTION_EQUIV_FREQ_224MHZ,
+    CPU_FREQUENCY_X128                        = INSTRUCTION_EQUIV_FREQ_448MHZ,
+};
+#endif
+//
+// MZ-1500
+#if(TARGET_HOST_MZ1500 == 1)
 #if(DEBUG_ENABLED > 0)
   #define INSTRUCTION_DELAY_ROM_3_54MHZ       253
   #define INSTRUCTION_DELAY_ROM_7MHZ          126
@@ -612,8 +700,9 @@ enum VIRTUAL_DEVICE {
     VIRTUAL_DEVICE_NONE                     = 0x00000000,
     VIRTUAL_DEVICE_MZ80A                    = 0x00000001,
     VIRTUAL_DEVICE_MZ700                    = 0x00000002,
-    VIRTUAL_DEVICE_MZ2000                   = 0x00000004,
-    VIRTUAL_DEVICE_PCW                      = 0x00000008,
+    VIRTUAL_DEVICE_MZ1500                   = 0x00000004,
+    VIRTUAL_DEVICE_MZ2000                   = 0x00000008,
+    VIRTUAL_DEVICE_PCW                      = 0x00000010,
     VIRTUAL_DEVICE_RFS40                    = 0x01000000,
     VIRTUAL_DEVICE_RFS80                    = 0x02000000,
     VIRTUAL_DEVICE_RFS                      = 0x03000000,
@@ -673,6 +762,11 @@ typedef struct {
     // Inhibit mode is where certain memory ranges are inhibitted. The memory page is set to inhibit and this flag
     // blocks actions which arent allowed during inhibit.
     uint8_t                                   inhibitMode;
+
+  #if defined(TARGET_HOST_MZ1500)
+    // Flag to indicate PCG active, all memory accesses from D000:FFFF are sent to hardware.
+    uint8_t                                   pcgMode;
+  #endif
 
     // I/O lookahead flags - to overcome SSD202 io slowness.
     uint8_t                                   ioReadAhead;

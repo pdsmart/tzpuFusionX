@@ -20,6 +20,7 @@
 //                                   out all low level control methods.
 //                           v1.01 - Updates to make compatible with the TZFS changes.
 //                  Apr      v1.02 - Updates to add MZ-2000 servicing.
+//                  May      v1.03 - Updates to add MZ-1500 servicing.
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -2329,6 +2330,13 @@ void loadTranZPUterDefaultROMS(uint8_t cpuConfig)
             }
             break;
 
+        case HW_MZ1500:
+              #if(DEBUG_ENABLED & 0x2)
+                if(Z80Ctrl->debug >= 2) printf("Loading 1Z_009B\n");
+              #endif
+            result = loadTZFS(MZ_ROM_1Z_009B_40C, MZ_MROM_ADDR);
+            break;
+
         case HW_MZ80B:
             //result = loadBIOS(MZ_ROM_MZ80B_IPL,        MZ80B,  MZ_MROM_ADDR);
             result = loadBIOS(MZ_ROM_MZ80B_IPL,        MZ_MROM_ADDR);
@@ -2946,6 +2954,8 @@ int main(int argc, char *argv[])
     z80Control.hostType = HW_MZ80A;
   #elif (TARGET_HOST_MZ700 == 1)
     z80Control.hostType = HW_MZ700;
+  #elif (TARGET_HOST_MZ1500 == 1)
+    z80Control.hostType = HW_MZ1500;
   #elif (TARGET_HOST_MZ2000 == 1)
     z80Control.hostType = HW_MZ2000;
   #else

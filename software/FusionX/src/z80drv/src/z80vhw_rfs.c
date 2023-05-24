@@ -95,6 +95,8 @@
   #define ROM_DIR                             "/apps/FusionX/host/MZ-80A/RFS/"
 #elif(TARGET_HOST_MZ700 == 1)
   #define ROM_DIR                             "/apps/FusionX/host/MZ-700/RFS/"
+#elif(TARGET_HOST_MZ1500 == 1)
+  #define ROM_DIR                             "/apps/FusionX/host/MZ-1500/RFS/"
 #else
   #error "Unknown host configured."
 #endif
@@ -255,9 +257,14 @@ void rfsSetupMemory(enum Z80_MEMORY_PROFILE mode)
     // Enable refresh as using virtual RAM stops refresh of host DRAM.
     Z80Ctrl->refreshDRAM = 2;
   
-  #if (TARGET_HOST_MZ700 == 1)
+  #if (TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1)
     // Reset memory paging to default.
     SPI_SEND_32(0x00e4, 0x00 << 8 | CPLD_CMD_WRITEIO_ADDR);
+
+   #if (TARGET_HOST_MZ1500 == 1)
+    // MZ-1500, E4 reset closes the PCG access.
+    Z80Ctrl->pcgMode = 0;
+   #endif
   #endif
   
     // No I/O Ports on the RFS board.
@@ -312,9 +319,14 @@ void rfsInit(uint8_t mode80c)
         Z80Ctrl->rom[idx+(Z80_VIRTUAL_ROM_SIZE-0x10000)] = z80io_PRL_Read8(1);
     }
 
-  #if (TARGET_HOST_MZ700 == 1)
+  #if (TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1)
     // Reset memory paging to default.
     SPI_SEND_32(0x00e4, 0x00 << 8 | CPLD_CMD_WRITEIO_ADDR);
+
+   #if (TARGET_HOST_MZ1500 == 1)
+    // MZ-1500, E4 reset closes the PCG access.
+    Z80Ctrl->pcgMode = 0;
+   #endif
   #endif
   
     pr_info("Enabling RFS(%d) driver.\n", mode80c == 1 ? 80 : 40);

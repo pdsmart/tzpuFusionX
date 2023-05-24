@@ -13,6 +13,7 @@
 //
 // History:         v1.0  Feb 2023 - Initial write of the Sharp MZ series hardware interface software.
 //                  v1.01 Mar 2023 - Bug fixes and additional ESC sequence processing.
+//                  v1.02 May 2023 - Updates to accommodate MZ-1500 host.
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -213,478 +214,141 @@ static t_dispCodeMap dispCodeMap[] = {
     { 0xA5 }, //  ~
     { 0xC0 }  //  DEL
 };
+// TODO: Change this mapping to reflect MZ-1500 ATB bit, update VRAM/ATBRAM macro.
+#elif (TARGET_HOST_MZ1500 == 1)
+static t_dispCodeMap dispCodeMap[] = {
+    { 0xCC }, //  NUL '\0' (null character)     
+    { 0xE0 }, //  SOH (start of heading)     
+    { 0xF2 }, //  STX (start of text)        
+    { 0xF3 }, //  ETX (end of text)          
+    { 0xCE }, //  EOT (end of transmission)  
+    { 0xCF }, //  ENQ (enquiry)              
+    { 0xF6 }, //  ACK (acknowledge)          
+    { 0xF7 }, //  BEL '\a' (bell)            
+    { 0xF8 }, //  BS  '\b' (backspace)       
+    { 0xF9 }, //  HT  '\t' (horizontal tab)  
+    { 0xFA }, //  LF  '\n' (new line)        
+    { 0xFB }, //  VT  '\v' (vertical tab)    
+    { 0xFC }, //  FF  '\f' (form feed)       
+    { 0xFD }, //  CR  '\r' (carriage ret)    
+    { 0xFE }, //  SO  (shift out)            
+    { 0xFF }, //  SI  (shift in)                
+    { 0xE1 }, //  DLE (data link escape)        
+    { 0xC1 }, //  DC1 (device control 1)     
+    { 0xC2 }, //  DC2 (device control 2)     
+    { 0xC3 }, //  DC3 (device control 3)     
+    { 0xC4 }, //  DC4 (device control 4)     
+    { 0xC5 }, //  NAK (negative ack.)        
+    { 0xC6 }, //  SYN (synchronous idle)     
+    { 0xE2 }, //  ETB (end of trans. blk)    
+    { 0xE3 }, //  CAN (cancel)               
+    { 0xE4 }, //  EM  (end of medium)        
+    { 0xE5 }, //  SUB (substitute)           
+    { 0xE6 }, //  ESC (escape)               
+    { 0xEB }, //  FS  (file separator)       
+    { 0xEE }, //  GS  (group separator)      
+    { 0xEF }, //  RS  (record separator)     
+    { 0xF4 }, //  US  (unit separator)       
+    { 0x00 }, //  SPACE                         
+    { 0x61 }, //  !                             
+    { 0x62 }, //  "                          
+    { 0x63 }, //  #                          
+    { 0x64 }, //  $                          
+    { 0x65 }, //  %                          
+    { 0x66 }, //  &                          
+    { 0x67 }, //  '                          
+    { 0x68 }, //  (                          
+    { 0x69 }, //  )                          
+    { 0x6B }, //  *                          
+    { 0x6A }, //  +                          
+    { 0x2F }, //  ,                          
+    { 0x2A }, //  -                          
+    { 0x2E }, //  .                          
+    { 0x2D }, //  /                          
+    { 0x20 }, //  0                          
+    { 0x21 }, //  1                          
+    { 0x22 }, //  2                          
+    { 0x23 }, //  3                          
+    { 0x24 }, //  4                          
+    { 0x25 }, //  5                          
+    { 0x26 }, //  6                          
+    { 0x27 }, //  7                          
+    { 0x28 }, //  8                          
+    { 0x29 }, //  9                          
+    { 0x4F }, //  :                          
+    { 0x2C }, //  ;                          
+    { 0x51 }, //  <                          
+    { 0x2B }, //  =                          
+    { 0x57 }, //  >                          
+    { 0x49 }, //  ?                          
+    { 0x55 }, //  @
+    { 0x01 }, //  A
+    { 0x02 }, //  B
+    { 0x03 }, //  C
+    { 0x04 }, //  D
+    { 0x05 }, //  E
+    { 0x06 }, //  F
+    { 0x07 }, //  G
+    { 0x08 }, //  H
+    { 0x09 }, //  I
+    { 0x0A }, //  J
+    { 0x0B }, //  K
+    { 0x0C }, //  L
+    { 0x0D }, //  M
+    { 0x0E }, //  N
+    { 0x0F }, //  O
+    { 0x10 }, //  P
+    { 0x11 }, //  Q
+    { 0x12 }, //  R
+    { 0x13 }, //  S
+    { 0x14 }, //  T
+    { 0x15 }, //  U
+    { 0x16 }, //  V
+    { 0x17 }, //  W
+    { 0x18 }, //  X
+    { 0x19 }, //  Y
+    { 0x1A }, //  Z
+    { 0x52 }, //  [
+    { 0x59 }, //  \  '\\'
+    { 0x54 }, //  ]
+    { 0xBE }, //  ^
+    { 0x3C }, //  _
+    { 0xC7 }, //  `
+    { 0x81 }, //  a
+    { 0x82 }, //  b
+    { 0x83 }, //  c
+    { 0x84 }, //  d
+    { 0x85 }, //  e
+    { 0x86 }, //  f
+    { 0x87 }, //  g
+    { 0x88 }, //  h
+    { 0x89 }, //  i
+    { 0x8A }, //  j
+    { 0x8B }, //  k
+    { 0x8C }, //  l
+    { 0x8D }, //  m
+    { 0x8E }, //  n
+    { 0x8F }, //  o
+    { 0x90 }, //  p
+    { 0x91 }, //  q
+    { 0x92 }, //  r
+    { 0x93 }, //  s
+    { 0x94 }, //  t
+    { 0x95 }, //  u
+    { 0x96 }, //  v
+    { 0x97 }, //  w
+    { 0x98 }, //  x
+    { 0x99 }, //  y
+    { 0x9A }, //  z
+    { 0xBC }, //  {
+    { 0x80 }, //  |
+    { 0x40 }, //  }
+    { 0xA5 }, //  ~
+    { 0xC0 }  //  DEL
+};
 #endif
 
-#if (TARGET_HOST_MZ700 == 1)
-static t_scanCodeMap scanCodeMap[] = {
-    // NO SHIFT
-    {{
-      //  S0   00 - 07
-        ESC    ,                                             //  SPARE - Allocate as Escape
-        GRAPHKEY ,                                           //  GRAPH
-        '_'      ,                                           //  Pound/Down Arrow
-        ALPHAKEY ,                                           //  ALPHA
-        NOKEY    ,                                           //  NO
-        ';'      ,                                           //  +
-        ':'      ,                                           //  *
-        CR       ,                                           //  CR
-        // S1   08 - 0F
-        'y'      ,                                           //  y
-        'z'      ,                                           //  z
-        '@'      ,                                           //  `
-        '['      ,                                           //  {
-        ']'      ,                                           //  }
-        NOKEY    ,                                           //  NULL
-        NOKEY    ,                                           //  NULL
-        NOKEY    ,                                           //  NULL
-        // S2   10 - 17
-        'q'      ,                                           //  q
-        'r'      ,                                           //  r
-        's'      ,                                           //  s
-        't'      ,                                           //  t
-        'u'      ,                                           //  u
-        'v'      ,                                           //  v
-        'w'      ,                                           //  w
-        'x'      ,                                           //  x
-        // S3   18 - 1F
-        'i'      ,                                           //  i
-        'j'      ,                                           //  j
-        'k'      ,                                           //  k
-        'l'      ,                                           //  l
-        'm'      ,                                           //  m
-        'n'      ,                                           //  n
-        'o'      ,                                           //  o
-        'p'      ,                                           //  p
-        // S4   20 - 27
-        'a'      ,                                           //  a
-        'b'      ,                                           //  b
-        'c'      ,                                           //  c
-        'd'      ,                                           //  d
-        'e'      ,                                           //  e
-        'f'      ,                                           //  f
-        'g'      ,                                           //  g
-        'h'      ,                                           //  h
-        // S5   28 - 2F
-        '1'      ,                                           //  1
-        '2'      ,                                           //  2
-        '3'      ,                                           //  3
-        '4'      ,                                           //  4
-        '5'      ,                                           //  5
-        '6'      ,                                           //  6
-        '7'      ,                                           //  7
-        '8'      ,                                           //  8
-        // S6   30 - 37
-        '\\'     ,                                           //  Backslash
-        CURSUP   ,                                           //  
-        '-'      ,                                           //  -
-        ' '      ,                                           //  SPACE
-        '0'      ,                                           //  0
-        '9'      ,                                           //  9
-        ','      ,                                           //  ,
-        '.'      ,                                           //  .
-        // S7   38 - 3F
-        INSERT   ,                                           //  INST.
-        DELETE   ,                                           //  DEL.
-        CURSUP   ,                                           //  CURSOR UP
-        CURSDOWN ,                                           //  CURSOR DOWN
-        CURSRIGHT,                                           //  CURSOR RIGHT
-        CURSLEFT ,                                           //  CURSOR LEFT
-        '?'      ,                                           //  Question Mark
-        '/'      ,                                           //  Forward Slash
-        // S8   40 - 47 - modifier keys.
-        BACKS    ,                                           // BREAK - Backspace without modifiers, like standard ascii keyboards.
-        NOKEY    ,                                           // CTRL
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    ,                                           // SHIFT
-        // S9   48 - 4F - Function keys.
-        FUNC1    ,                                           // Function key F1
-        FUNC2    ,                                           // Function key F2
-        FUNC3    ,                                           // Function key F3
-        FUNC4    ,                                           // Function key F4
-        FUNC5    ,                                           // Function key F5
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    
-    }},
-    // CAPS LOCK
-    {{
-      // S0   00 - 07
-        ESC    ,                                             //  SPARE - Allocate as Escape
-        GRAPHKEY ,                                           // GRAPH
-        0x58     ,                                           // 
-        ALPHAKEY ,                                           // ALPHA
-        NOKEY    ,                                           // NO
-        ':'      ,                                           // ;
-        ';'      ,                                           // :
-        CR       ,                                           // CR
-        // S1   08 - 0F
-        'Y'      ,                                           // Y
-        'Z'      ,                                           // Z
-        '@'      ,                                           // @
-        '['      ,                                           // [
-        ']'      ,                                           // ]
-        NOKEY    ,                                           // NULL
-        NOKEY    ,                                           // NULL
-        NOKEY    ,                                           // NULL
-        // S2   10 - 17
-        'Q'      ,                                           // Q
-        'R'      ,                                           // R
-        'S'      ,                                           // S
-        'T'      ,                                           // T
-        'U'      ,                                           // U
-        'V'      ,                                           // V
-        'W'      ,                                           // W
-        'X'      ,                                           // X
-        // S3   18 - 1F
-        'I'      ,                                           // I
-        'J'      ,                                           // J
-        'K'      ,                                           // K
-        'L'      ,                                           // L
-        'M'      ,                                           // M
-        'N'      ,                                           // N
-        'O'      ,                                           // O
-        'P'      ,                                           // P
-        // S4   20 - 27
-        'A'      ,                                           // A
-        'B'      ,                                           // B
-        'C'      ,                                           // C
-        'D'      ,                                           // D
-        'E'      ,                                           // E
-        'F'      ,                                           // F
-        'G'      ,                                           // G
-        'H'      ,                                           // H
-        // S5   28 - 2F
-        '1'      ,                                           // 1
-        '2'      ,                                           // 2
-        '3'      ,                                           // 3
-        '4'      ,                                           // 4
-        '5'      ,                                           // 5
-        '6'      ,                                           // 6
-        '7'      ,                                           // 7
-        '8'      ,                                           // 8
-        // S6   30 - 37
-        '\\'     ,                                           // Backslash
-        CURSUP   ,                                           // 
-        '-'      ,                                           // -
-        ' '      ,                                           // SPACE
-        '0'      ,                                           // 0
-        '9'      ,                                           // 9
-        ','      ,                                           // ,
-        '.'      ,                                           // .
-        // S7   38 - 3F
-        INSERT   ,                                           // INST.
-        DELETE   ,                                           // DEL.
-        CURSUP   ,                                           // CURSOR UP
-        CURSDOWN ,                                           // CURSOR DOWN
-        CURSRIGHT,                                           // CURSOR RIGHT
-        CURSLEFT ,                                           // CURSOR LEFT
-        '?'      ,                                           // ?
-        '/'      ,                                           // /
-        // S8   40 - 47 - modifier keys.
-        BACKS    ,                                           // BREAK - Backspace without modifiers, like standard ascii keyboards.
-        NOKEY    ,                                           // CTRL
-        NOKEY    ,                                                             
-        NOKEY    ,                                                             
-        NOKEY    ,                                                             
-        NOKEY    ,                                                             
-        NOKEY    ,                                                             
-        NOKEY    ,                                           // SHIFT
-        // S9   48 - 4F - Function keys.                                       
-        FUNC1    ,                                           // Function key F1
-        FUNC2    ,                                           // Function key F2
-        FUNC3    ,                                           // Function key F3
-        FUNC4    ,                                           // Function key F4
-        FUNC5    ,                                           // Function key F5
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    
-    }},
-    // SHIFT LOCK.
-    {{
-        // S0   00 - 07
-        ESC    ,                                             //  SPARE - Allocate as Escape
-        GRAPHKEY ,                                           //  GRAPH
-        0x58     ,                                           //  
-        ALPHAKEY ,                                           //  ALPHA
-        NOKEY    ,                                           //  NO
-        '+'      ,                                           //  ;
-        '*'      ,                                           //  :
-        CR       ,                                           //  CR
-        // S1   08 - 0F
-        'Y'      ,                                           //  Y
-        'Z'      ,                                           //  Z
-        '`'      ,                                           //  @
-        '{'      ,                                           //  [
-        '}'      ,                                           //  ]
-        NOKEY    ,                                           //  NULL
-        NOKEY    ,                                           //  NULL
-        NOKEY    ,                                           //  NULL
-        // S2   10 - 17
-        'Q'      ,                                           //  Q
-        'R'      ,                                           //  R
-        'S'      ,                                           //  S
-        'T'      ,                                           //  T
-        'U'      ,                                           //  U
-        'V'      ,                                           //  V
-        'W'      ,                                           //  W
-        'X'      ,                                           //  X
-        // S3   18 - 1F
-        'I'      ,                                           //  I
-        'J'      ,                                           //  J
-        'K'      ,                                           //  K
-        'L'      ,                                           //  L
-        'M'      ,                                           //  M
-        'N'      ,                                           //  N
-        'O'      ,                                           //  O
-        'P'      ,                                           //  P
-        // S4   20 - 27
-        'A'      ,                                           //  A
-        'B'      ,                                           //  B
-        'C'      ,                                           //  C
-        'D'      ,                                           //  D
-        'E'      ,                                           //  E
-        'F'      ,                                           //  F
-        'G'      ,                                           //  G
-        'H'      ,                                           //  H
-        // S5   28 - 2F
-        '!'      ,                                           //  !
-        '"'      ,                                           //  "
-        '#'      ,                                           //  #
-        '$'      ,                                           //  $
-        '%'      ,                                           //  %
-        '&'      ,                                           //  &
-        '\''     ,                                           //  '
-        '('      ,                                           //  (
-        // S6   30 - 37
-        '|'      ,                                           //  Backslash
-        '~'      ,                                           //  POND MARK
-        '='      ,                                           //  YEN
-        ' '      ,                                           //  SPACE
-        ' '      ,                                           //  ¶
-        ')'      ,                                           //  )
-        '<'      ,                                           //  <
-        '>'      ,                                           //  >
-        // S7   38 - 3F
-        CLRKEY   ,                                           //  CLR - END. - Clear display.
-        CURHOMEKEY,                                          //  HOME.      - Cursor to home.
-        PAGEUP   ,                                           //  PAGE UP    - CURSOR UP
-        PAGEDOWN ,                                           //  PAGE DOWN  - CURSOR DOWN
-        ENDKEY   ,                                           //  END        - CURSOR RIGHT
-        HOMEKEY  ,                                           //  HOME       - CURSOR LEFT
-        '?'      ,                                           //  ?          - Question Mark
-        '/'      ,                                           //  /          - Forward Slash
-        // S8   40 - 47 - modifier keys.
-        BREAKKEY ,                                           // BREAK - Shift+BREAK = BREAK
-        NOKEY    ,                                           // CTRL
-        NOKEY    ,                                                             
-        NOKEY    ,                                                             
-        NOKEY    ,                                                             
-        NOKEY    ,                                                             
-        NOKEY    ,                                                             
-        NOKEY    ,                                           // SHIFT
-        // S9   48 - 4F - Function keys.                                       
-        FUNC6    ,                                           // Function key F1
-        FUNC7    ,                                           // Function key F2
-        FUNC8    ,                                           // Function key F3
-        FUNC9    ,                                           // Function key F4
-        FUNC10   ,                                           // Function key F5
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    
-    }},
-    // CONTROL CODE
-    {{
-        // S0   00 - 07
-        ESC      ,                                           // SPARE - Allocate as Escape
-        DEBUGKEY ,                                           // GRAPH - Enable debugging output.
-        CTRL_CAPPA ,                                         // ^      
-        ANSITGLKEY,                                          // ALPHA - Toggle Ansi terminal emulator.
-        NOKEY    ,                                           // NO
-        NOKEY    ,                                           // ;
-        NOKEY    ,                                           // :
-        NOKEY    ,                                           // CR
-        // S1   08 - 0F
-        CTRL_Y   ,                                           // ^Y E3
-        CTRL_Z   ,                                           // ^Z E4 (CHECKER)
-        CTRL_AT  ,                                           // ^@
-        CTRL_LB  ,                                           // ^[ EB/E5
-        CTRL_RB  ,                                           // ^] EA/E7 
-        NOKEY    ,                                           // #NULL
-        NOKEY    ,                                           // #NULL
-        NOKEY    ,                                           // #NULL
-        // S2   10 - 17
-        CTRL_Q   ,                                           // ^Q
-        CTRL_R   ,                                           // ^R
-        CTRL_S   ,                                           // ^S
-        CTRL_T   ,                                           // ^T
-        CTRL_U   ,                                           // ^U
-        CTRL_V   ,                                           // ^V
-        CTRL_W   ,                                           // ^W E1
-        CTRL_X   ,                                           // ^X E2
-        // S3   18 - 1F
-        CTRL_I   ,                                           // ^I F9
-        CTRL_J   ,                                           // ^J FA
-        CTRL_K   ,                                           // ^K FB
-        CTRL_L   ,                                           // ^L FC
-        CTRL_M   ,                                           // ^M CD
-        CTRL_N   ,                                           // ^N FE
-        CTRL_O   ,                                           // ^O FF
-        CTRL_P   ,                                           // ^P E0
-        // S4   20 - 27
-        CTRL_A   ,                                           // ^A F1
-        CTRL_B   ,                                           // ^B F2
-        CTRL_C   ,                                           // ^C F3
-        CTRL_D   ,                                           // ^D F4
-        CTRL_E   ,                                           // ^E F5
-        CTRL_F   ,                                           // ^F F6
-        CTRL_G   ,                                           // ^G F7
-        CTRL_H   ,                                           // ^H F8
-        // S5   28 - 2F
-        HOTKEY_ORIGINAL,                                     // 1 - Hotkey to invoke original mode.
-        HOTKEY_RFS40,                                        // 2 - Hotkey to invoke RFS 40 mode.
-        HOTKEY_TZFS,                                         // 3 - Hotkey to invoke TZFS mode.
-        HOTKEY_LINUX,                                        // 4 - Hotkey to invoke Linux mode.
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    ,
-        // S6   30 - 37 (ERROR? 7 VALUES ONLY!!)
-        NOKEY    ,                                           // ^YEN E6
-        CTRL_CAPPA ,                                         // ^    EF
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    ,
-        CTRL_UNDSCR ,                                        // ^,
-        NOKEY    ,
-        NOKEY    ,
-        // S7  - 38 - 3F
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    ,
-        CTRL_SLASH ,                                         // ^/ EE
-        // S8   40 - 47 - modifier keys.
-        NOKEY    ,                                           // BREAK - CTRL+BREAK - not yet assigned
-        NOKEY    ,                                           // CTRL
-        NOKEY    ,                                                            
-        NOKEY    ,                                                            
-        NOKEY    ,                                                            
-        NOKEY    ,                                                            
-        NOKEY    ,                                                            
-        NOKEY    ,                                           // SHIFT
-        // S9   48 - 4F - Function keys.                                      
-        FUNC1    ,                                           // Function key F1
-        FUNC2    ,                                           // Function key F2
-        FUNC3    ,                                           // Function key F3
-        FUNC4    ,                                           // Function key F4
-        FUNC5    ,                                           // Function key F5
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    
-    }},
-    // KANA
-    {{
-        // S0   00 - 07
-        0xBF     ,                                          //  SPARE
-        NOKEY    ,                                          //  GRAPH BUT NULL
-        0xCF     ,                                          //  NIKO WH.
-        0xC9     ,                                          //  ALPHA
-        NOKEY    ,                                          //  NO
-        0xB5     ,                                          //  MO
-        0x4D     ,                                          //  DAKU TEN
-        0xCD     ,                                          //  CR
-        // S1   08 - 0F
-        0x35     ,                                          //  HA
-        0x77     ,                                          //  TA
-        0xD7     ,                                          //  WA
-        0xB3     ,                                          //  YO
-        0xB7     ,                                          //  HANDAKU
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    ,
-        // S2   10 - 17
-        0x7C     ,                                          //  KA
-        0x70     ,                                          //  KE
-        0x41     ,                                          //  SHI
-        0x31     ,                                          //  KO
-        0x39     ,                                          // HI
-        0xA6     ,                                          //  TE
-        0x78     ,                                          //  KI
-        0xDD     ,                                          //  CHI
-        // S3   18 - 1F
-        0x3D     ,                                          //  FU
-        0x5D     ,                                          //  MI
-        0x6C     ,                                          //  MU
-        0x56     ,                                          //  ME
-        0x1D     ,                                          //  RHI
-        0x33     ,                                          //  RA
-        0xD5     ,                                          //  HE
-        0xB1     ,                                          //  HO
-        // S4   20 - 27
-        0x46     ,                                          //  SA
-        0x6E     ,                                          //  TO
-        0xD9     ,                                          //  THU
-        0x48     ,                                          //  SU
-        0x74     ,                                          //  KU
-        0x43     ,                                          //  SE
-        0x4C     ,                                          //  SO
-        0x73     ,                                          //  MA
-        // S5   28 - 2F
-        0x3F     ,                                          //  A
-        0x36     ,                                          //  I
-        0x7E     ,                                          //  U
-        0x3B     ,                                          //  E
-        0x7A     ,                                          //  O
-        0x1E     ,                                          //  NA
-        0x5F     ,                                          //  NI
-        0xA2     ,                                          //  NU
-        // S6   30 - 37
-        0xD3     ,                                          //  YO
-        0x9F     ,                                          //  YU
-        0xD1     ,                                          //  YA
-        0x00     ,                                          //  SPACE
-        0x9D     ,                                          //  NO
-        0xA3     ,                                          //  NE
-        0xD0     ,                                          //  RU
-        0xB9     ,                                          //  RE
-        // S7   38 - 3F
-        0xC6     ,                                          //  ?CLR
-        0xC5     ,                                          //  ?HOME
-        0xC2     ,                                          //  ?CURSOR UP
-        0xC1     ,                                          //  ?CURSOR DOWN
-        0xC3     ,                                          //  ?CURSOR RIGHT
-        0xC4     ,                                          //  ?CURSOR LEFT 
-        0xBB     ,                                          //  DASH
-        0xBE     ,                                          //  RO
-        // S8   40 - 47 - modifier keys.
-        NOKEY    ,                                          // BREAK - GRPH+BREAK - not yet assigned
-        NOKEY    ,                                          // CTRL
-        NOKEY    ,                                                            
-        NOKEY    ,                                                            
-        NOKEY    ,                                                            
-        NOKEY    ,                                                            
-        NOKEY    ,                                                            
-        NOKEY    ,                                          // SHIFT
-        // S9   48 - 4F - Function keys.                                      
-        FUNC1    ,                                          // Function key F1
-        FUNC2    ,                                          // Function key F2
-        FUNC3    ,                                          // Function key F3
-        FUNC4    ,                                          // Function key F4
-        FUNC5    ,                                          // Function key F5
-        NOKEY    ,
-        NOKEY    ,
-        NOKEY    
-    }} 
-};
-
-#elif (TARGET_HOST_MZ80A == 1)
+#if (TARGET_HOST_MZ80A == 1)
 static t_scanCodeMap scanCodeMap[] = {
     // MZ_80A NO SHIFT
     {{
@@ -1150,6 +814,945 @@ static t_scanCodeMap scanCodeMap[] = {
         '3'      ,                                           //        3
         NOKEY    ,
         '.'                                                  //        .
+    }} 
+};
+
+#elif (TARGET_HOST_MZ700 == 1)
+static t_scanCodeMap scanCodeMap[] = {
+    // NO SHIFT
+    {{
+      //  S0   00 - 07
+        ESC    ,                                             //  SPARE - Allocate as Escape
+        GRAPHKEY ,                                           //  GRAPH
+        '_'      ,                                           //  Pound/Down Arrow
+        ALPHAKEY ,                                           //  ALPHA
+        NOKEY    ,                                           //  NO
+        ';'      ,                                           //  +
+        ':'      ,                                           //  *
+        CR       ,                                           //  CR
+        // S1   08 - 0F
+        'y'      ,                                           //  y
+        'z'      ,                                           //  z
+        '@'      ,                                           //  `
+        '['      ,                                           //  {
+        ']'      ,                                           //  }
+        NOKEY    ,                                           //  NULL
+        NOKEY    ,                                           //  NULL
+        NOKEY    ,                                           //  NULL
+        // S2   10 - 17
+        'q'      ,                                           //  q
+        'r'      ,                                           //  r
+        's'      ,                                           //  s
+        't'      ,                                           //  t
+        'u'      ,                                           //  u
+        'v'      ,                                           //  v
+        'w'      ,                                           //  w
+        'x'      ,                                           //  x
+        // S3   18 - 1F
+        'i'      ,                                           //  i
+        'j'      ,                                           //  j
+        'k'      ,                                           //  k
+        'l'      ,                                           //  l
+        'm'      ,                                           //  m
+        'n'      ,                                           //  n
+        'o'      ,                                           //  o
+        'p'      ,                                           //  p
+        // S4   20 - 27
+        'a'      ,                                           //  a
+        'b'      ,                                           //  b
+        'c'      ,                                           //  c
+        'd'      ,                                           //  d
+        'e'      ,                                           //  e
+        'f'      ,                                           //  f
+        'g'      ,                                           //  g
+        'h'      ,                                           //  h
+        // S5   28 - 2F
+        '1'      ,                                           //  1
+        '2'      ,                                           //  2
+        '3'      ,                                           //  3
+        '4'      ,                                           //  4
+        '5'      ,                                           //  5
+        '6'      ,                                           //  6
+        '7'      ,                                           //  7
+        '8'      ,                                           //  8
+        // S6   30 - 37
+        '\\'     ,                                           //  Backslash
+        CURSUP   ,                                           //  
+        '-'      ,                                           //  -
+        ' '      ,                                           //  SPACE
+        '0'      ,                                           //  0
+        '9'      ,                                           //  9
+        ','      ,                                           //  ,
+        '.'      ,                                           //  .
+        // S7   38 - 3F
+        INSERT   ,                                           //  INST.
+        DELETE   ,                                           //  DEL.
+        CURSUP   ,                                           //  CURSOR UP
+        CURSDOWN ,                                           //  CURSOR DOWN
+        CURSRIGHT,                                           //  CURSOR RIGHT
+        CURSLEFT ,                                           //  CURSOR LEFT
+        '?'      ,                                           //  Question Mark
+        '/'      ,                                           //  Forward Slash
+        // S8   40 - 47 - modifier keys.
+        BACKS    ,                                           // BREAK - Backspace without modifiers, like standard ascii keyboards.
+        NOKEY    ,                                           // CTRL
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,                                           // SHIFT
+        // S9   48 - 4F - Function keys.
+        FUNC1    ,                                           // Function key F1
+        FUNC2    ,                                           // Function key F2
+        FUNC3    ,                                           // Function key F3
+        FUNC4    ,                                           // Function key F4
+        FUNC5    ,                                           // Function key F5
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    
+    }},
+    // CAPS LOCK
+    {{
+      // S0   00 - 07
+        ESC    ,                                             //  SPARE - Allocate as Escape
+        GRAPHKEY ,                                           // GRAPH
+        0x58     ,                                           // 
+        ALPHAKEY ,                                           // ALPHA
+        NOKEY    ,                                           // NO
+        ':'      ,                                           // ;
+        ';'      ,                                           // :
+        CR       ,                                           // CR
+        // S1   08 - 0F
+        'Y'      ,                                           // Y
+        'Z'      ,                                           // Z
+        '@'      ,                                           // @
+        '['      ,                                           // [
+        ']'      ,                                           // ]
+        NOKEY    ,                                           // NULL
+        NOKEY    ,                                           // NULL
+        NOKEY    ,                                           // NULL
+        // S2   10 - 17
+        'Q'      ,                                           // Q
+        'R'      ,                                           // R
+        'S'      ,                                           // S
+        'T'      ,                                           // T
+        'U'      ,                                           // U
+        'V'      ,                                           // V
+        'W'      ,                                           // W
+        'X'      ,                                           // X
+        // S3   18 - 1F
+        'I'      ,                                           // I
+        'J'      ,                                           // J
+        'K'      ,                                           // K
+        'L'      ,                                           // L
+        'M'      ,                                           // M
+        'N'      ,                                           // N
+        'O'      ,                                           // O
+        'P'      ,                                           // P
+        // S4   20 - 27
+        'A'      ,                                           // A
+        'B'      ,                                           // B
+        'C'      ,                                           // C
+        'D'      ,                                           // D
+        'E'      ,                                           // E
+        'F'      ,                                           // F
+        'G'      ,                                           // G
+        'H'      ,                                           // H
+        // S5   28 - 2F
+        '1'      ,                                           // 1
+        '2'      ,                                           // 2
+        '3'      ,                                           // 3
+        '4'      ,                                           // 4
+        '5'      ,                                           // 5
+        '6'      ,                                           // 6
+        '7'      ,                                           // 7
+        '8'      ,                                           // 8
+        // S6   30 - 37
+        '\\'     ,                                           // Backslash
+        CURSUP   ,                                           // 
+        '-'      ,                                           // -
+        ' '      ,                                           // SPACE
+        '0'      ,                                           // 0
+        '9'      ,                                           // 9
+        ','      ,                                           // ,
+        '.'      ,                                           // .
+        // S7   38 - 3F
+        INSERT   ,                                           // INST.
+        DELETE   ,                                           // DEL.
+        CURSUP   ,                                           // CURSOR UP
+        CURSDOWN ,                                           // CURSOR DOWN
+        CURSRIGHT,                                           // CURSOR RIGHT
+        CURSLEFT ,                                           // CURSOR LEFT
+        '?'      ,                                           // ?
+        '/'      ,                                           // /
+        // S8   40 - 47 - modifier keys.
+        BACKS    ,                                           // BREAK - Backspace without modifiers, like standard ascii keyboards.
+        NOKEY    ,                                           // CTRL
+        NOKEY    ,                                                             
+        NOKEY    ,                                                             
+        NOKEY    ,                                                             
+        NOKEY    ,                                                             
+        NOKEY    ,                                                             
+        NOKEY    ,                                           // SHIFT
+        // S9   48 - 4F - Function keys.                                       
+        FUNC1    ,                                           // Function key F1
+        FUNC2    ,                                           // Function key F2
+        FUNC3    ,                                           // Function key F3
+        FUNC4    ,                                           // Function key F4
+        FUNC5    ,                                           // Function key F5
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    
+    }},
+    // SHIFT LOCK.
+    {{
+        // S0   00 - 07
+        ESC    ,                                             //  SPARE - Allocate as Escape
+        GRAPHKEY ,                                           //  GRAPH
+        0x58     ,                                           //  
+        ALPHAKEY ,                                           //  ALPHA
+        NOKEY    ,                                           //  NO
+        '+'      ,                                           //  ;
+        '*'      ,                                           //  :
+        CR       ,                                           //  CR
+        // S1   08 - 0F
+        'Y'      ,                                           //  Y
+        'Z'      ,                                           //  Z
+        '`'      ,                                           //  @
+        '{'      ,                                           //  [
+        '}'      ,                                           //  ]
+        NOKEY    ,                                           //  NULL
+        NOKEY    ,                                           //  NULL
+        NOKEY    ,                                           //  NULL
+        // S2   10 - 17
+        'Q'      ,                                           //  Q
+        'R'      ,                                           //  R
+        'S'      ,                                           //  S
+        'T'      ,                                           //  T
+        'U'      ,                                           //  U
+        'V'      ,                                           //  V
+        'W'      ,                                           //  W
+        'X'      ,                                           //  X
+        // S3   18 - 1F
+        'I'      ,                                           //  I
+        'J'      ,                                           //  J
+        'K'      ,                                           //  K
+        'L'      ,                                           //  L
+        'M'      ,                                           //  M
+        'N'      ,                                           //  N
+        'O'      ,                                           //  O
+        'P'      ,                                           //  P
+        // S4   20 - 27
+        'A'      ,                                           //  A
+        'B'      ,                                           //  B
+        'C'      ,                                           //  C
+        'D'      ,                                           //  D
+        'E'      ,                                           //  E
+        'F'      ,                                           //  F
+        'G'      ,                                           //  G
+        'H'      ,                                           //  H
+        // S5   28 - 2F
+        '!'      ,                                           //  !
+        '"'      ,                                           //  "
+        '#'      ,                                           //  #
+        '$'      ,                                           //  $
+        '%'      ,                                           //  %
+        '&'      ,                                           //  &
+        '\''     ,                                           //  '
+        '('      ,                                           //  (
+        // S6   30 - 37
+        '|'      ,                                           //  Backslash
+        '~'      ,                                           //  POND MARK
+        '='      ,                                           //  YEN
+        ' '      ,                                           //  SPACE
+        ' '      ,                                           //  ¶
+        ')'      ,                                           //  )
+        '<'      ,                                           //  <
+        '>'      ,                                           //  >
+        // S7   38 - 3F
+        CLRKEY   ,                                           //  CLR - END. - Clear display.
+        CURHOMEKEY,                                          //  HOME.      - Cursor to home.
+        PAGEUP   ,                                           //  PAGE UP    - CURSOR UP
+        PAGEDOWN ,                                           //  PAGE DOWN  - CURSOR DOWN
+        ENDKEY   ,                                           //  END        - CURSOR RIGHT
+        HOMEKEY  ,                                           //  HOME       - CURSOR LEFT
+        '?'      ,                                           //  ?          - Question Mark
+        '/'      ,                                           //  /          - Forward Slash
+        // S8   40 - 47 - modifier keys.
+        BREAKKEY ,                                           // BREAK - Shift+BREAK = BREAK
+        NOKEY    ,                                           // CTRL
+        NOKEY    ,                                                             
+        NOKEY    ,                                                             
+        NOKEY    ,                                                             
+        NOKEY    ,                                                             
+        NOKEY    ,                                                             
+        NOKEY    ,                                           // SHIFT
+        // S9   48 - 4F - Function keys.                                       
+        FUNC6    ,                                           // Function key F1
+        FUNC7    ,                                           // Function key F2
+        FUNC8    ,                                           // Function key F3
+        FUNC9    ,                                           // Function key F4
+        FUNC10   ,                                           // Function key F5
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    
+    }},
+    // CONTROL CODE
+    {{
+        // S0   00 - 07
+        ESC      ,                                           // SPARE - Allocate as Escape
+        DEBUGKEY ,                                           // GRAPH - Enable debugging output.
+        CTRL_CAPPA ,                                         // ^      
+        ANSITGLKEY,                                          // ALPHA - Toggle Ansi terminal emulator.
+        NOKEY    ,                                           // NO
+        NOKEY    ,                                           // ;
+        NOKEY    ,                                           // :
+        NOKEY    ,                                           // CR
+        // S1   08 - 0F
+        CTRL_Y   ,                                           // ^Y E3
+        CTRL_Z   ,                                           // ^Z E4 (CHECKER)
+        CTRL_AT  ,                                           // ^@
+        CTRL_LB  ,                                           // ^[ EB/E5
+        CTRL_RB  ,                                           // ^] EA/E7 
+        NOKEY    ,                                           // #NULL
+        NOKEY    ,                                           // #NULL
+        NOKEY    ,                                           // #NULL
+        // S2   10 - 17
+        CTRL_Q   ,                                           // ^Q
+        CTRL_R   ,                                           // ^R
+        CTRL_S   ,                                           // ^S
+        CTRL_T   ,                                           // ^T
+        CTRL_U   ,                                           // ^U
+        CTRL_V   ,                                           // ^V
+        CTRL_W   ,                                           // ^W E1
+        CTRL_X   ,                                           // ^X E2
+        // S3   18 - 1F
+        CTRL_I   ,                                           // ^I F9
+        CTRL_J   ,                                           // ^J FA
+        CTRL_K   ,                                           // ^K FB
+        CTRL_L   ,                                           // ^L FC
+        CTRL_M   ,                                           // ^M CD
+        CTRL_N   ,                                           // ^N FE
+        CTRL_O   ,                                           // ^O FF
+        CTRL_P   ,                                           // ^P E0
+        // S4   20 - 27
+        CTRL_A   ,                                           // ^A F1
+        CTRL_B   ,                                           // ^B F2
+        CTRL_C   ,                                           // ^C F3
+        CTRL_D   ,                                           // ^D F4
+        CTRL_E   ,                                           // ^E F5
+        CTRL_F   ,                                           // ^F F6
+        CTRL_G   ,                                           // ^G F7
+        CTRL_H   ,                                           // ^H F8
+        // S5   28 - 2F
+        HOTKEY_ORIGINAL,                                     // 1 - Hotkey to invoke original mode.
+        HOTKEY_RFS40,                                        // 2 - Hotkey to invoke RFS 40 mode.
+        HOTKEY_TZFS,                                         // 3 - Hotkey to invoke TZFS mode.
+        HOTKEY_LINUX,                                        // 4 - Hotkey to invoke Linux mode.
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        // S6   30 - 37 (ERROR? 7 VALUES ONLY!!)
+        NOKEY    ,                                           // ^YEN E6
+        CTRL_CAPPA ,                                         // ^    EF
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        CTRL_UNDSCR ,                                        // ^,
+        NOKEY    ,
+        NOKEY    ,
+        // S7  - 38 - 3F
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        CTRL_SLASH ,                                         // ^/ EE
+        // S8   40 - 47 - modifier keys.
+        NOKEY    ,                                           // BREAK - CTRL+BREAK - not yet assigned
+        NOKEY    ,                                           // CTRL
+        NOKEY    ,                                                            
+        NOKEY    ,                                                            
+        NOKEY    ,                                                            
+        NOKEY    ,                                                            
+        NOKEY    ,                                                            
+        NOKEY    ,                                           // SHIFT
+        // S9   48 - 4F - Function keys.                                      
+        FUNC1    ,                                           // Function key F1
+        FUNC2    ,                                           // Function key F2
+        FUNC3    ,                                           // Function key F3
+        FUNC4    ,                                           // Function key F4
+        FUNC5    ,                                           // Function key F5
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    
+    }},
+    // KANA
+    {{
+        // S0   00 - 07
+        0xBF     ,                                          //  SPARE
+        GRAPHKEY ,                                          //  GRAPH
+        0xCF     ,                                          //  NIKO WH.
+        0xC9     ,                                          //  ALPHA
+        NOKEY    ,                                          //  NO
+        0xB5     ,                                          //  MO
+        0x4D     ,                                          //  DAKU TEN
+        0xCD     ,                                          //  CR
+        // S1   08 - 0F
+        0x35     ,                                          //  HA
+        0x77     ,                                          //  TA
+        0xD7     ,                                          //  WA
+        0xB3     ,                                          //  YO
+        0xB7     ,                                          //  HANDAKU
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        // S2   10 - 17
+        0x7C     ,                                          //  KA
+        0x70     ,                                          //  KE
+        0x41     ,                                          //  SHI
+        0x31     ,                                          //  KO
+        0x39     ,                                          // HI
+        0xA6     ,                                          //  TE
+        0x78     ,                                          //  KI
+        0xDD     ,                                          //  CHI
+        // S3   18 - 1F
+        0x3D     ,                                          //  FU
+        0x5D     ,                                          //  MI
+        0x6C     ,                                          //  MU
+        0x56     ,                                          //  ME
+        0x1D     ,                                          //  RHI
+        0x33     ,                                          //  RA
+        0xD5     ,                                          //  HE
+        0xB1     ,                                          //  HO
+        // S4   20 - 27
+        0x46     ,                                          //  SA
+        0x6E     ,                                          //  TO
+        0xD9     ,                                          //  THU
+        0x48     ,                                          //  SU
+        0x74     ,                                          //  KU
+        0x43     ,                                          //  SE
+        0x4C     ,                                          //  SO
+        0x73     ,                                          //  MA
+        // S5   28 - 2F
+        0x3F     ,                                          //  A
+        0x36     ,                                          //  I
+        0x7E     ,                                          //  U
+        0x3B     ,                                          //  E
+        0x7A     ,                                          //  O
+        0x1E     ,                                          //  NA
+        0x5F     ,                                          //  NI
+        0xA2     ,                                          //  NU
+        // S6   30 - 37
+        0xD3     ,                                          //  YO
+        0x9F     ,                                          //  YU
+        0xD1     ,                                          //  YA
+        0x00     ,                                          //  SPACE
+        0x9D     ,                                          //  NO
+        0xA3     ,                                          //  NE
+        0xD0     ,                                          //  RU
+        0xB9     ,                                          //  RE
+        // S7   38 - 3F
+        0xC6     ,                                          //  ?CLR
+        0xC5     ,                                          //  ?HOME
+        0xC2     ,                                          //  ?CURSOR UP
+        0xC1     ,                                          //  ?CURSOR DOWN
+        0xC3     ,                                          //  ?CURSOR RIGHT
+        0xC4     ,                                          //  ?CURSOR LEFT 
+        0xBB     ,                                          //  DASH
+        0xBE     ,                                          //  RO
+        // S8   40 - 47 - modifier keys.
+        NOKEY    ,                                          // BREAK - GRPH+BREAK - not yet assigned
+        NOKEY    ,                                          // CTRL
+        NOKEY    ,                                                            
+        NOKEY    ,                                                            
+        NOKEY    ,                                                            
+        NOKEY    ,                                                            
+        NOKEY    ,                                                            
+        NOKEY    ,                                          // SHIFT
+        // S9   48 - 4F - Function keys.                                      
+        FUNC1    ,                                          // Function key F1
+        FUNC2    ,                                          // Function key F2
+        FUNC3    ,                                          // Function key F3
+        FUNC4    ,                                          // Function key F4
+        FUNC5    ,                                          // Function key F5
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    
+    }} 
+};
+
+
+#elif (TARGET_HOST_MZ1500 == 1)
+static t_scanCodeMap scanCodeMap[] = {
+    // NO SHIFT
+    {{
+      //  S0   00 - 07
+        ESC    ,                                             //  SPARE - Allocate as Escape
+        GRAPHKEY ,                                           //  GRAPH
+        '_'      ,                                           //  Pound/Down Arrow
+        ALPHAKEY ,                                           //  ALPHA
+        NOKEY    ,                                           //  NO
+        ';'      ,                                           //  +
+        ':'      ,                                           //  *
+        CR       ,                                           //  CR
+        // S1   08 - 0F
+        'y'      ,                                           //  y
+        'z'      ,                                           //  z
+        '@'      ,                                           //  `
+        '['      ,                                           //  {
+        ']'      ,                                           //  }
+        NOKEY    ,                                           //  NULL
+        NOKEY    ,                                           //  NULL
+        NOKEY    ,                                           //  NULL
+        // S2   10 - 17
+        'q'      ,                                           //  q
+        'r'      ,                                           //  r
+        's'      ,                                           //  s
+        't'      ,                                           //  t
+        'u'      ,                                           //  u
+        'v'      ,                                           //  v
+        'w'      ,                                           //  w
+        'x'      ,                                           //  x
+        // S3   18 - 1F
+        'i'      ,                                           //  i
+        'j'      ,                                           //  j
+        'k'      ,                                           //  k
+        'l'      ,                                           //  l
+        'm'      ,                                           //  m
+        'n'      ,                                           //  n
+        'o'      ,                                           //  o
+        'p'      ,                                           //  p
+        // S4   20 - 27
+        'a'      ,                                           //  a
+        'b'      ,                                           //  b
+        'c'      ,                                           //  c
+        'd'      ,                                           //  d
+        'e'      ,                                           //  e
+        'f'      ,                                           //  f
+        'g'      ,                                           //  g
+        'h'      ,                                           //  h
+        // S5   28 - 2F
+        '1'      ,                                           //  1
+        '2'      ,                                           //  2
+        '3'      ,                                           //  3
+        '4'      ,                                           //  4
+        '5'      ,                                           //  5
+        '6'      ,                                           //  6
+        '7'      ,                                           //  7
+        '8'      ,                                           //  8
+        // S6   30 - 37
+        '\\'     ,                                           //  Backslash
+        CURSUP   ,                                           //  
+        '-'      ,                                           //  -
+        ' '      ,                                           //  SPACE
+        '0'      ,                                           //  0
+        '9'      ,                                           //  9
+        ','      ,                                           //  ,
+        '.'      ,                                           //  .
+        // S7   38 - 3F
+        INSERT   ,                                           //  INST.
+        DELETE   ,                                           //  DEL.
+        CURSUP   ,                                           //  CURSOR UP
+        CURSDOWN ,                                           //  CURSOR DOWN
+        CURSRIGHT,                                           //  CURSOR RIGHT
+        CURSLEFT ,                                           //  CURSOR LEFT
+        '?'      ,                                           //  Question Mark
+        '/'      ,                                           //  Forward Slash
+        // S8   40 - 47 - modifier keys.
+        BACKS    ,                                           // BREAK - Backspace without modifiers, like standard ascii keyboards.
+        NOKEY    ,                                           // CTRL
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,                                           // SHIFT
+        // S9   48 - 4F - Function keys.
+        FUNC1    ,                                           // Function key F1
+        FUNC2    ,                                           // Function key F2
+        FUNC3    ,                                           // Function key F3
+        FUNC4    ,                                           // Function key F4
+        FUNC5    ,                                           // Function key F5
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    
+    }},
+    // CAPS LOCK
+    {{
+      // S0   00 - 07
+        ESC    ,                                             //  SPARE - Allocate as Escape
+        GRAPHKEY ,                                           // GRAPH
+        0x58     ,                                           // 
+        ALPHAKEY ,                                           // ALPHA
+        NOKEY    ,                                           // NO
+        ':'      ,                                           // ;
+        ';'      ,                                           // :
+        CR       ,                                           // CR
+        // S1   08 - 0F
+        'Y'      ,                                           // Y
+        'Z'      ,                                           // Z
+        '@'      ,                                           // @
+        '['      ,                                           // [
+        ']'      ,                                           // ]
+        NOKEY    ,                                           // NULL
+        NOKEY    ,                                           // NULL
+        NOKEY    ,                                           // NULL
+        // S2   10 - 17
+        'Q'      ,                                           // Q
+        'R'      ,                                           // R
+        'S'      ,                                           // S
+        'T'      ,                                           // T
+        'U'      ,                                           // U
+        'V'      ,                                           // V
+        'W'      ,                                           // W
+        'X'      ,                                           // X
+        // S3   18 - 1F
+        'I'      ,                                           // I
+        'J'      ,                                           // J
+        'K'      ,                                           // K
+        'L'      ,                                           // L
+        'M'      ,                                           // M
+        'N'      ,                                           // N
+        'O'      ,                                           // O
+        'P'      ,                                           // P
+        // S4   20 - 27
+        'A'      ,                                           // A
+        'B'      ,                                           // B
+        'C'      ,                                           // C
+        'D'      ,                                           // D
+        'E'      ,                                           // E
+        'F'      ,                                           // F
+        'G'      ,                                           // G
+        'H'      ,                                           // H
+        // S5   28 - 2F
+        '1'      ,                                           // 1
+        '2'      ,                                           // 2
+        '3'      ,                                           // 3
+        '4'      ,                                           // 4
+        '5'      ,                                           // 5
+        '6'      ,                                           // 6
+        '7'      ,                                           // 7
+        '8'      ,                                           // 8
+        // S6   30 - 37
+        '\\'     ,                                           // Backslash
+        CURSUP   ,                                           // 
+        '-'      ,                                           // -
+        ' '      ,                                           // SPACE
+        '0'      ,                                           // 0
+        '9'      ,                                           // 9
+        ','      ,                                           // ,
+        '.'      ,                                           // .
+        // S7   38 - 3F
+        INSERT   ,                                           // INST.
+        DELETE   ,                                           // DEL.
+        CURSUP   ,                                           // CURSOR UP
+        CURSDOWN ,                                           // CURSOR DOWN
+        CURSRIGHT,                                           // CURSOR RIGHT
+        CURSLEFT ,                                           // CURSOR LEFT
+        '?'      ,                                           // ?
+        '/'      ,                                           // /
+        // S8   40 - 47 - modifier keys.
+        BACKS    ,                                           // BREAK - Backspace without modifiers, like standard ascii keyboards.
+        NOKEY    ,                                           // CTRL
+        NOKEY    ,                                                             
+        NOKEY    ,                                                             
+        NOKEY    ,                                                             
+        NOKEY    ,                                                             
+        NOKEY    ,                                                             
+        NOKEY    ,                                           // SHIFT
+        // S9   48 - 4F - Function keys.                                       
+        FUNC1    ,                                           // Function key F1
+        FUNC2    ,                                           // Function key F2
+        FUNC3    ,                                           // Function key F3
+        FUNC4    ,                                           // Function key F4
+        FUNC5    ,                                           // Function key F5
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    
+    }},
+    // SHIFT LOCK.
+    {{
+        // S0   00 - 07
+        ESC    ,                                             //  SPARE - Allocate as Escape
+        GRAPHKEY ,                                           //  GRAPH
+        0x58     ,                                           //  
+        ALPHAKEY ,                                           //  ALPHA
+        NOKEY    ,                                           //  NO
+        '+'      ,                                           //  ;
+        '*'      ,                                           //  :
+        CR       ,                                           //  CR
+        // S1   08 - 0F
+        'Y'      ,                                           //  Y
+        'Z'      ,                                           //  Z
+        '`'      ,                                           //  @
+        '{'      ,                                           //  [
+        '}'      ,                                           //  ]
+        NOKEY    ,                                           //  NULL
+        NOKEY    ,                                           //  NULL
+        NOKEY    ,                                           //  NULL
+        // S2   10 - 17
+        'Q'      ,                                           //  Q
+        'R'      ,                                           //  R
+        'S'      ,                                           //  S
+        'T'      ,                                           //  T
+        'U'      ,                                           //  U
+        'V'      ,                                           //  V
+        'W'      ,                                           //  W
+        'X'      ,                                           //  X
+        // S3   18 - 1F
+        'I'      ,                                           //  I
+        'J'      ,                                           //  J
+        'K'      ,                                           //  K
+        'L'      ,                                           //  L
+        'M'      ,                                           //  M
+        'N'      ,                                           //  N
+        'O'      ,                                           //  O
+        'P'      ,                                           //  P
+        // S4   20 - 27
+        'A'      ,                                           //  A
+        'B'      ,                                           //  B
+        'C'      ,                                           //  C
+        'D'      ,                                           //  D
+        'E'      ,                                           //  E
+        'F'      ,                                           //  F
+        'G'      ,                                           //  G
+        'H'      ,                                           //  H
+        // S5   28 - 2F
+        '!'      ,                                           //  !
+        '"'      ,                                           //  "
+        '#'      ,                                           //  #
+        '$'      ,                                           //  $
+        '%'      ,                                           //  %
+        '&'      ,                                           //  &
+        '\''     ,                                           //  '
+        '('      ,                                           //  (
+        // S6   30 - 37
+        '|'      ,                                           //  Backslash
+        '~'      ,                                           //  POND MARK
+        '='      ,                                           //  YEN
+        ' '      ,                                           //  SPACE
+        ' '      ,                                           //  ¶
+        ')'      ,                                           //  )
+        '<'      ,                                           //  <
+        '>'      ,                                           //  >
+        // S7   38 - 3F
+        CLRKEY   ,                                           //  CLR - END. - Clear display.
+        CURHOMEKEY,                                          //  HOME.      - Cursor to home.
+        PAGEUP   ,                                           //  PAGE UP    - CURSOR UP
+        PAGEDOWN ,                                           //  PAGE DOWN  - CURSOR DOWN
+        ENDKEY   ,                                           //  END        - CURSOR RIGHT
+        HOMEKEY  ,                                           //  HOME       - CURSOR LEFT
+        '?'      ,                                           //  ?          - Question Mark
+        '/'      ,                                           //  /          - Forward Slash
+        // S8   40 - 47 - modifier keys.
+        BREAKKEY ,                                           // BREAK - Shift+BREAK = BREAK
+        NOKEY    ,                                           // CTRL
+        NOKEY    ,                                                             
+        NOKEY    ,                                                             
+        NOKEY    ,                                                             
+        NOKEY    ,                                                             
+        NOKEY    ,                                                             
+        NOKEY    ,                                           // SHIFT
+        // S9   48 - 4F - Function keys.                                       
+        FUNC6    ,                                           // Function key F1
+        FUNC7    ,                                           // Function key F2
+        FUNC8    ,                                           // Function key F3
+        FUNC9    ,                                           // Function key F4
+        FUNC10   ,                                           // Function key F5
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    
+    }},
+    // CONTROL CODE
+    {{
+        // S0   00 - 07
+        ESC      ,                                           // SPARE - Allocate as Escape
+        DEBUGKEY ,                                           // GRAPH - Enable debugging output.
+        CTRL_CAPPA ,                                         // ^      
+        ANSITGLKEY,                                          // ALPHA - Toggle Ansi terminal emulator.
+        NOKEY    ,                                           // NO
+        NOKEY    ,                                           // ;
+        NOKEY    ,                                           // :
+        NOKEY    ,                                           // CR
+        // S1   08 - 0F
+        CTRL_Y   ,                                           // ^Y E3
+        CTRL_Z   ,                                           // ^Z E4 (CHECKER)
+        CTRL_AT  ,                                           // ^@
+        CTRL_LB  ,                                           // ^[ EB/E5
+        CTRL_RB  ,                                           // ^] EA/E7 
+        NOKEY    ,                                           // #NULL
+        NOKEY    ,                                           // #NULL
+        NOKEY    ,                                           // #NULL
+        // S2   10 - 17
+        CTRL_Q   ,                                           // ^Q
+        CTRL_R   ,                                           // ^R
+        CTRL_S   ,                                           // ^S
+        CTRL_T   ,                                           // ^T
+        CTRL_U   ,                                           // ^U
+        CTRL_V   ,                                           // ^V
+        CTRL_W   ,                                           // ^W E1
+        CTRL_X   ,                                           // ^X E2
+        // S3   18 - 1F
+        CTRL_I   ,                                           // ^I F9
+        CTRL_J   ,                                           // ^J FA
+        CTRL_K   ,                                           // ^K FB
+        CTRL_L   ,                                           // ^L FC
+        CTRL_M   ,                                           // ^M CD
+        CTRL_N   ,                                           // ^N FE
+        CTRL_O   ,                                           // ^O FF
+        CTRL_P   ,                                           // ^P E0
+        // S4   20 - 27
+        CTRL_A   ,                                           // ^A F1
+        CTRL_B   ,                                           // ^B F2
+        CTRL_C   ,                                           // ^C F3
+        CTRL_D   ,                                           // ^D F4
+        CTRL_E   ,                                           // ^E F5
+        CTRL_F   ,                                           // ^F F6
+        CTRL_G   ,                                           // ^G F7
+        CTRL_H   ,                                           // ^H F8
+        // S5   28 - 2F
+        HOTKEY_ORIGINAL,                                     // 1 - Hotkey to invoke original mode.
+        HOTKEY_RFS40,                                        // 2 - Hotkey to invoke RFS 40 mode.
+        HOTKEY_TZFS,                                         // 3 - Hotkey to invoke TZFS mode.
+        HOTKEY_LINUX,                                        // 4 - Hotkey to invoke Linux mode.
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        // S6   30 - 37 (ERROR? 7 VALUES ONLY!!)
+        NOKEY    ,                                           // ^YEN E6
+        CTRL_CAPPA ,                                         // ^    EF
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        CTRL_UNDSCR ,                                        // ^,
+        NOKEY    ,
+        NOKEY    ,
+        // S7  - 38 - 3F
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        CTRL_SLASH ,                                         // ^/ EE
+        // S8   40 - 47 - modifier keys.
+        NOKEY    ,                                           // BREAK - CTRL+BREAK - not yet assigned
+        NOKEY    ,                                           // CTRL
+        NOKEY    ,                                                            
+        NOKEY    ,                                                            
+        NOKEY    ,                                                            
+        NOKEY    ,                                                            
+        NOKEY    ,                                                            
+        NOKEY    ,                                           // SHIFT
+        // S9   48 - 4F - Function keys.                                      
+        FUNC1    ,                                           // Function key F1
+        FUNC2    ,                                           // Function key F2
+        FUNC3    ,                                           // Function key F3
+        FUNC4    ,                                           // Function key F4
+        FUNC5    ,                                           // Function key F5
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    
+    }},
+    // KANA
+    {{
+        // S0   00 - 07
+        0xBF     ,                                          //  SPARE
+        GRAPHKEY ,                                          //  GRAPH
+        0xCF     ,                                          //  NIKO WH.
+        0xC9     ,                                          //  ALPHA
+        NOKEY    ,                                          //  NO
+        0xB5     ,                                          //  MO
+        0x4D     ,                                          //  DAKU TEN
+        0xCD     ,                                          //  CR
+        // S1   08 - 0F
+        0x35     ,                                          //  HA
+        0x77     ,                                          //  TA
+        0xD7     ,                                          //  WA
+        0xB3     ,                                          //  YO
+        0xB7     ,                                          //  HANDAKU
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    ,
+        // S2   10 - 17
+        0x7C     ,                                          //  KA
+        0x70     ,                                          //  KE
+        0x41     ,                                          //  SHI
+        0x31     ,                                          //  KO
+        0x39     ,                                          // HI
+        0xA6     ,                                          //  TE
+        0x78     ,                                          //  KI
+        0xDD     ,                                          //  CHI
+        // S3   18 - 1F
+        0x3D     ,                                          //  FU
+        0x5D     ,                                          //  MI
+        0x6C     ,                                          //  MU
+        0x56     ,                                          //  ME
+        0x1D     ,                                          //  RHI
+        0x33     ,                                          //  RA
+        0xD5     ,                                          //  HE
+        0xB1     ,                                          //  HO
+        // S4   20 - 27
+        0x46     ,                                          //  SA
+        0x6E     ,                                          //  TO
+        0xD9     ,                                          //  THU
+        0x48     ,                                          //  SU
+        0x74     ,                                          //  KU
+        0x43     ,                                          //  SE
+        0x4C     ,                                          //  SO
+        0x73     ,                                          //  MA
+        // S5   28 - 2F
+        0x3F     ,                                          //  A
+        0x36     ,                                          //  I
+        0x7E     ,                                          //  U
+        0x3B     ,                                          //  E
+        0x7A     ,                                          //  O
+        0x1E     ,                                          //  NA
+        0x5F     ,                                          //  NI
+        0xA2     ,                                          //  NU
+        // S6   30 - 37
+        0xD3     ,                                          //  YO
+        0x9F     ,                                          //  YU
+        0xD1     ,                                          //  YA
+        0x00     ,                                          //  SPACE
+        0x9D     ,                                          //  NO
+        0xA3     ,                                          //  NE
+        0xD0     ,                                          //  RU
+        0xB9     ,                                          //  RE
+        // S7   38 - 3F
+        0xC6     ,                                          //  ?CLR
+        0xC5     ,                                          //  ?HOME
+        0xC2     ,                                          //  ?CURSOR UP
+        0xC1     ,                                          //  ?CURSOR DOWN
+        0xC3     ,                                          //  ?CURSOR RIGHT
+        0xC4     ,                                          //  ?CURSOR LEFT 
+        0xBB     ,                                          //  DASH
+        0xBE     ,                                          //  RO
+        // S8   40 - 47 - modifier keys.
+        NOKEY    ,                                          // BREAK - GRPH+BREAK - not yet assigned
+        NOKEY    ,                                          // CTRL
+        NOKEY    ,                                                            
+        NOKEY    ,                                                            
+        NOKEY    ,                                                            
+        NOKEY    ,                                                            
+        NOKEY    ,                                                            
+        NOKEY    ,                                          // SHIFT
+        // S9   48 - 4F - Function keys.                                      
+        FUNC1    ,                                          // Function key F1
+        FUNC2    ,                                          // Function key F2
+        FUNC3    ,                                          // Function key F3
+        FUNC4    ,                                          // Function key F4
+        FUNC5    ,                                          // Function key F5
+        NOKEY    ,
+        NOKEY    ,
+        NOKEY    
     }} 
 };
 
@@ -1741,7 +2344,35 @@ static t_ansiKeyMap ansiKeySeq[] = {
     { PAGEDOWN   ,    "\x1b[6~"  },                         // Page Down.
 };
 
-#if (TARGET_HOST_MZ700 == 1)
+#if (TARGET_HOST_MZ80A == 1)
+    // Static structures for controlling and managing hardware features.
+    // Display control structure. Used to manage the display including the Ansi Terminal.
+    const t_displayBuffer displayDefault  = { .displayAttr = 0x71, .backingRow = 0, .displayCol = 0, .displayRow = 0, .maxBackingRow = (VC_DISPLAY_BUFFER_SIZE / VC_MAX_COLUMNS),
+                                              .maxDisplayRow = VC_MAX_ROWS, .maxBackingCol = 80, .useAnsiTerm = 1, .lineWrap = 0, .inDebug = 0
+                                            };
+
+    // Keyboard control structure. Used to manage keyboard sweep, mapping and store.
+    const t_keyboard      keyboardDefault = { .holdTimer = 0L, .autorepeat = 0, .cursorOn = 1, .flashTimer = 0L, .keyBuf[0] = 0x00, .keyBufPtr = 0,
+                                              .mode = KEYB_LOWERCASE, .dualmode = KEYB_DUAL_GRAPH
+                                            };
+
+    // Audio control structure. Used to manage audio output.
+    const t_audio         audioDefault    = { .audioStopTimer = 0
+                                            };
+    
+
+    // AnsiTerminal control structure. Used to manage the inbuilt Ansi Terminal.
+    const t_AnsiTerm      ansitermDefault = { .state = ANSITERM_ESC, .charcnt = 0, .paramcnt = 0, .setDisplayMode = 0, .setExtendedMode = 0, .saveRow = 0, .saveCol = 0, 
+                                            };
+
+    // Module control structure.
+    const t_control       ctrlDefault     = { .suspendIO = 0, .debug = 0
+                                            };
+
+    // Colour map for the Ansi Terminal.
+    const unsigned char ansiColourMap[8] = { 0, 4, 2, 6, 1, 5, 3, 7 };
+
+#elif (TARGET_HOST_MZ700 == 1)
     // Static structures for controlling and managing hardware features.
     // Display control structure. Used to manage the display including the Ansi Terminal.
     const t_displayBuffer displayDefault  = { .displayAttr = 0x71, .backingRow = 0, .displayCol = 0, .displayRow = 0, .maxBackingRow = (VC_DISPLAY_BUFFER_SIZE / VC_MAX_COLUMNS),
@@ -1767,23 +2398,21 @@ static t_ansiKeyMap ansiKeySeq[] = {
     // Colour map for the Ansi Terminal.
     const unsigned char ansiColourMap[8] = { 0, 4, 2, 6, 1, 5, 3, 7 };
 
-#elif (TARGET_HOST_MZ80A == 1)
+#elif (TARGET_HOST_MZ1500 == 1)
     // Static structures for controlling and managing hardware features.
     // Display control structure. Used to manage the display including the Ansi Terminal.
     const t_displayBuffer displayDefault  = { .displayAttr = 0x71, .backingRow = 0, .displayCol = 0, .displayRow = 0, .maxBackingRow = (VC_DISPLAY_BUFFER_SIZE / VC_MAX_COLUMNS),
-                                              .maxDisplayRow = VC_MAX_ROWS, .maxBackingCol = 80, .useAnsiTerm = 1, .lineWrap = 0, .inDebug = 0
+                                              .maxDisplayRow = VC_MAX_ROWS, .maxBackingCol = 40, .useAnsiTerm = 1, .lineWrap = 0, .inDebug = 0
                                             };
-
     // Keyboard control structure. Used to manage keyboard sweep, mapping and store.
     const t_keyboard      keyboardDefault = { .holdTimer = 0L, .autorepeat = 0, .cursorOn = 1, .flashTimer = 0L, .keyBuf[0] = 0x00, .keyBufPtr = 0,
-                                              .mode = KEYB_LOWERCASE, .dualmode = KEYB_DUAL_GRAPH
+                                              .mode = KEYB_LOWERCASE, .dualmode = KEYB_DUAL_NONE 
                                             };
 
     // Audio control structure. Used to manage audio output.
     const t_audio         audioDefault    = { .audioStopTimer = 0
                                             };
     
-
     // AnsiTerminal control structure. Used to manage the inbuilt Ansi Terminal.
     const t_AnsiTerm      ansitermDefault = { .state = ANSITERM_ESC, .charcnt = 0, .paramcnt = 0, .setDisplayMode = 0, .setExtendedMode = 0, .saveRow = 0, .saveCol = 0, 
                                             };
@@ -1841,17 +2470,17 @@ static t_ansiKeyMap ansiKeySeq[] = {
 uint8_t mzInitMBHardware(void)
 {
     // Locals.
-  #if (TARGET_HOST_MZ2000 == 1)
+  #if (TARGET_HOST_MZ1500 == 1 || TARGET_HOST_MZ2000 == 1)
     uint32_t     idx;
     uint32_t     idx2;
   #endif
 
-  #if (TARGET_HOST_MZ700 == 1)
+  #if (TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1)
     // Ensure memory paging is set to default.
     SPI_SEND_32(0x00e4, 0x00 << 8 | CPLD_CMD_WRITEIO_ADDR);
   #endif
 
-  #if (TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ80A == 1)
+  #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1)
     // From the 1Z-013A monitor code, initialise the 8255 PIO.
     //
     WRITE_HARDWARE(1, MBADDR_KEYPF, 0x8A);                                       // 10001010 CTRL WORD MODE0
@@ -1877,6 +2506,27 @@ uint8_t mzInitMBHardware(void)
    
     // Disable the hardware sound output.
     WRITE_HARDWARE(0, MBADDR_SUNDG, 0x00);                                       // Sound could be enabled on start, disable it.
+
+   #if (TARGET_HOST_MZ1500 == 1)
+    for(idx=1; idx < 4; idx++)
+    {
+        WRITE_HARDWARE(0, IO_ADDR_E5, 0x00);                                     // Select the PCG Bank.
+        for(idx2=0xD000; idx2 < 0xF000; idx2++)
+        {
+            WRITE_HARDWARE(0, idx2, 0x00);                                       // Zero the PCG memory in the bank.
+        }
+    }
+    WRITE_HARDWARE(0, IO_ADDR_E6, 0x00);                                         // Deselect the PCG Bank.
+    WRITE_HARDWARE(0, IO_PCG_PRIO, 0x00);                                        // Set text as priority.
+    for(idx=0x11; idx < 0x90; idx+=0x11)
+    {
+        WRITE_HARDWARE(0, IO_PALETTE, idx);                                      // Setup palettes.
+    }
+    for(idx=0x9F; idx <- 0xFF; idx+=0x20)
+    {
+        WRITE_HARDWARE(0, IO_PSG_BOTH, idx);                                     // Setup PSG.
+    }
+   #endif
 
   #elif (TARGET_HOST_MZ2000 == 1)
     // Initialise the Z80 PIO/8255 controllers.
@@ -1946,6 +2596,8 @@ uint8_t mzInit(void)
     mzSetMachineVideoMode(VMMODE_MZ80A);
   #elif (TARGET_HOST_MZ700 == 1)
     mzSetMachineVideoMode(VMMODE_MZ700);
+  #elif (TARGET_HOST_MZ1500 == 1)
+    mzSetMachineVideoMode(VMMODE_MZ1500);
   #elif (TARGET_HOST_MZ2000 == 1)
     mzSetMachineVideoMode(VMMODE_MZ2000);
   #endif
@@ -1963,9 +2615,11 @@ void mzBeep(uint32_t freq, uint32_t timeout)
     uint16_t   freqDiv = TIMER_8253_MZ80A_FREQ/(freq*2);
   #elif (TARGET_HOST_MZ700 == 1)
     uint16_t   freqDiv = TIMER_8253_MZ700_FREQ/freq;
+  #elif (TARGET_HOST_MZ1500 == 1)
+    uint16_t   freqDiv = TIMER_8253_MZ700_FREQ/freq;
   #endif
 
-  #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
+  #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1)
     // Setup the 8253 Timer 0 to output a sound, enable output to amplifier and set timeout.
     WRITE_HARDWARE(0, MBADDR_CONTF, 0x34               );       // Timer 0 to square wave generator, load LSB first.
     WRITE_HARDWARE(0, MBADDR_CONT0, (freqDiv&0xff)     );  
@@ -2058,7 +2712,7 @@ void mzClearDisplay(uint8_t mode, uint8_t updPos)
     for(dstVRAMAddr=dstVRAMStartAddr, dstARAMAddr = dstARAMStartAddr; dstVRAMAddr <= dstVRAMEndAddr; dstVRAMAddr+=1, dstARAMAddr+=1)
     {
         // Clear both Video and Attribute RAM.
-        WRITE_VRAM_CHAR(dstVRAMAddr, 0x00);
+        WRITE_VRAM_CHAR(dstVRAMAddr, 0x00, 0);
         WRITE_VRAM_ATTRIBUTE(dstARAMAddr, display.displayAttr);
     }
     // Clear the shadow display scrollback RAM.
@@ -2112,7 +2766,7 @@ void mzClearLine(int row, int colStart, int colEnd, uint8_t updPos)
     //
     for(dstVRAMAddr=dstVRAMStartAddr, dstARAMAddr = dstARAMStartAddr; dstVRAMAddr <= dstVRAMEndAddr; dstVRAMAddr+=1, dstARAMAddr+=1)
     {
-        WRITE_VRAM_CHAR(dstVRAMAddr, 0x00);
+        WRITE_VRAM_CHAR(dstVRAMAddr, 0x00, 0);
         WRITE_VRAM_ATTRIBUTE(dstARAMAddr, display.displayAttr);
     }
 
@@ -2169,11 +2823,13 @@ uint8_t mzSetDisplayWidth(uint8_t width)
         return(1);
     
     // Toggle the 40/80 bit according to requirements.
+  #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ2000 == 1)
     if(width == 40)
     {
+  #endif
         display.maxBackingCol = 40;
 
-      #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
+      #if (TARGET_HOST_MZ80A == 1)
         // Dummy read to enable access to control register.
         READ_HARDWARE_INIT(0, MBADDR_DSPCTL);
         WRITE_HARDWARE(0, MBADDR_DSPCTL, 0x00);
@@ -2182,12 +2838,14 @@ uint8_t mzSetDisplayWidth(uint8_t width)
         display.hwVideoMode = display.hwVideoMode & 0xDF;
         DISABLE_VIDEO();
       #endif
+
+  #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ2000 == 1)
     }
     else
     {
         display.maxBackingCol = 80;
 
-      #if (TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1)
+      #if (TARGET_HOST_MZ80A == 1)
         // Dummy read to enable access to control register.
         READ_HARDWARE_INIT(0, MBADDR_DSPCTL);
         WRITE_HARDWARE(0, MBADDR_DSPCTL, VMMODE_80CHAR);
@@ -2197,6 +2855,7 @@ uint8_t mzSetDisplayWidth(uint8_t width)
         DISABLE_VIDEO();
       #endif
     }
+  #endif
 
     return(0);
 }
@@ -2217,7 +2876,7 @@ void mzRefreshDisplay(void)
     startIdx = (display.backingRow < display.maxDisplayRow ? 0 : (display.backingRow - display.maxDisplayRow)+1) * display.maxBackingCol;
     for(srcIdx = startIdx, dstVRAMAddr = VIDEO_VRAM_BASE_ADDR, dstARAMAddr = VIDEO_ARAM_BASE_ADDR; srcIdx < startIdx+(display.maxDisplayRow*display.maxBackingCol); srcIdx++, dstVRAMAddr++, dstARAMAddr++)
     {
-        WRITE_VRAM_CHAR(dstVRAMAddr, display.displayCharBuf[srcIdx]);
+        WRITE_VRAM_CHAR(dstVRAMAddr, display.displayCharBuf[srcIdx], 1);
         WRITE_VRAM_ATTRIBUTE(dstARAMAddr, display.displayAttrBuf[srcIdx]);
     }
   
@@ -2542,7 +3201,7 @@ int mzPutChar(char c)
 
         // Output character using default attributes.
         dispMemAddr = VIDEO_VRAM_BASE_ADDR + (display.displayRow * display.maxBackingCol) + display.displayCol;
-        WRITE_VRAM_CHAR(dispMemAddr, (char)c);
+        WRITE_VRAM_CHAR(dispMemAddr, (char)c, 1);
         display.displayCharBuf[(display.backingRow * display.maxBackingCol) + display.displayCol] = c;
         //
         dispMemAddr = VIDEO_ARAM_BASE_ADDR + (display.displayRow * display.maxBackingCol) + display.displayCol;
@@ -2598,7 +3257,7 @@ int mzPutRaw(char c)
 
     // Output character using default attributes.
     dispMemAddr = VIDEO_VRAM_BASE_ADDR + (display.displayRow * display.maxBackingCol) + display.displayCol;
-    WRITE_VRAM_CHAR(dispMemAddr, (char)c);
+    WRITE_VRAM_CHAR(dispMemAddr, (char)c, 1);
     display.displayCharBuf[(display.backingRow * display.maxBackingCol) + display.displayCol] = c;
     //
     dispMemAddr = VIDEO_ARAM_BASE_ADDR + (display.displayRow * display.maxBackingCol) + display.displayCol;
@@ -3502,7 +4161,7 @@ uint8_t mzFlashCursor(enum CURSOR_STATES state)
             // Only restore character if it had been previously saved and active.
             if(keyboard.cursorOn == 1 && keyboard.displayCursor == 1)
             {
-                WRITE_VRAM_CHAR(dispMemAddr, display.displayCharBuf[srcIdx]);
+                WRITE_VRAM_CHAR(dispMemAddr, display.displayCharBuf[srcIdx], 1);
             }
             keyboard.cursorOn = 0;
             keyboard.displayCursor = 0;
@@ -3518,7 +4177,7 @@ uint8_t mzFlashCursor(enum CURSOR_STATES state)
         case CURSOR_RESTORE:
             if(keyboard.displayCursor == 1)
             {
-                WRITE_VRAM_CHAR(dispMemAddr, display.displayCharBuf[srcIdx]);
+                WRITE_VRAM_CHAR(dispMemAddr, display.displayCharBuf[srcIdx], 1);
                 keyboard.displayCursor = 0;
             }
             break;
@@ -3547,10 +4206,10 @@ uint8_t mzFlashCursor(enum CURSOR_STATES state)
                             cursorChr = CURSOR_CHR_GRAPH;
                             break;
                     }
-                    WRITE_VRAM_CHAR(dispMemAddr, cursorChr);
+                    WRITE_VRAM_CHAR(dispMemAddr, cursorChr, 0);
                 } else
                 {
-                    WRITE_VRAM_CHAR(dispMemAddr, display.displayCharBuf[srcIdx]);
+                    WRITE_VRAM_CHAR(dispMemAddr, display.displayCharBuf[srcIdx], 1);
                 }
             }
             break;
@@ -3650,7 +4309,32 @@ uint8_t mzSweepKeys(void)
         keyboard.scanbuf[1][strobeIdx] = keyboard.scanbuf[0][strobeIdx];
     }
 
-  #if (TARGET_HOST_MZ700 == 1)
+  #if (TARGET_HOST_MZ80A == 1)
+    // Check for modifiers.
+    //
+    if((keyboard.scanbuf[0][0] & 0x01) == 0)
+    {
+        keyboard.shiftKey = 1;
+    } else
+    {
+        keyboard.shiftKey = 0;
+    }
+    if((keyboard.scanbuf[0][0] & 0x80) == 0 && keyboard.shiftKey == 0)
+    {
+        keyboard.ctrlKey = 1;
+    } else
+    {
+        keyboard.ctrlKey = 0;
+    }
+    if((keyboard.scanbuf[0][0] & 0x80) == 0 && keyboard.shiftKey == 1)
+    {
+        keyboard.breakKey = 1;
+    } else
+    {
+        keyboard.breakKey = 0;
+    }
+
+  #elif (TARGET_HOST_MZ700 == 1)
     // Check for modifiers.
     //
     if((keyboard.scanbuf[0][8] & 0x80) == 0)
@@ -3675,29 +4359,29 @@ uint8_t mzSweepKeys(void)
         keyboard.shiftKey = 0;
     }
 
-  #elif (TARGET_HOST_MZ80A == 1)
+  #elif (TARGET_HOST_MZ1500 == 1)
     // Check for modifiers.
     //
-    if((keyboard.scanbuf[0][0] & 0x01) == 0)
+    if((keyboard.scanbuf[0][8] & 0x80) == 0)
     {
-        keyboard.shiftKey = 1;
+        keyboard.breakKey = 1;
     } else
     {
-        keyboard.shiftKey = 0;
+        keyboard.breakKey = 0;
     }
-    if((keyboard.scanbuf[0][0] & 0x80) == 0 && keyboard.shiftKey == 0)
+    if((keyboard.scanbuf[0][8] & 0x40) == 0)
     {
         keyboard.ctrlKey = 1;
     } else
     {
         keyboard.ctrlKey = 0;
     }
-    if((keyboard.scanbuf[0][0] & 0x80) == 0 && keyboard.shiftKey == 1)
+    if((keyboard.scanbuf[0][8] & 0x01) == 0)
     {
-        keyboard.breakKey = 1;
+        keyboard.shiftKey = 1;
     } else
     {
-        keyboard.breakKey = 0;
+        keyboard.shiftKey = 0;
     }
 
   #elif (TARGET_HOST_MZ2000 == 1)

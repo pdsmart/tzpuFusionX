@@ -17,6 +17,7 @@
 //
 // History:         Oct 2022 v1.0  - v1.Initial write of the z80 kernel driver software.
 //                  Feb 2023 v1.1  - Extended to allow Rom upload for RFS and other drivers.
+//                  May 2023 v1.2  - Extended to accommodate MZ-1500 host.
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -54,7 +55,7 @@
 #include <Z80.h>
 #include "z80driver.h"
 
-#define VERSION                      "1.1"
+#define VERSION                      "1.2"
 #define AUTHOR                       "P.D.Smart"
 #define COPYRIGHT                    "(c) 2018-23"
   
@@ -436,7 +437,7 @@ int z80load(int fdZ80, char *fileName, uint32_t memLoadAddr, long fileOffset, lo
         }
         else
         {
-          #if(TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ80A)
+          #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1)
             if(mzfHeader.loadAddr > 0x1000)
             {
           #endif
@@ -446,7 +447,7 @@ int z80load(int fdZ80, char *fileName, uint32_t memLoadAddr, long fileOffset, lo
                 // Now read in the data.
                 fread(&Z80RAM[mzfHeader.loadAddr], mzfHeader.fileSize, 1, ptr);
                 printf("Loaded %s, Size:%04x, Addr:%04x, Exec:%04x\n", fileName, mzfHeader.fileSize, mzfHeader.loadAddr, mzfHeader.execAddr);
-          #if(TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ80A)
+          #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1)
             }
           #endif
            
@@ -459,7 +460,7 @@ int z80load(int fdZ80, char *fileName, uint32_t memLoadAddr, long fileOffset, lo
             // Set PC to 2 (NST) which switches to RUN mode and executes at 0000H
             ioctlCmd.z80.pc = 2;
           #endif
-          #if(TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ80A)
+          #if(TARGET_HOST_MZ80A == 1 || TARGET_HOST_MZ700 == 1 || TARGET_HOST_MZ1500 == 1)
             // MZ-700 or MZ-80A just use the MZF header exec address.
             ioctlCmd.z80.pc = mzfHeader.execAddr;
           #endif
@@ -601,6 +602,10 @@ int ctrlCmd(int fdZ80, enum CTRL_COMMANDS cmd, long param1, long param2, long pa
             {
                 ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ700;
             }
+            else if(strcasecmp((char *)param1, "MZ1500") == 0)
+            {
+                ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ1500;
+            }
             else if(strcasecmp((char *)param1, "MZ2000") == 0)
             {
                 ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ2000;
@@ -637,6 +642,10 @@ int ctrlCmd(int fdZ80, enum CTRL_COMMANDS cmd, long param1, long param2, long pa
             else if(strcasecmp((char *)param1, "MZ700") == 0)
             {
                 ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ700;
+            }
+            else if(strcasecmp((char *)param1, "MZ1500") == 0)
+            {
+                ioctlCmd.vdev.device = VIRTUAL_DEVICE_MZ1500;
             }
             else if(strcasecmp((char *)param1, "MZ2000") == 0)
             {
