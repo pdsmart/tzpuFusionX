@@ -12,6 +12,7 @@
 //
 // History:         Feb 2023 - v1.0  Initial write of the Sharp MZ tty driver software.
 //                  Apr 2023 - v1.1  Updated to include MZ-2000 mode.
+//                  Jul 2023 - v1.2  Updates and bug fixes.
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -34,15 +35,28 @@
 
 // Constants.
 #define DRIVER_LICENSE                        "GPL"
-#define DRIVER_AUTHOR                         "Philip D Smart"
+#define DRIVER_AUTHOR                         "P.D.Smart"
 #define DRIVER_DESCRIPTION                    "Sharp MZ TTY Driver"
-#define DRIVER_VERSION                        "v1.1"
-#define DRIVER_VERSION_DATE                   "Apr 2023"
-#define DRIVER_COPYRIGHT                      "(C) 2018-2023"
+#define DRIVER_VERSION                        "v1.2"
+#define DRIVER_VERSION_DATE                   "July 2023"
+#define DRIVER_COPYRIGHT                      "(C) 2018-23"
 #define DEVICE_NAME                           "ttymz"
 #define DRIVER_NAME                           "SharpMZ_tty"
 #define DEBUG_ENABLED                         0                                   // 0 = disabled, 1 .. debug level.
 #define ARBITER_NAME                          "sharpbiter"
+#if (TARGET_HOST_MZ80A == 1)
+    #define DRIVER_TITLE                      "Sharp MZ-80A TTY"
+#elif (TARGET_HOST_MZ700 == 1)
+    #define DRIVER_TITLE                      "Sharp MZ-700 TTY"
+#elif (TARGET_HOST_MZ1500 == 1)
+    #define DRIVER_TITLE                      "Sharp MZ-1500 TTY"
+#elif (TARGET_HOST_MZ2000 == 1)
+    #define DRIVER_TITLE                      "Sharp MZ-2000 TTY"
+#elif (TARGET_HOST_PCW == 1)
+    #define DRIVER_TITLE                      "Amstrad PCW-8XXX TTY"
+#else
+    #define DRIVER_MODEL                      "not defined"
+#endif
 
 // Fake UART values
 #define MCR_DTR                               0x01

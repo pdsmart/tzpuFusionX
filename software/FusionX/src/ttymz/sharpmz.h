@@ -14,6 +14,7 @@
 // History:         v1.0 Feb 2023  - Initial write of the Sharp MZ series hardware interface software.
 //                  v1.01 Mar 2023 - Bug fixes and additional ESC sequence processing.
 //                  v1.02 May 2023 - Updates to accommodate MZ-1500 host.
+//                  v1.2  Jul 2023 - Fixed MZ-1500 ATB Display of lower case characters.
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -369,6 +370,33 @@
                                      }
   #define READ_KEYB_INIT()           READ_HARDWARE_IO_INIT(0, MBADDR_PIOB)
   #define READ_KEYB()                READ_HARDWARE_IO()
+#elif (TARGET_HOST_MZ1500 ==1)
+  #define ENABLE_VIDEO()             {}
+  #define DISABLE_VIDEO()            {}
+  #define WRITE_VRAM_CHAR(__addr__,__data__,__xlat__)  if(__xlat__ == 1)\
+                                                       {\
+                                                           if(islower(__data__))\
+                                                           {\
+                                                               WRITE_HARDWARE(0,__addr__,(dispCodeMap[(int)(__data__)].dispCode & 0x7F));\
+                                                               READ_HARDWARE_INIT(0,(__addr__+0x800));\
+                                                               WRITE_HARDWARE(0,(__addr__+0x800),(READ_HARDWARE() | 0x80));\
+                                                           } else\
+                                                           {\
+                                                               WRITE_HARDWARE(0,__addr__,dispCodeMap[(int)(__data__)].dispCode);\
+                                                               READ_HARDWARE_INIT(0,(__addr__+0x800));\
+                                                               WRITE_HARDWARE(0,(__addr__+0x800),(READ_HARDWARE() & 0x7F));\
+                                                           }\
+                                                       } else\
+                                                       {\
+                                                           WRITE_HARDWARE(0,__addr__, __data__);\
+                                                       }
+  #define WRITE_VRAM_ATTRIBUTE(__addr__,__data__)      {\
+                                                           READ_HARDWARE_INIT(0,(__addr__));\
+                                                           WRITE_HARDWARE(0,__addr__,((READ_HARDWARE() & 0x80) | (__data__ & 0x7F)));\
+                                                       }
+  #define WRITE_KEYB_STROBE(__data__)                  WRITE_HARDWARE(0, MBADDR_KEYPA, __data__)
+  #define READ_KEYB_INIT()           READ_HARDWARE_INIT(0, MBADDR_KEYPB)
+  #define READ_KEYB()                READ_HARDWARE()
 #else
   #define ENABLE_VIDEO()             {}
   #define DISABLE_VIDEO()            {}

@@ -19,6 +19,7 @@
 //                                   being the TTY will continue to run within the mirrored framebuffer
 //                                   and when reselected, refresh the hardware screen.
 //                  Apr 2023 - v1.1  Updated to include MZ-2000 mode.                                   
+//                  Jul 2023 - v1.2  Updates and bug fixes.
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -864,8 +865,8 @@ static int __init ttymz_init(void)
     mzInit();
 
     // Sign on.
-    sprintf(buf, "%s %s",   DRIVER_DESCRIPTION, DRIVER_VERSION); mzWriteString(0, 0, buf, -1);
-    sprintf(buf, "%s %s\n", DRIVER_COPYRIGHT, DRIVER_AUTHOR);    mzWriteString(0, 1, buf, -1);
+    sprintf(buf, "%s %s",   DRIVER_TITLE,     DRIVER_VERSION); mzWriteString(0, 0, buf, -1);
+    sprintf(buf, "%s %s\n", DRIVER_COPYRIGHT, DRIVER_AUTHOR);  mzWriteString(0, 1, buf, -1);
 
     pr_info(DRIVER_DESCRIPTION " " DRIVER_VERSION "\n");
 

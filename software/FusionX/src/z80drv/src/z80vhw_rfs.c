@@ -121,7 +121,7 @@
 
 // SD Drive constants.
 #define SD_DIR                                "/apps/FusionX/host/MZ-80A/RFS/"
-#define SD_CARD_FILENAME                      SD_DIR "SHARP_MZ80A_RFS_CPM_IMAGE_1.img"// SD Card Binary Image.
+#define SD_CARD_FILENAME                      SD_DIR "SHARP_MZ80A_RFS_CPM_IMAGE_1.img"  // SD Card Binary Image.
 
 // MMC/SD command (SPI mode)
 #define CMD0                                  0x40 + 0                                  // GO_IDLE_STATE 

@@ -40,6 +40,8 @@
 //                                    a vanilla Z80 or customisations for hosts pulled in.
 //                  Apr 2023 - v1.4.1 Completed MZ2000 mode to work with arbiter and ttymz.
 //                  May 2023 - v1.5   Added MZ1500 modes.
+//                  Jul 2023 - v1.6   Updated MZ-700 code, adding sub-memory maps to increase page mapping
+//                                    speed specifically to enable reliable tape read/write.
 //
 //
 // Notes:           See Makefile to enable/disable conditional components
@@ -478,12 +480,12 @@ static zuint8 z80_read(void *context, zuint16 address)
     Z_UNUSED(context)
        
     // Only read if the address is in physical RAM.
-  #if(TARGET_HOST_PCW == 0)
-    if(isPhysical(address))
-  #elif(TARGET_HOST_MZ1500 == 1)
+  #if(TARGET_HOST_MZ1500 == 1)
     // MZ-1500 take into account PCG being active, always go to hardware when active. Cannot use the map because
     // this can change during PCG active mode and must be reflected when PCG is deactivated.
-    if(isPhysicalHW(address) || (Z80Ctrl->pcgMode == 1 && address >= 0xD000))
+    if(isPhysical(address) || (Z80Ctrl->pcgMode == 1 && address >= 0xD000))
+  #elif(TARGET_HOST_PCW == 0)
+    if(isPhysical(address))
   #else
     if(isPhysicalHW(address))
   #endif
@@ -863,7 +865,7 @@ static zuint8 z80_in(void *context, zuint16 port)
         // Finally ensure the data from the port is ready and retrieve it.
         while(CPLD_READY() == 0);
         value = z80io_PRL_Read();
-      
+
       #if (TARGET_HOST_MZ2000 == 1)
         // Keyport data? Store.
         if((port&0xff) == 0xEA)
@@ -1267,10 +1269,10 @@ static int z80drv_mmap(struct file *filp, struct vm_area_struct *vma)
     }
     // Another one, as the memory bank page maps are allocated dynamically, need to send a size which indicates which memory block to map. This is done by the size of a memory map
     // added to it the map slot as 0x1000 per slot.
-    else if(size >= ((MEMORY_BLOCK_SLOTS*sizeof(uint32_t)) + 0x1000) && size < ((MEMORY_BLOCK_SLOTS*sizeof(uint32_t)) + (MEMORY_MODES * 0x1000)))
+    else if(size >= ((MEMORY_BLOCK_SLOTS*sizeof(uint32_t)) + 0x1000) && size < ((MEMORY_BLOCK_SLOTS*sizeof(uint32_t)) + ((MEMORY_MODES+MEMORY_SUB_MODES) * 0x1000)))
     {
         // Loop through all the memory page slots, if active and the size is in range, then map the memory to user space.
-        for(idx=0; idx < MEMORY_MODES; idx++)
+        for(idx=0; idx < MEMORY_MODES+MEMORY_SUB_MODES; idx++)
         {
             if(size >= ((MEMORY_BLOCK_SLOTS*sizeof(uint32_t)) + ((idx+1)*0x1000)) && size < ((MEMORY_BLOCK_SLOTS*sizeof(uint32_t)) + ((idx+2) * 0x1000)))
             {
@@ -1665,6 +1667,7 @@ static long int z80drv_ioctl(struct file *file, unsigned cmd, unsigned long arg)
                             case 2:
                                 Z80Ctrl->cpuGovernorDelayROM = ROM_DELAY_X2;
                                 Z80Ctrl->cpuGovernorDelayRAM = RAM_DELAY_X2;
+                    pr_info("ROM:%d, RAM:%d\n", Z80Ctrl->cpuGovernorDelayROM, Z80Ctrl->cpuGovernorDelayRAM);
                                 break;
 
                             case 4:
@@ -2091,8 +2094,8 @@ static int __init ModuleInit(void)
         goto initExit;
     }
     // Default memory mode is 0, ie. Original. Additional modes may be used by drivers such as the tzpu driver.
-    Z80Ctrl->memoryMode = 0;
-    for(idx=0; idx < MEMORY_MODES; idx++)
+    Z80Ctrl->memoryMode    = 0;
+    for(idx=0; idx < MEMORY_MODES+MEMORY_SUB_MODES; idx++)
     {
         (Z80Ctrl->page[idx]) = NULL;
     }
@@ -2202,7 +2205,7 @@ static void __exit ModuleExit(void)
     }
 
     // Return the memory used for the Z80 'virtual memory' and control variables.
-    for(idx=0; idx < MEMORY_MODES; idx++)
+    for(idx=0; idx < MEMORY_MODES+MEMORY_SUB_MODES; idx++)
     {
         if(Z80Ctrl->page[idx] != NULL)
         {

@@ -17,6 +17,8 @@
 //                  Feb 2023 - v1.2   Added RFS virtual driver.
 //                  Apr 2023 - v1.4.1 Completed MZ2000 mode to work with arbiter and ttymz.
 //                  May 2023 - v1.5   Added MZ1500 modes.
+//                  Jul 2023 - v1.6   Updated MZ-700 code, adding sub-memory maps to increase page mapping
+//                                    speed specifically to enable reliable tape read/write.
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -80,8 +82,8 @@
 #define DRIVER_LICENSE                        "GPL"
 #define DRIVER_AUTHOR                         "Philip D Smart"
 #define DRIVER_DESCRIPTION                    "Z80 CPU Emulator and Hardware Interface Driver"
-#define DRIVER_VERSION                        "v1.5"
-#define DRIVER_VERSION_DATE                   "May 2023"
+#define DRIVER_VERSION                        "v1.6"
+#define DRIVER_VERSION_DATE                   "July 2023"
 #define DRIVER_COPYRIGHT                      "(C) 2018-2023"
 #define Z80_VIRTUAL_ROM_SIZE                  (65536 * 32)       // Sized to maximum Kernel contiguous allocation size, 2M which is 4x512K ROMS.
 #define Z80_VIRTUAL_RAM_SIZE                  (65536 * 32)       // Sized to maximum Kernel contiguous allocation size, 2M.
@@ -166,11 +168,11 @@
   #define INSTRUCTION_DELAY_ROM_112MHZ        8
   #define INSTRUCTION_DELAY_ROM_224MHZ        4
   #define INSTRUCTION_DELAY_ROM_448MHZ        1
-  #define INSTRUCTION_DELAY_RAM_3_54MHZ       253
-  #define INSTRUCTION_DELAY_RAM_7MHZ          126
-  #define INSTRUCTION_DELAY_RAM_14MHZ         63
-  #define INSTRUCTION_DELAY_RAM_28MHZ         32
-  #define INSTRUCTION_DELAY_RAM_56MHZ         16
+  #define INSTRUCTION_DELAY_RAM_3_54MHZ       240
+  #define INSTRUCTION_DELAY_RAM_7MHZ          120
+  #define INSTRUCTION_DELAY_RAM_14MHZ         60
+  #define INSTRUCTION_DELAY_RAM_28MHZ         30
+  #define INSTRUCTION_DELAY_RAM_56MHZ         15
   #define INSTRUCTION_DELAY_RAM_112MHZ        8
   #define INSTRUCTION_DELAY_RAM_224MHZ        4
   #define INSTRUCTION_DELAY_RAM_448MHZ        1
@@ -599,6 +601,7 @@ enum Z80_INSTRUCTION_DELAY {
 // The memory page arrays dont check for allocation due to speed, it is assumed a memory mode page has been allocated and defined prior to the memoryMode
 // variable being set to that page.
 #define MEMORY_MODES                          32                                       // Maximum number of different memory modes.
+#define MEMORY_SUB_MODES                      6                                        // Number of possible alternate memory maps for a given memory mode.
 #define MEMORY_PAGE_SIZE                      0x10000                                  // Total size of directly addressable memory.
 #define MEMORY_BLOCK_GRANULARITY              0x1                                      // Any change update MEMORY_BLOCK_SHIFT and mask in MEMORY_BLOCK_MASK
 #define MEMORY_BLOCK_SHIFT                    0
@@ -738,10 +741,10 @@ typedef struct {
     // 16bit Input Address -> map -> Pointer to 24bit memory address + type flag.
     //                            -> Pointer+<low bits of address> to 24bit memory address + type flag.
     //uint32_t                                  page[MEMORY_BLOCK_SLOTS];
-    uint32_t                                 *page[MEMORY_MODES];
+    uint32_t                                 *page[MEMORY_MODES+MEMORY_SUB_MODES];
     uint32_t                                  shadowPage[MEMORY_BLOCK_SLOTS];               // Shadow page is for manipulation and backup of an existing page.
 
-    // Current memory mode as used by active driver.
+    // Current memory modes as used by an active driver.
     uint8_t                                   memoryMode;
 
     // I/O Page map.

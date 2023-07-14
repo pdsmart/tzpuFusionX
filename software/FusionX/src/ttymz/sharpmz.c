@@ -14,6 +14,7 @@
 // History:         v1.0  Feb 2023 - Initial write of the Sharp MZ series hardware interface software.
 //                  v1.01 Mar 2023 - Bug fixes and additional ESC sequence processing.
 //                  v1.02 May 2023 - Updates to accommodate MZ-1500 host.
+//                  v1.2  Jul 2023 - Updates to MZ-1500 to display lower case chars and bug fixes.
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -2505,26 +2506,26 @@ uint8_t mzInitMBHardware(void)
     READ_HARDWARE_INIT(1, MBADDR_SCLDSP);                                        // Hardware scroll needs to be reset.
    
     // Disable the hardware sound output.
-    WRITE_HARDWARE(0, MBADDR_SUNDG, 0x00);                                       // Sound could be enabled on start, disable it.
+    WRITE_HARDWARE(1, MBADDR_SUNDG, 0x00);                                       // Sound could be enabled on start, disable it.
 
    #if (TARGET_HOST_MZ1500 == 1)
     for(idx=1; idx < 4; idx++)
     {
-        WRITE_HARDWARE(0, IO_ADDR_E5, 0x00);                                     // Select the PCG Bank.
+        WRITE_HARDWARE_IO(1, IO_ADDR_E5, 0x00);                                  // Select the PCG Bank.
         for(idx2=0xD000; idx2 < 0xF000; idx2++)
         {
-            WRITE_HARDWARE(0, idx2, 0x00);                                       // Zero the PCG memory in the bank.
+            WRITE_HARDWARE(1, idx2, 0x00);                                       // Zero the PCG memory in the bank.
         }
     }
-    WRITE_HARDWARE(0, IO_ADDR_E6, 0x00);                                         // Deselect the PCG Bank.
-    WRITE_HARDWARE(0, IO_PCG_PRIO, 0x00);                                        // Set text as priority.
+    WRITE_HARDWARE_IO(1, IO_ADDR_E6, 0x00);                                      // Deselect the PCG Bank.
+    WRITE_HARDWARE_IO(1, IO_PCG_PRIO, 0x00);                                     // Set text as priority.
     for(idx=0x11; idx < 0x90; idx+=0x11)
     {
-        WRITE_HARDWARE(0, IO_PALETTE, idx);                                      // Setup palettes.
+        WRITE_HARDWARE_IO(1, IO_PALETTE, idx);                                   // Setup palettes.
     }
-    for(idx=0x9F; idx <- 0xFF; idx+=0x20)
+    for(idx=0x9F; idx <= 0xFF; idx+=0x20)
     {
-        WRITE_HARDWARE(0, IO_PSG_BOTH, idx);                                     // Setup PSG.
+        WRITE_HARDWARE_IO(1, IO_PSG_BOTH, idx);                                  // Setup PSG.
     }
    #endif
 

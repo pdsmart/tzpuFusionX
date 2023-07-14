@@ -42,10 +42,14 @@ START:  LD      SP,STACK
         CALL    ?CLER                   ; Clear 256 bytes from NAME 10F1h to 11F0h
         LD      A,016H
         CALL    PRNT
-        IF      MODE80C = 0
-          LD    A,007H                  ; Black background, white characters. Bit 7 is clear as a write to bit 7 @ DFFFH selects 40Char mode.
+        IF      KUMA = 1
+          LD    A,0CFH
         ELSE
-          LD    A,017H                  ; Blue background, white characters in colour mode. Bit 7 is set as a write to bit 7 @ DFFFH selects 80Char mode.
+          IF    MODE80C = 0
+            LD  A,007H                  ; Black background, white characters. Bit 7 is clear as a write to bit 7 @ DFFFH selects 40Char mode.
+          ELSE
+            LD  A,017H                  ; Blue background, white characters in colour mode. Bit 7 is set as a write to bit 7 @ DFFFH selects 80Char mode.
+          ENDIF
         ENDIF
         LD      HL,ARAM
         JR      STRT1                   
@@ -130,13 +134,19 @@ LOAD:   CALL    ?RDI
         JR      C,ST1                 
         JP      (HL)
 
+
         ; LOADING
 MSG?2:  DB      04CH, 0B7H, 0A1H, 09CH
         DB      0A6H, 0B0H, 097H, 020H
         DB      00DH
 
-        ; SIGN ON BANNER
-MSG?3:  DB      "**  MONITOR SA-1510  **", 0DH
+        ; SIGN ON BANNER - Different for Kuma 80 BIOS
+MSG?3:  IF      KUMA = 0
+          DB    "**  MONITOR SA-1510  **", 0DH
+        ELSE
+          DB      "*K",0A5H,0B3H,0A1H," MZ-80A M",0B7H,0B0H,0A6H
+          DB      096H,0B7H,09DH,"*",00DH,"*",00DH
+        ENDIF
 
         ; For 80 Character mode we need some space, so shorten the Check Sum Error message.
         ;
@@ -148,7 +158,7 @@ MSGE1:  IF      MODE80C = 0
           DB    "CK SUM?", 0DH
         ENDIF
 
-        ; Hook = 7 bytes.
+        ; Hook = 7 bytes using space taken from Check Sum message.
 HOOK:   IF      MODE80C = 1
           LD    A,0FFH
           LD    (SPAGE),A
@@ -156,27 +166,56 @@ HOOK:   IF      MODE80C = 1
         ENDIF
 
         ; CR PAGE MODE1
-.CR:    CALL    .MANG
-        RRCA    
-        JP      NC,CURS2
-        LD      L,000H
-        INC     H
-        CP      ROW - 1                 ; End of line?
-        JR      Z,.CP1                 
-        INC     H
-        JP      CURS1
+.CR:    IF      KUMA = 1
+          LD    HL,(DSPXY)
+          JP    CURS2
+        ELSE
+          CALL  .MANG
+          RRCA  
+          JP   NC,CURS2
+          LD   L,000H
+          INC  H
+          CP   ROW - 1                 ; End of line?
+          JR   Z,.CP1                 
+          INC  H
+          JP   CURS1
+        ENDIF
+.CR1:   IF     KUMA = 1
+          NEG
+          LD   (SPAGE),A
+          ADD  A,004H
+          LD   (KEYPF),A
+          RET  
+          DB   00EH
+        ENDIF
 
 .CP1:   LD      (DSPXY),HL
 
         ; SCROLLER
-.SCROL: LD      BC,SCRNSZ - COLW        ; Scroll COLW -1 lines
+.SCROL: IF      KUMA = 1
+          LD    BC, 0780H
+        ELSE
+          LD    BC,SCRNSZ - COLW        ; Scroll COLW -1 lines
+        ENDIF
         LD      DE,SCRN                 ; Start of the screen.
-        LD      HL,SCRN + COLW          ; Start of screen + 1 line.
+        IF      KUMA = 1
+          LD    HL,0D050H
+        ELSE
+          LD    HL,SCRN + COLW          ; Start of screen + 1 line.
+        ENDIF
         LDIR    
         EX      DE,HL
-        LD      B,COLW                  ; Clear last line at bottom of screen.
+        IF      KUMA = 1
+          LD    B, 050H
+        ELSE
+          LD    B,COLW                  ; Clear last line at bottom of screen.
+        ENDIF
         CALL    ?CLER
-        LD      BC,0001AH
+        IF      KUMA = 1
+          JP    ?RSTR
+        ELSE
+          LD    BC,0001AH
+        ENDIF
         LD      DE,MANG
         LD      HL,MANG + 1
         LDIR    
@@ -587,22 +626,46 @@ TIMIN:  PUSH    AF
         EI      
         RET     
 
-.DSP03:  EX      DE,HL
-        LD      (HL),001H
-        INC     HL
-        LD      (HL),000H
-        JP      CURSR
-.MANG2: LD      A,(DSPXY + 1)
-        ADD     A,L
-        LD      L,A
-        LD      A,(HL)
-        INC     HL
-        RL      (HL)
-        OR      (HL)
-        RR      (HL)
-        RRCA    
-        EX      DE,HL
-        LD      HL,(DSPXY)
+.DSP03: IF      KUMA = 1
+          LD    A,(SPAGE)
+          OR    A
+          LD    A,027H
+          RET   Z
+          ADD   A,A
+          INC   A
+          RET   
+
+L03A7:    PUSH  BC
+          CALL  .DSP03
+          LD    B,A
+          LD    A,L
+          CP    B
+          POP   BC
+          RET   
+
+L03B0:    CALL  .DSP03
+          LD    L,A
+          XOR   A
+          DEC   H
+          RET   
+        ELSE
+          EX    DE,HL
+          LD    (HL),001H
+          INC   HL
+          LD    (HL),000H
+          JP    CURSR
+.MANG2:   LD    A,(DSPXY + 1)
+          ADD   A,L
+          LD    L,A
+          LD    A,(HL)
+          INC   HL
+          RL    (HL)
+          OR    (HL)
+          RR    (HL)
+          RRCA  
+          EX    DE,HL
+          LD    HL,(DSPXY)
+        ENDIF
         RET     
 
         LD      C,H
@@ -1141,7 +1204,11 @@ L0743:  DEC     H
 ?MODE:  LD      HL,KEYPF
         LD      (HL),08AH
         LD      (HL),007H
-        LD      (HL),005H
+        IF      KUMA = 1
+          LD    (HL),004H
+        ELSE
+          LD    (HL),005H
+        ENDIF
         LD      (HL),001H
         RET     
 
@@ -1270,7 +1337,11 @@ CHGPA:  XOR     A
           JR    CHGPK1                   
         ENDIF
 CHGPK:  LD      A,0FFH
-CHGPK1: LD      (SPAGE),A
+CHGPK1: IF      KUMA = 1
+          CALL  .CR1
+        ELSE
+          LD    (SPAGE),A
+        ENDIF
         LD      A,0C6H
         CALL    ?DPCT
 CHGP1:  JP      GETL0
@@ -1581,7 +1652,12 @@ REV2:   JP      ?RSTR
 .MANG:  LD      HL,MANG
         LD      A,(SPAGE)
         OR      A
-        JP      NZ,.MANG2
+        IF      KUMA = 1
+          JR    NZ,.MANG1            ; (+018H)
+          NOP
+        ELSE
+          JP    NZ,.MANG2
+        ENDIF
         LD      A,(MGPNT)
 .MANG3: SUB     008H
         INC     HL
@@ -2407,14 +2483,24 @@ DLY12A: CALL    DLY3
         CALL    ?PONT
         LD      (HL),B
         LD      HL,(DSPXY)
-        LD      A,L
-DSP01:  CP      COLW - 1                ; End of line.
+        IF      KUMA = 1
+          CALL  L03A7
+        ELSE
+          LD      A,L
+        ENDIF
+DSP01:  IF      KUMA = 0
+          CP    COLW - 1                ; End of line.
+        ENDIF
         JR      NZ,DSP04                
         CALL    .MANG
         JR      C,DSP04                 
         LD      A,(SPAGE)
         OR      A
-        JP      NZ,.DSP03
+        IF      KUMA
+          JP    NZ,CURSR
+        ELSE
+          JP    NZ,.DSP03
+        ENDIF
         EX      DE,HL
         LD      A,B
         CP      007H
@@ -2535,8 +2621,12 @@ CURSU1: CALL    MGP.D
         JR      CURS3                   
 
 CURSR:  LD      HL,(DSPXY)
-        LD      A,L
-        CP      COLW - 1                ; End of line
+        IF      KUMA = 1
+          CALL  L03A7
+        ELSE
+          LD    A,L
+          CP    COLW - 1                ; End of line
+        ENDIF
         JR      NC,CURS2                
         INC     L
         JR      CURS3                   
@@ -2555,8 +2645,12 @@ CURSL:  LD      HL,(DSPXY)
         JR      Z,CURS5A                 
         DEC     L
         JR      CURS3                   
-CURS5A: LD      L,COLW - 1              ; End of line
-        DEC     H
+CURS5A: IF      KUMA = 1
+          CALL  L03B0
+        ELSE
+          LD    L,COLW - 1              ; End of line
+          DEC     H
+        ENDIF
         JP      P,CURSU1
         LD      H,000H
         LD      (DSPXY),HL
@@ -2643,13 +2737,24 @@ INST:   CALL    .MANG
         RRCA    
         LD      L,COLW - 1              ; End of line
         LD      A,L
-        JR      NC,INST1A                
-        INC     H
-INST1A: CALL    ?PNT1
-        PUSH    HL
-        LD      HL,(DSPXY)
-        JR      NC,INST2                
-        LD      A,(COLW*2)-1            ; 04FH
+        IF      KUMA = 1
+          JR    NC,INST1B
+          LD    A,028H
+          ADD   A,L
+          LD    L,A
+INST1B:   CALL  ?PNT1
+          PUSH  HL
+          LD    HL,(DSPXY)
+          NOP
+        ELSE
+          JR    NC,INST1A                
+          INC   H
+INST1A:   CALL  ?PNT1
+          PUSH  HL
+          LD    HL,(DSPXY)
+          JR    NC,INST2                
+          LD    A,(COLW*2)-1            ; 04FH
+        ENDIF
 INST2:  SUB     L
         LD      B,A
         POP     DE
@@ -2720,16 +2825,30 @@ ROLU1:  CALL    MGP.I
         PUSH    HL
         POP     BC
         LD      DE,COLW
-        LD      HL,SCRN - COLW
-        LD      A,(SPAGE)
-        OR      A
-        JR      NZ,?PNT2                
-        LD      HL,(PAGETP)
-        SBC     HL,DE
-?PNT2:  ADD     HL,DE
-        DEC     B
-        JP      P,?PNT2
-        LD      B,000H
+        IF      KUMA = 1
+          LD    HL,(PAGETP)
+          INC   B
+          LD    A,(SPAGE)
+          OR    A
+          JR    Z,L0FCE             ; (+008H)
+          LD    HL,0D000H
+          LD    E,050H
+          JR    L0FCE               ; (+001H)
+L0FCD:    ADD   HL,DE
+L0FCE:    DJNZ  L0FCD               ; (-003H)
+          NOP     
+        ELSE
+          LD    HL,SCRN - COLW
+          LD    A,(SPAGE)
+          OR    A
+          JR    NZ,?PNT2                
+          LD    HL,(PAGETP)
+          SBC   HL,DE
+?PNT2:    ADD   HL,DE
+          DEC   B
+          JP    P,?PNT2
+          LD    B,000H
+        ENDIF
         ADD     HL,BC
         RES     3,H
         POP     DE

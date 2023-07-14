@@ -128,7 +128,7 @@ enum CTRL_COMMANDS {
 static t_Z80Ctrl  *Z80Ctrl     = NULL;
 static uint8_t    *Z80RAM      = NULL;
 static uint8_t    *Z80ROM      = NULL;
-static uint32_t   *Z80PAGE[MEMORY_MODES];
+static uint32_t   *Z80PAGE[MEMORY_MODES+MEMORY_SUB_MODES];
 static uint8_t     memoryPage  = 0;
 
 // Method to obtain and return the output screen width.
@@ -1038,7 +1038,7 @@ int main(int argc, char *argv[])
             exit(1);
         }
         // Loop through all the memory mapping pages, each page specifies a 64K mapping block, all memory accesses go through this map.
-        for(idx=0; idx < MEMORY_MODES; idx++)
+        for(idx=0; idx < MEMORY_MODES+MEMORY_SUB_MODES; idx++)
         {
             // Try and bind the page, if it doesnt exist, then the pointer will be NULL so it wont be used.
             Z80PAGE[idx] = (uint32_t *)mmap(0, ((MEMORY_BLOCK_SLOTS*sizeof(uint32_t)) + (0x1000*(idx+1))), PROT_READ | PROT_WRITE,  MAP_SHARED,  fdZ80,  0);

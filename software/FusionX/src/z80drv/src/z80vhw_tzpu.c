@@ -16,8 +16,11 @@
 // Credits:         
 // Copyright:       (c) 2019-2023 Philip Smart <philip.smart@net2net.org>
 //
-// History:         Feb 2023 v1.0 - Initial write based on the tranZPUter SW hardware.
-//                  Apr 2023 v1.1 - Updates & bug fixes.
+// History:         Feb 2023 - v1.0 - Initial write based on the tranZPUter SW hardware.
+//                  Apr 2023 - v1.1 - Updates & bug fixes.
+//                  Jul 2023 - v1.6 - Updated MZ-700 code, adding sub-memory maps to increase page mapping
+//                                    speed specifically to enable reliable tape read/write.
+
 //
 // Notes:           See Makefile to enable/disable conditional components
 //
@@ -68,6 +71,8 @@ typedef struct {
     uint8_t                                   regCpuInfo;                               // Internal FPGA CPU information register.
     uint8_t                                   regCpldCfg;                               // Internal CPLD config register.
     uint8_t                                   regCpldInfo;                              // Internal CPLD information register.
+    uint8_t                                   loDRAMen;                                 // Lower bank 0000:0FFF DRAM enabled, else monitor.
+    uint8_t                                   hiDRAMen;                                 // Higher bank D000:FFFF DRAM enabled, else memory mapped I/O.
 } t_TZPUCtrl;
 
 // TZPU Board control.
@@ -147,7 +152,9 @@ void tzpuSetupMemory(enum Z80_MEMORY_PROFILE mode)
   #if(TARGET_HOST_MZ2000 == 1)
     TZPUCtrl.regCpldInfo    = (CPLD_VERSION << 4) | (CPLD_HAS_FPGA_VIDEO << 3) | HWMODE_MZ2000;
   #endif
-    TZPUCtrl.regCpldCfg     = 0x00;   // Not used, as no CPLD available, but need to store/return value if addressed.
+    TZPUCtrl.regCpldCfg     = 0x00;    // Not used, as no CPLD available, but need to store/return value if addressed.
+    TZPUCtrl.loDRAMen       = 0;       // Default is monitor ROM is enabled.
+    TZPUCtrl.hiDRAMen       = 0;       // Default is memory mapped I/O enabled.
 
     // Default memory mode, TZFS.
     Z80Ctrl->memoryMode = TZMM_TZFS;
@@ -246,7 +253,7 @@ void tzpuRemove(void)
     uint32_t      idx;
 
     // Go through and clear all memory maps, leave the original page in slot 0.
-    for(idx=1; idx < MEMORY_MODES; idx++)
+    for(idx=1; idx < MEMORY_MODES+MEMORY_SUB_MODES; idx++)
     {
         if(Z80Ctrl->page[idx] != NULL)
         {
@@ -267,17 +274,18 @@ void tzpuRemove(void)
 static inline void tzpuDecodeMemoryMapSetup(zuint16 address, zuint8 data, uint8_t ioFlag, uint8_t readFlag)
 {
     // Locals.
-    uint32_t    idx;
+    //uint32_t    idx;
 
     // I/O or Memory?
     if(ioFlag == 0)
     {
-   //   #if(DEBUG_ENABLED & 1)
-   //     if(Z80Ctrl->debug >= 2)
-   //     {
-   //         pr_info("MEM:%04x,%02x,%d,%d\n", address, data, ioFlag, readFlag);
-   //     }
-   //   #endif
+      #if(DEBUG_ENABLED & 1)
+        if(Z80Ctrl->debug >= 3)
+        {
+            pr_info("MEM:%04x,%02x,%d,%d\n", address, data, ioFlag, readFlag);
+        }
+      #endif
+
         // Certain machines have memory mapped I/O, these need to be handled in-situ as some reads may change the memory map.
         // These updates are made whilst waiting for the CPLD to retrieve the requested byte.
         //
@@ -305,116 +313,87 @@ static inline void tzpuDecodeMemoryMapSetup(zuint16 address, zuint8 data, uint8_
     } else
     // I/O Decoding.
     {
-   //   #if(DEBUG_ENABLED & 1)
-   //     if(Z80Ctrl->debug >= 2)
-   //     {
-   //         pr_info("IO:%04x,%02x,%d,%d\n", address, data, ioFlag, readFlag);
-   //     }
-   //   #endif
-
-        // Determine if this is a memory management port and update the memory page if required.
-        switch(address & 0x00FF)
+      #if(DEBUG_ENABLED & 1)
+        if(Z80Ctrl->debug >= 3)
+        {
+            pr_info("IO:%04x,%02x,%d,%d\n", address, data, ioFlag, readFlag);
+        }
+      #endif
+  
+        // Check to see if the memory mode page has been allocated for requested mode, if it hasnt, we need to allocate and then define.
+        if(((address&0xFF) - 0xE0) >= 0 && ((address&0xFF) - 0xE0) < MEMORY_SUB_MODES)
         {
             //  MZ700 memory mode switch.
-            // 
+            //
             //              MZ-700                                                     
             //             |0000:0FFF|1000:CFFF|D000:FFFF          
             //             ------------------------------          
-            //  OUT 0xE0 = |DRAM     |         |                   
-            //  OUT 0xE1 = |         |         |DRAM               
-            //  OUT 0xE2 = |MONITOR  |         |                   
-            //  OUT 0xE3 = |         |         |Memory Mapped I/O  
+            //  OUT 0xE0 = |DRAM     |DRAM     |<last>             
+            //  OUT 0xE1 = |<last>   |DRAM     |DRAM               
+            //  OUT 0xE2 = |MONITOR  |DRAM     |<last>             
+            //  OUT 0xE3 = |<last>   |DRAM     |Memory Mapped I/O  
             //  OUT 0xE4 = |MONITOR  |DRAM     |Memory Mapped I/O  
-            //  OUT 0xE5 = |         |         |Inhibit            
-            //  OUT 0xE6 = |         |         |<return>           
-            // 
-            //  <return> = Return to the state prior to the complimentary command being invoked.
-            // Enable lower 4K block as DRAM
-            case IO_ADDR_E0:
-                for(idx=0x0000; idx < 0x1000; idx+=MEMORY_BLOCK_GRANULARITY)
-                {
-                    setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM, idx);
-                }
-                break;
+            //  OUT 0xE5 = |<last>   |DRAM     |Inhibit            
+            //  OUT 0xE6 = |<last>   |DRAM     |<return to last>   
+            //
+            // Determine if this is a memory management port and update the memory page if required.
+            switch(address & 0x00FF)
+            {
+                case IO_ADDR_E0:
+                    TZPUCtrl.loDRAMen = 1;
+                    break;
 
-            // Enable upper 12K block, including Video/Memory Mapped peripherals area, as DRAM.
-            case IO_ADDR_E1:
-                if(!Z80Ctrl->inhibitMode)
-                {
-                    for(idx=0xD000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
-                    {
-                        // MZ-700 mode we only work in first 64K block.
-                        setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM, idx);
-                    }
-                }
-                break;
-              
-            // Enable MOnitor ROM in lower 4K block
-            case IO_ADDR_E2:
-                for(idx=0x0000; idx < 0x1000; idx+=MEMORY_BLOCK_GRANULARITY)
-                {
-                    setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_ROM, idx);
-                }
-                break;
-               
-            // Enable Video RAM and Memory mapped peripherals in upper 12K block.
-            case IO_ADDR_E3:
-                if(!Z80Ctrl->inhibitMode)
-                {
-                    for(idx=0xD000; idx < 0xE000; idx+=MEMORY_BLOCK_GRANULARITY)
-                    {
-                        setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_VRAM, idx);
-                    }
-                    for(idx=0xE000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
-                    {
-                        setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_HW, idx);
-                    }
-                }
-                break;
+                case IO_ADDR_E1:
+                    TZPUCtrl.hiDRAMen = 1;
+                    break;
 
-            // Reset to power on condition memory map.
-            case IO_ADDR_E4:
-                // Lower 4K set to Monitor ROM.
-                for(idx=0x0000; idx < 0x1000; idx+=MEMORY_BLOCK_GRANULARITY)
-                {
-                    setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_ROM, idx);
-                }
-                if(!Z80Ctrl->inhibitMode)
-                {
-                    // Upper 12K to hardware.
-                    for(idx=0xD000; idx < 0xE000; idx+=MEMORY_BLOCK_GRANULARITY)
-                    {
-                        setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_VRAM, idx);
-                    }
-                    for(idx=0xE000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
-                    {
-                        setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_HW, idx);
-                    }
-                }
-                break;
+                case IO_ADDR_E2:
+                    TZPUCtrl.loDRAMen = 0;
+                    break;
 
-            // Inhibit. Backup current page data in region 0xD000-0xFFFF and inhibit it.
-            case IO_ADDR_E5:
-                for(idx=0xD000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
-                {
-                    backupMemoryType(idx/MEMORY_BLOCK_GRANULARITY);
-                    setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_INHIBIT, idx);
-                }
-                Z80Ctrl->inhibitMode = 1;
-                break;
+                case IO_ADDR_E3:
+                    TZPUCtrl.hiDRAMen = 0;
+                    break;
 
-            // Restore D000-FFFF to its original state.
-            case IO_ADDR_E6:
-                for(idx=0xD000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
-                {
-                    restoreMemoryType(idx/MEMORY_BLOCK_GRANULARITY);
-                }
-                Z80Ctrl->inhibitMode = 0;
-                break;
+                case IO_ADDR_E4:
+                    TZPUCtrl.loDRAMen  = 0;
+                    TZPUCtrl.hiDRAMen  = 0;
+                    Z80Ctrl->inhibitMode = 0;
+                    break;
 
-            // Port is not a memory management port.
-            default:
-                break;
+                case IO_ADDR_E5:
+                    Z80Ctrl->inhibitMode = 1;
+                    break;
+
+                case IO_ADDR_E6:
+                    Z80Ctrl->inhibitMode = 0;
+                    break;
+    
+                default:
+                    break;
+            }
+
+            // Setup memory mode based on flag state.
+            if(Z80Ctrl->inhibitMode)
+            {
+               if(TZPUCtrl.loDRAMen)
+                   Z80Ctrl->memoryMode = MEMORY_MODES + 2;
+               else
+                   Z80Ctrl->memoryMode = MEMORY_MODES + 5;
+            } else
+            if(TZPUCtrl.loDRAMen)
+            {
+                if(TZPUCtrl.hiDRAMen)
+                   Z80Ctrl->memoryMode = MEMORY_MODES + 0;
+                else
+                   Z80Ctrl->memoryMode = MEMORY_MODES + 1;
+            } else
+            {
+                if(TZPUCtrl.hiDRAMen)
+                   Z80Ctrl->memoryMode = MEMORY_MODES + 3;
+                else
+                   Z80Ctrl->memoryMode = MEMORY_MODES + 4;
+            }
         }
     }
 }
@@ -493,6 +472,7 @@ static inline uint8_t tzpuRead(zuint16 address, uint8_t ioFlag)
 static inline void tzpuWrite(zuint16 address, zuint8 data, uint8_t ioFlag)
 {
     // Locals
+    uint8_t        subMode;
     uint32_t       idx;
 
     // The tranZPUter board, in order to autoboot and use valuable space for variables, allows writing into the User ROM 
@@ -925,6 +905,95 @@ static inline void tzpuWrite(zuint16 address, zuint8 data, uint8_t ioFlag)
                     }
                 }
                 // Memory map now created/switched.
+
+                // Allocate/populate the sub-memory maps for this mode. TZFS currently uses sub-memory modes for MZ-700 page banking.
+                if(Z80Ctrl->memoryMode == TZMM_TZFS)
+                {
+                    for(subMode=0; subMode < MEMORY_SUB_MODES; subMode++)
+                    {
+                        if(Z80Ctrl->page[MEMORY_MODES+subMode] == NULL)
+                        {
+                          #if(DEBUG_ENABLED & 0x01)
+                            if(Z80Ctrl->debug >=3) pr_info("Allocating memory sub page:%d\n", subMode);
+                          #endif
+pr_info("Allocating memory sub page:%d,%d\n", subMode, (MEMORY_BLOCK_SLOTS*sizeof(uint32_t)));
+                            (Z80Ctrl->page[MEMORY_MODES+subMode]) = (uint32_t *)kmalloc((MEMORY_BLOCK_SLOTS*sizeof(uint32_t)), GFP_KERNEL);
+                            if ((Z80Ctrl->page[MEMORY_MODES+subMode]) == NULL) 
+                            {
+                                pr_info("z80drv: failed to allocate memory sub mapping page:%d memory!", subMode);
+                            }
+                        }
+                       
+                        // Duplicate current mode into the sub page prior to setting up specific config.
+                        memcpy((uint8_t *)Z80Ctrl->page[MEMORY_MODES+subMode], (uint8_t *)Z80Ctrl->page[(data & (MEMORY_MODES - 1))], MEMORY_BLOCK_SLOTS*sizeof(uint32_t));
+                        Z80Ctrl->memoryMode  = MEMORY_MODES + subMode;
+                        TZPUCtrl.loDRAMen    = 0;
+                        TZPUCtrl.hiDRAMen    = 0;
+                        Z80Ctrl->inhibitMode = 0;
+
+                        //  MZ700 memory mode switch.
+                        //
+                        //              MZ-700                                                     
+                        //             |0000:0FFF|1000:CFFF|D000:FFFF          
+                        //             ------------------------------          
+                        //  OUT 0xE0 = |DRAM     |DRAM     |<last>             
+                        //  OUT 0xE1 = |<last>   |DRAM     |DRAM               
+                        //  OUT 0xE2 = |MONITOR  |DRAM     |<last>             
+                        //  OUT 0xE3 = |<last>   |DRAM     |Memory Mapped I/O  
+                        //  OUT 0xE4 = |MONITOR  |DRAM     |Memory Mapped I/O  
+                        //  OUT 0xE5 = |<last>   |DRAM     |Inhibit            
+                        //  OUT 0xE6 = |<last>   |DRAM     |<return to last>   
+                        //
+                        // Sub-memory page maps:
+                        //
+                        // LOW BANK    HIGH BANK  PAGE MAP
+                        //             DRAM          0
+                        // DRAM        MEMORY MAP    1
+                        //             Inhibit       2
+                        //             DRAM          3
+                        // MONITOR     MEMORY MAP    4
+                        //             Inhibit       5
+                        //
+                        if(subMode >= 0 && subMode < 3)
+                        {
+                            // Enable lower 4K block as DRAM
+                            for(idx=0x0000; idx < 0x1000; idx+=MEMORY_BLOCK_GRANULARITY)
+                            {
+                                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM, idx);
+                            }
+                        }
+                        if(subMode == 0 || subMode == 3)
+                        {
+                            // Enable upper 12K block, including Video/Memory Mapped peripherals area, as DRAM.
+                            for(idx=0xD000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
+                            {
+                                // MZ-700 mode we only work in first 64K block.
+                                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_VIRTUAL_RAM, idx);
+                            }
+                        }
+                        if(subMode == 1 || subMode == 4)
+                        {
+                            // Enable Video RAM and Memory mapped peripherals in upper 12K block.
+                            for(idx=0xD000; idx < 0xE000; idx+=MEMORY_BLOCK_GRANULARITY)
+                            {
+                                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_VRAM, idx);
+                            }
+                            for(idx=0xE000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
+                            {
+                                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_PHYSICAL_HW, idx);
+                            }
+                        }
+                        if(subMode == 2 || subMode == 5)
+                        {
+                            // Inhibit. Backup current page data in region 0xD000-0xFFFF and inhibit it.
+                            for(idx=0xD000; idx < 0x10000; idx+=MEMORY_BLOCK_GRANULARITY)
+                            {
+                                setMemoryType(idx/MEMORY_BLOCK_GRANULARITY, MEMORY_TYPE_INHIBIT, idx);
+                            }
+                        }
+                    }
+                }
+                Z80Ctrl->memoryMode = (data & (MEMORY_MODES - 1));
                 break;
 
             case IO_TZ_SETXMHZ:   
